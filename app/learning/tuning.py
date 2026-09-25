@@ -118,6 +118,34 @@ def evaluate(params: dict, samples: list, cfg: dict, extra: str = "") -> float:
     return float(np.mean(vals)) if vals else 1.0
 
 
+def pipeline_guard(case_names: list[str], params: dict, log=print) -> dict:
+    """Comprobación a nivel de TODO el pipeline con los casos de validación: corre la comparación completa con los
+    valores de fábrica y con el ajuste candidato. Devuelve errores de texto (FP+FN) y CER de cada uno."""
+    import tempfile
+
+    from bench import metrics
+    from ..pipeline import run_comparison
+
+    out = {"base": {"err": 0, "cer": []}, "nuevo": {"err": 0, "cer": []}}
+    for name in case_names:
+        cdir = DATOS_DIR / "casos" / name
+        exp = json.loads((cdir / "esperado.json").read_text(encoding="utf-8"))
+        for label, tune in (("base", {}), ("nuevo", params)):
+            res = run_comparison(f"guard_{name}", cdir / exp["cliente"], cdir / exp["diseno"], {"tune": tune},
+                                 exp.get("pagina_cliente", 1) - 1, exp.get("pagina_diseno", 1) - 1, persist=False,
+                                 out_dir=Path(tempfile.mkdtemp(prefix="fv_guard_")))
+            det = [d.model_dump() for d in res.differences if d.category == "text" and d.subtype != "ocr_dudoso"]
+            esp = [e for e in exp.get("errores", []) if e.get("categoria") == "text"]
+            c = metrics.case_counts(det, esp)["counts"]["text"]
+            out[label]["err"] += c["fp"] + c["fn"]
+            if exp.get("texto_cliente"):
+                out[label]["cer"].append(metrics.cer(exp["texto_cliente"], res.client_text or ""))
+    for k in out:
+        cers = out[k].pop("cer")
+        out[k]["cer"] = float(np.mean(cers)) if cers else None
+    return out
+
+
 def tune_type(tipo: str, samples: list, log=print) -> dict:
     """Busca los mejores parámetros con ~2/3 de los casos y los VALIDA con el resto (casos que no vio): solo se
     adoptan si allí también mejoran (evita sobreajustar a unos pocos diseños)."""
@@ -151,9 +179,22 @@ def tune_type(tipo: str, samples: list, log=print) -> dict:
     val_before = evaluate(dict(DEFAULT_TUNE), val, cfg, extra)
     val_after = evaluate(cur, val, cfg, extra) if cur != DEFAULT_TUNE else val_before
     adopted = cur != DEFAULT_TUNE and val_after <= val_before * (1 - MIN_GAIN) and (val_before - val_after) >= 0.003
+    guard = None
+    if adopted:  # segunda barrera: no debe empeorar el pipeline completo en los casos de validación
+        try:
+            guard = pipeline_guard(sorted(val_cases), cur, log)
+            b, n = guard["base"], guard["nuevo"]
+            worse = n["err"] > b["err"] or (b["cer"] is not None and n["cer"] is not None and n["cer"] > b["cer"] * 1.02)
+            adopted = not worse
+            log(f"  pipeline completo (casos de validación): errores de texto {b['err']} → {n['err']}"
+                + (f" · CER {b['cer'] * 100:.2f}% → {n['cer'] * 100:.2f}%" if b["cer"] is not None and n["cer"] is not None else ""))
+        except Exception as e:  # si no se puede comprobar, no se adopta
+            adopted = False
+            log(f"  no se pudo comprobar con el pipeline completo ({e}); descartado")
     log(f"  validación: {val_before * 100:.2f}% → {val_after * 100:.2f}% · {'ADOPTADO' if adopted else 'descartado'}")
     return {"params": cur, "cer_antes": round(val_before, 4), "cer_despues": round(val_after, 4),
-            "lineas": len(samples), "fecha": datetime.now().isoformat(timespec="seconds"), "adoptado": adopted}
+            "lineas": len(samples), "fecha": datetime.now().isoformat(timespec="seconds"), "adoptado": adopted,
+            "pipeline": guard}
 
 
 def autotune(tipo: str | None = None, log=print) -> dict:

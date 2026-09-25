@@ -198,6 +198,8 @@ def run_comparison(job_id: str, client_path, design_path, params: dict | None = 
     image_type = classify_image(client_path, framed=any("marco" in n for n in al.notes),
                                 illumination_fixed=normalized, perspective=perspective)
     tune = tuning.params_for(image_type) if learn_on else None
+    if params and "tune" in params:  # (uso interno: comprobar un ajuste candidato; {} = valores de fábrica)
+        tune = params["tune"]
     extra = vocab.ocr_extra_config() if learn_on else ""
     try:
         if spans and cfg.get("ocr_mode", "guiado") == "guiado":

@@ -127,3 +127,30 @@ def test_reviewed_case_feeds_learning_and_line_export(datos, monkeypatch):
     assert len(list((store.path("lineas")).glob("*.gt.txt"))) == st["lineas_guardadas"]
     shutil.rmtree(m.RESULTS_DIR / res["job_id"], ignore_errors=True)
     shutil.rmtree(m.UPLOADS_DIR / res["job_id"], ignore_errors=True)
+
+
+def test_tuning_needs_pipeline_confirmation(monkeypatch):
+    """Un ajuste que mejora el CER por línea pero empeora el pipeline completo NO se adopta."""
+    from app.ocr_guided import DEFAULT_TUNE
+    samples = [(None, None, 1.0, f"caso_{i}") for i in range(9)]
+
+    def fake_eval(params, samples_, cfg, extra=""):
+        return 0.10 if params == DEFAULT_TUNE else 0.05  # cualquier ajuste «mejora» por línea
+
+    monkeypatch.setattr(tuning, "evaluate", fake_eval)
+    monkeypatch.setattr("app.learning.vocab.ocr_extra_config", lambda: "")
+    monkeypatch.setattr(tuning, "OPTIONS", {"target_px": [40, 60]})
+    worse = {"base": {"err": 1, "cer": 0.01}, "nuevo": {"err": 3, "cer": 0.02}}
+    monkeypatch.setattr(tuning, "pipeline_guard", lambda *a, **k: worse)
+    assert tuning.tune_type("foto", samples, log=lambda *_: None)["adoptado"] is False
+    better = {"base": {"err": 3, "cer": 0.02}, "nuevo": {"err": 1, "cer": 0.01}}
+    monkeypatch.setattr(tuning, "pipeline_guard", lambda *a, **k: better)
+    res = tuning.tune_type("foto", samples, log=lambda *_: None)
+    assert res["adoptado"] is True and res["params"]["target_px"] == 40
+
+
+def test_tuning_needs_several_cases(datos, monkeypatch):
+    lines = [(None, None, 1.0, "caso_001")] * 20  # muchas líneas pero de un solo caso
+    monkeypatch.setattr(tuning, "collect_samples", lambda tipo: {"foto": lines})
+    res = tuning.autotune(log=lambda *_: None)
+    assert "pocos datos" in res["foto"]["estado"]
