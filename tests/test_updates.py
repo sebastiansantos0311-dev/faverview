@@ -50,7 +50,13 @@ def test_shortcut_is_created_once_on_first_run(tmp_path, monkeypatch):
     monkeypatch.setattr(launcher, "MARKER", tmp_path / ".creado")
     monkeypatch.setattr(launcher, "BASE_DIR", tmp_path)
     monkeypatch.setattr(launcher.sys, "platform", "win32")
-    monkeypatch.setattr(launcher, "create_shortcut", lambda quiet=False: calls.append(1) or (launcher.MARKER.write_text("ok") or (tmp_path / "FAVERVIEW.lnk").write_text("x") or True))
+    def fake(quiet=False):
+        calls.append(1)
+        launcher.MARKER.write_text("ok")
+        (tmp_path / "FAVERVIEW.lnk").write_text("x")
+        return True
+
+    monkeypatch.setattr(launcher, "create_shortcut", fake)
     launcher.ensure_shortcut()
     launcher.ensure_shortcut()  # segunda vez: ya existe el marcador, no lo recrea
     assert len(calls) == 1
