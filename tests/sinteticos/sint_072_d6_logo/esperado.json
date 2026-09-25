@@ -1,6 +1,7 @@
 {
  "caso": "sint_072_d6_logo",
- "tipo": "sintetico",
+ "tipo": "foto",
+ "variante": "logo",
  "cliente": "cliente.jpg",
  "diseno": "diseno.pdf",
  "pagina_cliente": 1,

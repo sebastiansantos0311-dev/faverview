@@ -1,6 +1,7 @@
 {
  "caso": "sint_017_d2_palabra_agregada",
- "tipo": "sintetico",
+ "tipo": "whatsapp",
+ "variante": "palabra_agregada",
  "cliente": "cliente.jpg",
  "diseno": "diseno.pdf",
  "pagina_cliente": 1,

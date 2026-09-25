@@ -638,7 +638,8 @@ async function saveCase() {
   try {
     const r = await (await api("/api/cases/" + data.job_id, { method: "POST", headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ verdicts, missed, client_text: $("#rv-text").value || null, tipo: $("#rv-tipo").value }) })).json();
-    $("#rv-msg").textContent = `Guardado como ${r.caso} (${r.errores} errores esperados) en datos_locales/casos.`;
+    $("#rv-msg").textContent = `Guardado como ${r.caso} (${r.errores} errores esperados) en datos_locales/casos.`
+      + (r.autoajuste ? " Se está ajustando el OCR con tus casos en segundo plano (puedes seguir trabajando)." : "");
   } catch (e) { showError(e.message); }
 }
 
@@ -708,8 +709,8 @@ async function openLearning() {
         r.modelo ? h("button", { onclick: () => act("/api/learning/model", { method: "POST", headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ activo: !r.modelo_activo }) }) }, r.modelo_activo ? "Volver al modelo original" : "Activar modelo entrenado") : null),
       tarea.en_curso ? h("div", { class: "banner warn" }, `En curso: ${tarea.en_curso}…`, h("pre", {}, (tarea.registro || []).join("\n"))) : null,
-      tarea.resultado ? h("div", { class: "hint" }, "Último resultado: " + (tarea.resultado.mensaje || JSON.stringify(tarea.resultado).slice(0, 300))) : null,
-      r.ab ? h("div", { class: "hint" }, `Prueba A/B: CER ${r.ab.cer_base}% → ${r.ab.cer_nuevo}% · F1 texto ${r.ab.f1_base}% → ${r.ab.f1_nuevo}% · ${r.ab.activado ? "activado" : "descartado"}`) : null,
+      tarea.resultado ? h("div", { class: "hint" }, "Último resultado: " + (tarea.resultado.mensaje || JSON.stringify(tarea.resultado).slice(0, 300))) : "",
+      r.ab ? h("div", { class: "hint" }, `Prueba A/B: CER ${r.ab.cer_base}% → ${r.ab.cer_nuevo}% · F1 texto ${r.ab.f1_base}% → ${r.ab.f1_nuevo}% · ${r.ab.activado ? "activado" : "descartado"}`) : "",
       h("h3", {}, "Confusiones aprendidas"),
       r.confusiones_lista.length ? h("table", { class: "learn-table" }, h("tr", {}, h("th", {}, "Leído"), h("th", {}, "Correcto"), h("th", {}, "Veces"), h("th", {}, "Ejemplo"), h("th", {}, "")),
         r.confusiones_lista.map(c => h("tr", {}, h("td", {}, `«${c.leido}»`), h("td", {}, `«${c.correcto}»`), h("td", {}, c.veces),

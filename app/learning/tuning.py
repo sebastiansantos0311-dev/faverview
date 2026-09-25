@@ -13,18 +13,19 @@ from pathlib import Path
 import numpy as np
 from rapidfuzz.distance import Levenshtein
 
-from ..config import DATOS_DIR, load_config
+from ..config import DATOS_DIR, load_config, setup_tesseract
 from . import store
 
 OPTIONS = {
-    "target_px": [30, 40, 50, 60],
+    "target_px": [40, 50, 60, 80],
     "method": ["sauvola", "otsu"],
     "k": [0.1, 0.2, 0.3],
     "blur": [0.0, 1.0],
     "psm": [7, 13],
     "margin": [0.15, 0.25, 0.4],
 }
-MIN_LINES = 8
+MIN_LINES = 12  # líneas mínimas por tipo
+MIN_CASES = 3  # casos distintos mínimos (la validación se hace con casos que el ajuste NO vio)
 MIN_GAIN = 0.05  # se adopta solo si el CER baja al menos 5% (relativo)
 _running = threading.Event()
 
@@ -40,7 +41,7 @@ def _norm(t: str) -> str:
     return " ".join(t.lower().split())
 
 
-def collect_samples(tipo: str | None, max_per_case: int = 12, max_total: int = 70) -> dict[str, list]:
+def collect_samples(tipo: str | None, max_per_case: int = 8, max_total: int = 45) -> dict[str, list]:
     """Recortes de líneas 'de verdad conocida' agrupados por tipo de imagen."""
     from ..align import align_images
     from ..loaders import extract_pdf_layout, load_as_image
@@ -94,7 +95,7 @@ def collect_samples(tipo: str | None, max_per_case: int = 12, max_total: int = 7
             rel = Line(ln.spans, [type(w)(w.text, (w.bbox[0] - x0, w.bbox[1] - y0, w.bbox[2] - x0, w.bbox[3] - y0))
                                   for w in ln.words],
                        (ln.bbox[0] - x0, ln.bbox[1] - y0, ln.bbox[2] - x0, ln.bbox[3] - y0))
-            out.setdefault(t, []).append((sub, rel, al.alignment_quality))
+            out.setdefault(t, []).append((sub, rel, al.alignment_quality, cdir.name))
     return out
 
 
@@ -102,8 +103,10 @@ def evaluate(params: dict, samples: list, cfg: dict, extra: str = "") -> float:
     """CER medio de leer las líneas con estos parámetros."""
     from ..ocr_guided import read_line
 
+    setup_tesseract(cfg)
+
     def one(s):
-        sub, ln, q = s
+        sub, ln, q = s[:3]
         H, W = sub.shape[:2]
         words, _ = read_line(sub, ln, cfg, q, extra, None, params)
         want = _norm(" ".join(w.text for w in ln.words))
@@ -116,15 +119,22 @@ def evaluate(params: dict, samples: list, cfg: dict, extra: str = "") -> float:
 
 
 def tune_type(tipo: str, samples: list, log=print) -> dict:
+    """Busca los mejores parámetros con ~2/3 de los casos y los VALIDA con el resto (casos que no vio): solo se
+    adoptan si allí también mejoran (evita sobreajustar a unos pocos diseños)."""
     from ..ocr_guided import DEFAULT_TUNE
     from . import vocab
 
     cfg = load_config()
     extra = vocab.ocr_extra_config()
+    # la validación usa CASOS distintos a los del ajuste (mismo diseño en ambos lados daría una mejora engañosa)
+    cases = sorted({smp[3] for smp in samples})
+    val_cases = set(cases[::3])
+    val = [smp for smp in samples if smp[3] in val_cases]
+    train = [smp for smp in samples if smp[3] not in val_cases]
     cur = dict(DEFAULT_TUNE)
-    base = evaluate(cur, samples, cfg, extra)
-    best = base
-    log(f"[{tipo}] {len(samples)} líneas · CER inicial {base * 100:.2f}%")
+    base_tr = evaluate(cur, train, cfg, extra)
+    best = base_tr
+    log(f"[{tipo}] {len(train)} líneas de ajuste + {len(val)} de validación · CER inicial {base_tr * 100:.2f}%")
     for _ in range(2):  # dos pasadas de búsqueda por coordenadas
         improved = False
         for key, values in OPTIONS.items():
@@ -132,15 +142,18 @@ def tune_type(tipo: str, samples: list, log=print) -> dict:
                 if v == cur[key]:
                     continue
                 trial = {**cur, key: v}
-                c = evaluate(trial, samples, cfg, extra)
+                c = evaluate(trial, train, cfg, extra)
                 if c < best - 0.002:
                     best, cur, improved = c, trial, True
                     log(f"  {key}={v} → CER {c * 100:.2f}%")
         if not improved:
             break
-    adopted = best <= base * (1 - MIN_GAIN)
-    return {"params": cur, "cer_antes": round(base, 4), "cer_despues": round(best, 4), "lineas": len(samples),
-            "fecha": datetime.now().isoformat(timespec="seconds"), "adoptado": adopted}
+    val_before = evaluate(dict(DEFAULT_TUNE), val, cfg, extra)
+    val_after = evaluate(cur, val, cfg, extra) if cur != DEFAULT_TUNE else val_before
+    adopted = cur != DEFAULT_TUNE and val_after <= val_before * (1 - MIN_GAIN) and (val_before - val_after) >= 0.003
+    log(f"  validación: {val_before * 100:.2f}% → {val_after * 100:.2f}% · {'ADOPTADO' if adopted else 'descartado'}")
+    return {"params": cur, "cer_antes": round(val_before, 4), "cer_despues": round(val_after, 4),
+            "lineas": len(samples), "fecha": datetime.now().isoformat(timespec="seconds"), "adoptado": adopted}
 
 
 def autotune(tipo: str | None = None, log=print) -> dict:
@@ -153,8 +166,9 @@ def autotune(tipo: str | None = None, log=print) -> dict:
         ajustes = store.load_json("ajustes_ocr.json", {})
         resumen = {}
         for t, samples in groups.items():
-            if len(samples) < MIN_LINES:
-                resumen[t] = {"estado": f"pocas líneas ({len(samples)} < {MIN_LINES})"}
+            if len(samples) < MIN_LINES or len({smp[3] for smp in samples}) < MIN_CASES:
+                resumen[t] = {"estado": f"pocos datos ({len(samples)} líneas de {len({smp[3] for smp in samples})} casos; "
+                                        f"hacen falta {MIN_LINES} líneas y {MIN_CASES} casos)"}
                 continue
             res = tune_type(t, samples, log)
             resumen[t] = res

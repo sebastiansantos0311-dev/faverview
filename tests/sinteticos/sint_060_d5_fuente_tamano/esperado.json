@@ -1,6 +1,7 @@
 {
  "caso": "sint_060_d5_fuente_tamano",
- "tipo": "sintetico",
+ "tipo": "exportado",
+ "variante": "fuente_tamano",
  "cliente": "cliente.jpg",
  "diseno": "diseno.pdf",
  "pagina_cliente": 1,

@@ -1,6 +1,7 @@
 {
  "caso": "sint_054_d5_numero",
- "tipo": "sintetico",
+ "tipo": "exportado",
+ "variante": "numero",
  "cliente": "cliente.jpg",
  "diseno": "diseno.pdf",
  "pagina_cliente": 1,

@@ -12,8 +12,10 @@ Los demás equipos se actualizan con `git pull` (ver el README).
 
 ## Privacidad
 - Los commits usan el correo anónimo de GitHub (`…@users.noreply.github.com`), configurado solo en este repositorio.
-- **Nunca** subas archivos de clientes reales: `data/uploads/` y `data/results/` están excluidos en `.gitignore`.
-  No pongas archivos reales en `samples/`, porque esa carpeta sí se publica.
+- **Nunca** subas archivos de clientes reales: `data/uploads/`, `data/results/` y **`datos_locales/`** (casos de prueba
+  reales, aprendizaje del OCR, plantillas y reportes del banco de pruebas) están excluidos en `.gitignore`.
+  No pongas archivos reales en `samples/` ni en `tests/sinteticos/`, porque esas carpetas sí se publican.
+  Antes de cada `git push` comprueba con `git status` que no aparezca nada de `datos_locales/`.
 
 ## Licencia
 AGPL-3.0 (archivo `LICENSE`), compatible con PyMuPDF.

@@ -1,6 +1,7 @@
 {
  "caso": "sint_055_d5_palabra_quitada",
- "tipo": "sintetico",
+ "tipo": "foto",
+ "variante": "palabra_quitada",
  "cliente": "cliente.jpg",
  "diseno": "diseno.pdf",
  "pagina_cliente": 1,

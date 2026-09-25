@@ -55,7 +55,7 @@ def _dedupe(visual: list[Difference], others: list[Difference], colors: list[Dif
             continue
         tregion = tmask[y:y + h, x:x + w]
         if tregion.size and tregion.mean() >= 0.6:
-            if v.subtype == "diferencia_visual" or any(_intersects(v.bbox, o.bbox) for o in others):
+            if v.subtype in ("diferencia_visual", "color_distinto") or any(_intersects(v.bbox, o.bbox) for o in others):
                 continue
         # región sobre texto, en la misma línea que un error de texto/fuente: la explican (p. ej. las palabras
         # que se corren al quitar una)

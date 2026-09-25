@@ -254,8 +254,9 @@ def inject_word_removed(design, client, tmp, rng):
 
 def inject_word_added(design, client, tmp, rng):
     """El cliente tiene una palabra extra al final de una línea (falta en el diseño)."""
+    # (el texto blanco sobre un rectángulo se saldría de él y quedaría invisible: no sirve de caso de prueba)
     cands = [i for i in text_items(client, 2, 6) if i["x"] + text_width(i) + 90 < 560 and i["size"] >= 12
-             and i["id"] not in ("tel",)]
+             and i["id"] not in ("tel",) and tuple(i["color"]) != (1, 1, 1)]
     it = rng.choice(cands)
     old_text = it["s"]
     it["s"] = old_text + " gratis"

@@ -69,10 +69,11 @@ def fingerprint() -> str | None:
     return h.hexdigest()[:8] if found else None
 
 
-def record_review(result, body: dict, case_dir: Path, design_path, client_path) -> None:
-    """Se llama al guardar un caso revisado: alimenta los 4 niveles de aprendizaje."""
+def record_review(result, body: dict, case_dir: Path, design_path, client_path) -> dict:
+    """Se llama al guardar un caso revisado: alimenta los 4 niveles de aprendizaje.
+    Devuelve {"autoajuste": True} si arrancó el auto-ajuste del OCR en segundo plano."""
     if not enabled():
-        return
+        return {"autoajuste": False}
     from . import confusions, finetune, tuning, vocab
     from ..config import RESULTS_DIR
 
@@ -96,5 +97,7 @@ def record_review(result, body: dict, case_dir: Path, design_path, client_path) 
 
     from ..config import load_config
     every = int(load_config().get("learning_autotune_every", 5))
-    if every > 0 and st["casos_revisados"] - st["ultimo_autoajuste_en"] >= every:
+    if every > 0 and st["casos_revisados"] - st["ultimo_autoajuste_en"] >= every and not tuning.is_running():
         tuning.autotune_background()
+        return {"autoajuste": True}
+    return {"autoajuste": False}

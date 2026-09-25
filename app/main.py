@@ -256,12 +256,13 @@ def save_case(job_id: str, body: Review):
         "errores": errores, "texto_cliente": body.client_text or "", "notas": body.notas or ""}
     (cdir / "esperado.json").write_text(json.dumps(esperado, ensure_ascii=False, indent=1), encoding="utf-8")
     rj.write_text(result.model_dump_json(indent=1), encoding="utf-8")  # conserva el veredicto de cada error
+    aprendizaje = {"autoajuste": False}
     try:
         from .learning import store
-        store.record_review(result, body.model_dump(), cdir, dpath, cpath)
+        aprendizaje = store.record_review(result, body.model_dump(), cdir, dpath, cpath)
     except ImportError:
         pass
-    return {"caso": cdir.name, "errores": len(errores)}
+    return {"caso": cdir.name, "errores": len(errores), **aprendizaje}
 
 
 # ---------------------------------------------------------------------------------- aprendizaje (Fase 7)

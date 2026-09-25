@@ -1,6 +1,7 @@
 {
  "caso": "sint_018_d2_tilde",
- "tipo": "sintetico",
+ "tipo": "whatsapp",
+ "variante": "tilde",
  "cliente": "cliente.jpg",
  "diseno": "diseno.pdf",
  "pagina_cliente": 1,

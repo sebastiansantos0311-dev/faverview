@@ -18,7 +18,7 @@ from .compare_text import (OcrUnavailable, TextResult, Word, _missing_diff, comp
 from .config import setup_tesseract
 from .loaders import TextSpan
 
-TARGET_LETTER_PX = 40  # altura de la caja de una línea tras el reescalado
+TARGET_LETTER_PX = 60  # altura de la caja de una línea tras el reescalado
 BORDER = 10
 
 
@@ -154,7 +154,7 @@ def line_zone(line: Line, lines: list[Line], quality: float, W: int, H: int,
             min(W, int(line.bbox[2] + right)), min(H, int(line.bbox[3] + my)))
 
 
-DEFAULT_TUNE = {"target_px": 40, "method": "sauvola", "k": 0.2, "blur": 0.0, "psm": 7, "margin": 0.25}
+DEFAULT_TUNE = {"target_px": 60, "method": "sauvola", "k": 0.2, "blur": 0.0, "psm": 7, "margin": 0.25}
 
 
 def read_line(img: np.ndarray, line: Line, cfg: dict, quality: float, extra: str = "",
@@ -284,6 +284,16 @@ def verify_diffs(img: np.ndarray, diffs, cfg: dict, extra: str = ""):
     return keep, verified
 
 
+def _next_to_line(w: Word, ln: "Line") -> bool:
+    """Palabra pegada al principio o al final de la línea del diseño (misma banda vertical, a menos de ~2 alturas)."""
+    h = max(ln.h, 8.0)
+    v = min(w.bbox[3], ln.bbox[3]) - max(w.bbox[1], ln.bbox[1])
+    if v < 0.5 * min(w.h, ln.h):
+        return False
+    gap = max(w.bbox[0] - ln.bbox[2], ln.bbox[0] - w.bbox[2])
+    return gap < 2.5 * h
+
+
 def _alnum_ok(t: str) -> bool:
     return len(t) >= 2 and sum(c.isalnum() for c in t) >= max(2, len(t) * 0.6)
 
@@ -310,7 +320,7 @@ def compare_guided(spans: list[TextSpan], client: np.ndarray, cfg: dict, quality
         hh = max(ln.h, 8.0)
         cwords = [w for w in cwords
                   if (ln.bbox[0] - 0.3 * hh <= (w.bbox[0] + w.bbox[2]) / 2 <= ln.bbox[2] + 0.3 * hh)
-                  or (_alnum_ok(w.text) and len(w.text) >= 3 and w.conf >= 85)]
+                  or (_alnum_ok(w.text) and len(w.text) >= 3 and (w.conf >= 85 or (w.conf >= 70 and _next_to_line(w, ln))))]
         tr = compare_words(ln.words, cwords)
         res.differences += tr.differences
         res.pairs += tr.pairs

@@ -1,6 +1,7 @@
 {
  "caso": "sint_041_d4_numero",
- "tipo": "sintetico",
+ "tipo": "exportado",
+ "variante": "numero",
  "cliente": "cliente.jpg",
  "diseno": "diseno.pdf",
  "pagina_cliente": 1,

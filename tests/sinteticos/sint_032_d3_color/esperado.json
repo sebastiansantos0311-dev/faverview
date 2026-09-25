@@ -1,6 +1,7 @@
 {
  "caso": "sint_032_d3_color",
- "tipo": "sintetico",
+ "tipo": "foto",
+ "variante": "color",
  "cliente": "cliente.jpg",
  "diseno": "diseno.pdf",
  "pagina_cliente": 1,

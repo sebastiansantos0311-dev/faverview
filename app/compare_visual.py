@@ -107,6 +107,9 @@ def compare_visual(design: np.ndarray, client: np.ndarray, cfg: dict, valid: np.
         if cv2.contourArea(cnt) < float(cfg["min_region_area"]):
             continue
         x, y, w, h = cv2.boundingRect(cnt)
+        # franjas finas pegadas al borde de la imagen: restos de la alineación, no contenido
+        if (min(w, h) < 14) and (x <= 6 or y <= 6 or x + w >= W - 6 or y + h >= H - 6):
+            continue
         frac = (w * h) / float(W * H)
         region_strength = float(ex[y:y + h, x:x + w].mean())
         if frac > 0.02 or region_strength > 90:

@@ -1,6 +1,7 @@
 {
  "caso": "sint_023_d2_mixto",
- "tipo": "sintetico",
+ "tipo": "foto",
+ "variante": "mixto",
  "cliente": "cliente.jpg",
  "diseno": "diseno.pdf",
  "pagina_cliente": 1,

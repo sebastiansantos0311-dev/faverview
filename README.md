@@ -152,6 +152,8 @@ positivos por caso, CER del OCR y tiempos, comparado con la corrida anterior. Op
 
 ## Actualizar a la última versión
 
+La app comprueba una vez al día (si hay internet y la instalaste con `git clone`) si hay una versión nueva y te lo avisa
+arriba con un botón **Actualizar**. También puedes hacerlo a mano:
 
 ```bash
 cd $HOME\FAVERVIEW; git pull

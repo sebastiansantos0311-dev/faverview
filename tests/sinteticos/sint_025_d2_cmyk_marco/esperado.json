@@ -1,6 +1,7 @@
 {
  "caso": "sint_025_d2_cmyk_marco",
- "tipo": "sintetico",
+ "tipo": "captura",
+ "variante": "cmyk_marco",
  "cliente": "cliente.jpg",
  "diseno": "diseno.pdf",
  "pagina_cliente": 1,

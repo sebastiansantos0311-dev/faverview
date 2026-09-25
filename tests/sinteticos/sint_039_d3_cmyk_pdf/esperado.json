@@ -1,6 +1,7 @@
 {
  "caso": "sint_039_d3_cmyk_pdf",
- "tipo": "sintetico",
+ "tipo": "cmyk",
+ "variante": "cmyk_pdf",
  "cliente": "cliente.jpg",
  "diseno": "diseno.pdf",
  "pagina_cliente": 1,

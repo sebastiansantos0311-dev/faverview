@@ -1,6 +1,7 @@
 {
  "caso": "sint_001_d1_identico",
- "tipo": "sintetico",
+ "tipo": "exportado",
+ "variante": "identico",
  "cliente": "cliente.jpg",
  "diseno": "diseno.pdf",
  "pagina_cliente": 1,

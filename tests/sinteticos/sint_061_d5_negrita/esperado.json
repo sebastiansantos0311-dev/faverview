@@ -1,6 +1,7 @@
 {
  "caso": "sint_061_d5_negrita",
- "tipo": "sintetico",
+ "tipo": "foto",
+ "variante": "negrita",
  "cliente": "cliente.jpg",
  "diseno": "diseno.pdf",
  "pagina_cliente": 1,

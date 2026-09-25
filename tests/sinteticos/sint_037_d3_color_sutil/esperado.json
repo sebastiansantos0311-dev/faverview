@@ -1,6 +1,7 @@
 {
  "caso": "sint_037_d3_color_sutil",
- "tipo": "sintetico",
+ "tipo": "exportado",
+ "variante": "color_sutil",
  "cliente": "cliente.jpg",
  "diseno": "diseno.pdf",
  "pagina_cliente": 1,
