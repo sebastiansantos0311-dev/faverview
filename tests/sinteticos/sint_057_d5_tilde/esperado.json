@@ -1,0 +1,39 @@
+{
+ "caso": "sint_057_d5_tilde",
+ "tipo": "sintetico",
+ "cliente": "cliente.jpg",
+ "diseno": "diseno.pdf",
+ "pagina_cliente": 1,
+ "pagina_diseno": 1,
+ "degradaciones": {
+  "jpeg": 50,
+  "noise": 4
+ },
+ "errores": [
+  {
+   "categoria": "text",
+   "bbox": [
+    139,
+    1702,
+    200,
+    61
+   ],
+   "subtipo": "cambiada",
+   "cliente_dice": "Teléfono:",
+   "diseno_dice": "Telefono:"
+  },
+  {
+   "categoria": "spelling",
+   "bbox": [
+    139,
+    1702,
+    200,
+    61
+   ],
+   "subtipo": "tilde_faltante",
+   "diseno_dice": "Telefono:"
+  }
+ ],
+ "texto_cliente": "Vivero Los Andes Ofertas de Primavera Descuentos en jardinería Nueva colección de flores Visita nuestra tienda esta semana Teléfono: 555-7788",
+ "notas": ""
+}

@@ -6,6 +6,10 @@ import numpy as np
 import pymupdf
 from PIL import Image, ImageOps
 
+from . import color_mgmt
+
+color_mgmt.enable_pdf_icc()
+
 ALLOWED_EXT = {".jpg", ".jpeg", ".png", ".webp", ".bmp", ".tif", ".tiff", ".pdf"}
 MAX_SIDE_PX = 6000
 Image.MAX_IMAGE_PIXELS = 300_000_000
@@ -118,12 +122,28 @@ def load_as_image(path, dpi: float = 200, page: int = 0) -> np.ndarray:
                 a = (a / max(a.max(), 1) * 255).astype(np.uint8)
                 im = Image.fromarray(a).convert("RGB")
             else:
-                im = im.convert("RGB")
+                from .config import load_config
+                im, _space = color_mgmt.image_to_srgb(im, load_config().get("cmyk_profile", ""))
             return np.array(im)
     except FileError:
         raise
     except Exception:
         raise FileError("La imagen está dañada o no se puede leer.")
+
+
+def color_space(path, page: int = 0) -> str:
+    """Descripción del espacio de color del archivo (para mostrar en la interfaz)."""
+    p = Path(path)
+    if is_pdf(p):
+        return color_mgmt.pdf_color_space(p, page)
+    try:
+        with Image.open(p) as im:
+            if getattr(im, "n_frames", 1) > 1:
+                im.seek(min(page, im.n_frames - 1))
+            from .config import load_config
+            return color_mgmt.image_to_srgb(im.copy(), load_config().get("cmyk_profile", ""))[1]
+    except Exception:
+        return "desconocido"
 
 
 def _color_hex(c: int) -> str:

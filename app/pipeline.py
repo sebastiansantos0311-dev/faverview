@@ -9,12 +9,12 @@ from . import history
 from .align import align_images
 from .compare_color import grid_color_diffs, text_color_diffs
 from .compare_text import (OcrUnavailable, Word, _missing_diff, compare_words, layout_words, ocr_words)
-from .compare_visual import compare_visual, make_outputs
+from .compare_visual import compare_visual, make_outputs, save_jpg
 from .config import CFG, RESULTS_DIR, load_config
 from .fonts import compare_fonts, fonts_in_design
 from .photometry import normalize_illumination
 from .ocr_guided import compare_guided, ocr_page_adaptive, read_region
-from .loaders import extract_pdf_layout, load_as_image, page_count, validate_file
+from .loaders import color_space, extract_pdf_layout, load_as_image, page_count, validate_file
 from .models import Difference, Result
 from .scoring import compute_scores
 from .spelling import check_spelling
@@ -86,25 +86,42 @@ def _dedupe(visual: list[Difference], others: list[Difference], colors: list[Dif
     return kept_v, kept_c
 
 
+STAGES = [("cargar", "Cargando archivos…", 0.05), ("alinear", "Alineando las imágenes…", 0.15),
+          ("visual", "Comparando visualmente…", 0.30), ("ocr", "Leyendo el texto (OCR)…", 0.75),
+          ("ortografia", "Revisando la ortografía…", 0.80), ("color", "Comparando colores…", 0.88),
+          ("fuentes", "Analizando fuentes…", 0.93), ("cierre", "Generando resultados…", 0.99)]
+
+
 class _Timer:
-    def __init__(self):
+    def __init__(self, progress=None):
         self.t = {}
         self._last = time.time()
+        self._cb = progress
+        if progress:
+            progress(*STAGES[0][:1], 0.0, STAGES[0][1])
 
     def mark(self, name: str):
         now = time.time()
         self.t[name] = round(self.t.get(name, 0.0) + now - self._last, 2)
         self._last = now
+        if self._cb:
+            keys = [k for k, _, _ in STAGES]
+            if name in keys:
+                i = keys.index(name)
+                nxt = STAGES[min(i + 1, len(STAGES) - 1)]
+                self._cb(nxt[0], STAGES[i][2], nxt[1])
 
 
 def run_comparison(job_id: str, client_path, design_path, params: dict | None = None,
                    client_page: int = 0, design_page: int = 0,
                    client_name: str = "", design_name: str = "",
-                   persist: bool = True, out_dir: Path | None = None) -> Result:
+                   persist: bool = True, out_dir: Path | None = None, progress=None) -> Result:
     t0 = time.time()
-    tm = _Timer()
+    tm = _Timer(progress)
     cfg = load_config()
     used = {}
+    if (params or {}).get("manual_points"):
+        used["manual_points"] = params["manual_points"]
     cfg.update((params or {}).get("overrides") or {})
     for k in TUNABLE:
         if params and params.get(k) is not None:
@@ -122,7 +139,8 @@ def run_comparison(job_id: str, client_path, design_path, params: dict | None = 
     spans = extract_pdf_layout(design_path, dpi, design_page)
 
     tm.mark("cargar")
-    al = align_images(design, client_raw)
+    manual = (params or {}).get("manual_points")
+    al = align_images(design, client_raw, manual)
     client = al.aligned_client
     if al.warning:
         warnings.append(al.warning)
@@ -245,6 +263,12 @@ def run_comparison(job_id: str, client_path, design_path, params: dict | None = 
 
     out_dir = out_dir or (RESULTS_DIR / job_id)
     images = make_outputs(design, client, vis.diff_strength, out_dir)
+    save_jpg(out_dir / "client_original.jpg", client_raw)  # para la alineación manual
+    images["client_original"] = "client_original.jpg"
+    cs = {"design": color_space(design_path, design_page), "client": color_space(client_path, client_page)}
+    if cs["client"].startswith("CMYK (sin perfil"):
+        warnings.append("El arte del cliente está en CMYK sin perfil de color: la conversión a pantalla es "
+                        "aproximada y los colores pueden variar.")
 
     counts: dict[str, int] = {}
     for d in diffs:
@@ -260,6 +284,7 @@ def run_comparison(job_id: str, client_path, design_path, params: dict | None = 
         pages={"client": client_page + 1, "design": design_page + 1,
                "client_total": page_count(client_path), "design_total": page_count(design_path)},
         elapsed_s=round(time.time() - t0, 1), timings=tm.t,
+        color_spaces=cs,
         client_text=" ".join(w.text for w in client_words) if text_ok else None)
     if not persist:
         return result

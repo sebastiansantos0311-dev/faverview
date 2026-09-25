@@ -81,7 +81,7 @@ def compare_fonts(design: np.ndarray, client: np.ndarray, spans: list[TextSpan],
     exact_pairs = [(d, c) for d, c in pairs if _exact(d, c)]
     for sp in spans:
         sx0, sy0, sx1, sy1 = sp.bbox
-        size_r, stroke_r, slant_d, sharp = [], [], [], []
+        size_r, size_abs, stroke_r, slant_d, sharp = [], [], [], [], []
         for dw, cw in exact_pairs:
             cx, cy = (dw.bbox[0] + dw.bbox[2]) / 2, (dw.bbox[1] + dw.bbox[3]) / 2
             if not (sx0 <= cx <= sx1 and sy0 <= cy <= sy1) or len(dw.text) < 3:
@@ -97,7 +97,8 @@ def compare_fonts(design: np.ndarray, client: np.ndarray, spans: list[TextSpan],
             if mc is None:
                 continue
             size_r.append(float(mc[1] / md[1]))  # la altura no depende de las palabras vecinas
-            if md[1] >= 18:  # con letras muy pequeñas grosor e inclinación no son medibles
+            size_abs.append(mc[1] - md[1])
+            if md[1] >= 28:  # con letras muy pequeñas grosor e inclinación no son medibles
                 stroke_r.append((mc[2] / mc[1]) / max(md[2] / md[1], 1e-6))
                 slant_d.append(mc[3] - md[3])
             sd = _sharpness(design, dw.bbox)
@@ -110,7 +111,8 @@ def compare_fonts(design: np.ndarray, client: np.ndarray, spans: list[TextSpan],
         ratio = float(np.median(r))
         # consistente: ≥70% de las palabras se desvían más que la tolerancia y en el mismo sentido
         big = (r > 1 + tol) if ratio > 1 else (r < 1 - tol)
-        size_diff = abs(ratio - 1.0) > tol and float(big.mean()) >= 0.7
+        # además de ser relativa, la diferencia debe medir al menos 3 px (el redondeo del raster no cuenta)
+        size_diff = abs(ratio - 1.0) > tol and float(big.mean()) >= 0.7 and abs(float(np.median(size_abs))) >= 3
         if size_diff:
             details.append(f"tamaño aprox. {sp.size * ratio:.0f}pt en el cliente vs {sp.size:.0f}pt en tu diseño")
         # grosor e inclinación solo si el cliente está tan nítido como el diseño (con desenfoque no se puede medir)
@@ -121,7 +123,7 @@ def compare_fonts(design: np.ndarray, client: np.ndarray, spans: list[TextSpan],
             elif np.median(s_arr) < 0.72 and float((s_arr < 0.8).mean()) >= 0.7:
                 details.append("el cliente parece más delgado (¿sin negrita?)")
             sl = np.array(slant_d)
-            if abs(float(np.median(sl))) > 0.15 and float((np.abs(sl) > 0.1).mean()) >= 0.7:
+            if abs(float(np.median(sl))) > 0.2 and float((np.abs(sl) > 0.12).mean()) >= 0.7:
                 details.append("distinta inclinación (¿cursiva?)")
         if details:
             diffs.append(Difference(

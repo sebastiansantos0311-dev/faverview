@@ -63,3 +63,36 @@ def test_font_size_change_is_detected(tmp_path):
     make_pdf(b, title_size=36, title=t)
     r = run_comparison("t_font2", b, a, persist=False, out_dir=tmp_path / "o")
     assert [d for d in r.differences if d.category == "font"]
+
+
+def test_hunspell_tilde_and_valid_forms():
+    diffs, _ = check_spelling([_w("informacion"), _w("jardineria"), _w("verrano"), _w("comunícate"), _w("Bogotá"),
+                               _w("productos"), _w("aprovecha")])
+    by = {d.found: d for d in diffs}
+    assert set(by) == {"informacion", "jardineria", "verrano"}
+    assert by["informacion"].subtype == "tilde_faltante" and by["informacion"].suggestions == ["información"]
+    assert by["verrano"].subtype == "ortografia"
+
+
+@needs_ocr
+def test_guided_ocr_finds_price_and_removed_word():
+    from app.align import align_images
+    from app.ocr_guided import compare_guided
+    d = load_as_image("samples/diseno.pdf", 200)
+    c = load_as_image("samples/cliente_errores.png", 200)
+    al = align_images(d, c)
+    tr = compare_guided(extract_pdf_layout("samples/diseno.pdf", 200), al.aligned_client, load_config(),
+                        al.alignment_quality)
+    kinds = sorted((x.subtype, x.found or x.expected) for x in tr.differences)
+    assert ("cambiada", "10.000") in kinds and ("sobrante", "especiales") in kinds and len(kinds) == 2
+
+
+@needs_ocr
+def test_ocr_accent_loss_is_not_reported_but_missing_tilde_is():
+    from app.compare_text import compare_words
+    w = lambda t: Word(t, (0, 0, 50, 20), 90.0)
+    # el diseño TIENE la tilde y el OCR la perdió: no es error del diseño
+    assert not compare_words([w("Visítanos")], [w("Visitanos")]).differences
+    # el diseño NO tiene la tilde y el cliente sí: error real
+    r = compare_words([w("Reunion")], [w("Reunión")])
+    assert [d.subtype for d in r.differences] == ["cambiada"]

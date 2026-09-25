@@ -1,0 +1,27 @@
+{
+ "caso": "sint_015_d2_numero",
+ "tipo": "sintetico",
+ "cliente": "cliente.jpg",
+ "diseno": "diseno.pdf",
+ "pagina_cliente": 1,
+ "pagina_diseno": 1,
+ "degradaciones": {
+  "jpeg": 75
+ },
+ "errores": [
+  {
+   "categoria": "text",
+   "bbox": [
+    325,
+    1140,
+    76,
+    34
+   ],
+   "subtipo": "cambiada",
+   "cliente_dice": "45.000",
+   "diseno_dice": "15.000"
+  }
+ ],
+ "texto_cliente": "Boletín Informativo Mensual La comunidad se reunirá el próximo sábado para revisar las actividades del mes. Durante la jornada se presentarán los resultados de la campaña de reciclaje. Los vecinos podrán proponer nuevas ideas para mejorar el parque principal. Recuerda traer tu documento de identidad y el comprobante de residencia. La entrada es libre y habrá refrigerios para todos los asistentes. El comité agradece la participación de las familias en cada evento. Para más detalles comunícate con la oficina de atención al ciudadano. Los horarios de atención son de lunes a viernes por la mañana y la tarde. Si tienes alguna pregunta escribe a nuestro correo o visita la sede central. Gracias por ser parte de una comunidad activa, solidaria y comprometida. Cuota mensual 45.000 Reunión general el sábado a las diez de la mañana Teléfono de atención 555-4321 - Horario continuo",
+ "notas": ""
+}

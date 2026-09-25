@@ -44,3 +44,19 @@ def test_invalid_files(tmp_path):
     corrupt.write_bytes(b"no soy un pdf")
     with pytest.raises(FileError):
         load_as_image(corrupt)
+
+
+def test_color_spaces_and_cmyk(tmp_path):
+    from app.loaders import color_space
+    cmyk = tmp_path / "c.jpg"
+    Image.new("CMYK", (30, 30), (0, 255, 255, 0)).save(cmyk)  # rojo puro
+    assert color_space(cmyk).startswith("CMYK (sin perfil")
+    rgb = load_as_image(cmyk)
+    assert rgb[0, 0, 0] > 240 and rgb[0, 0, 1] < 20
+    p = tmp_path / "s.png"
+    Image.new("RGB", (10, 10), (1, 2, 3)).save(p)
+    assert color_space(p) == "sRGB"
+    from make_samples import make_pdf
+    d = tmp_path / "d.pdf"
+    make_pdf(d)
+    assert color_space(d) == "sRGB"

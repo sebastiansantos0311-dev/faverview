@@ -35,14 +35,17 @@
 
 ## 1. Problemas conocidos de la v1 (corregir en Fase 6)
 
-- [ ] **Falso positivo de fuente:** en `samples/cliente_errores.png` se reporta "tamaño aprox. 42pt vs 34pt" sin
+- [x] **Falso positivo de fuente:** en `samples/cliente_errores.png` se reporta "tamaño aprox. 42pt vs 34pt" sin
       que haya cambio de fuente. Causa probable: `fonts.compare_fonts` estima el tamaño sobre palabras ya marcadas
       como cambiadas (el precio), o sobre una línea con una palabra de menos.
-- [ ] **OCR con umbral global (Otsu)** en `compare_text.ocr_words`: falla con fondos de color, degradados y
+      _Nota de la implementación: el cambio de 34→42 pt en esa muestra era REAL (la muestra lo incluía a propósito);
+      se regeneró `samples/cliente_errores.png` sin ese cambio y la prueba de regresión pasó a comprobar 0 diferencias
+      de fuente, más otra prueba que sí exige detectar un cambio de tamaño real._
+- [x] **OCR con umbral global (Otsu)** en `compare_text.ocr_words`: falla con fondos de color, degradados y
       texto claro sobre fondo oscuro en solo una parte de la imagen.
-- [ ] **Mensaje obsoleto:** `compare_text.py` dice "Ejecuta instalar.bat". Debe decir
+- [x] **Mensaje obsoleto:** `compare_text.py` dice "Ejecuta instalar.bat". Debe decir
       "Instálalo con: winget install UB-Mannheim.TesseractOCR".
-- [ ] El OCR lee toda la página con `--psm 11` sin aprovechar que el PDF del diseño dice dónde está cada texto.
+- [x] El OCR lee toda la página con `--psm 11` sin aprovechar que el PDF del diseño dice dónde está cada texto.
 
 ---
 
@@ -200,57 +203,57 @@ ajustar o revertir.
 5. **Texto extra del cliente:** además, OCR de página completa (`--psm 11`) **excluyendo** las zonas ya leídas,
    para detectar texto que el cliente tiene y el diseño no ("falta en tu diseño").
 6. Si el diseño no tiene texto vectorial, mantener el camino actual (OCR de ambas imágenes a página completa).
-- [ ] Implementado y usado por defecto; el camino anterior queda como alternativa (`"ocr_mode": "guiado" | "pagina"`
+- [x] Implementado y usado por defecto; el camino anterior queda como alternativa (`"ocr_mode": "guiado" | "pagina"`
       en `config.json`)
-- [ ] Mejora medida en CER y en recall/precisión de texto
+- [x] Mejora medida en CER y en recall/precisión de texto (sintéticos; los 20 casos reales cuando el usuario los cargue)
 
 ### 6.2 Falsos positivos de fuente (`fonts.py`)
-- [ ] No estimar la fuente en palabras marcadas como `cambiada`/`faltante`/`sobrante`.
-- [ ] Estimar el tamaño con la **altura x** (altura de minúsculas sin ascendentes/descendentes) o la altura de
+- [x] No estimar la fuente en palabras marcadas como `cambiada`/`faltante`/`sobrante`.
+- [x] Estimar el tamaño con la **altura x** (altura de minúsculas sin ascendentes/descendentes) o la altura de
       mayúsculas por línea, usando la mediana de ≥ 3 palabras. Si hay menos palabras, no concluir.
-- [ ] Normalizar por la escala de la homografía (si la imagen del cliente estaba escalada).
-- [ ] Solo reportar con una diferencia ≥ `font_size_tolerance_pct` **y** consistente en toda la línea.
-- [ ] Prueba de regresión: `samples/cliente_errores.png` → 0 diferencias de fuente.
+- [x] Normalizar por la escala de la homografía (si la imagen del cliente estaba escalada).
+- [x] Solo reportar con una diferencia ≥ `font_size_tolerance_pct` **y** consistente en toda la línea.
+- [x] Prueba de regresión: `samples/cliente_errores.png` → 0 diferencias de fuente.
 
 ### 6.3 Alineación robusta (`align.py`)
-- [ ] Intento 1: ORB (actual). Intento 2: **SIFT** (`cv2.SIFT_create`, libre desde OpenCV 4.4) si hay
+- [x] Intento 1: ORB (actual). Intento 2: **SIFT** (`cv2.SIFT_create`, libre desde OpenCV 4.4) si hay
       < 15 inliers o la calidad es < 0.3.
-- [ ] **Refinamiento ECC** (`cv2.findTransformECC`, `MOTION_HOMOGRAPHY`) partiendo de la homografía encontrada
+- [x] **Refinamiento ECC** (`cv2.findTransformECC`, `MOTION_HOMOGRAPHY`) partiendo de la homografía encontrada
       y a resolución reducida, para precisión sub-píxel.
-- [ ] Detectar el "marco" de capturas de pantalla (barras de WhatsApp o del navegador) y recortarlo antes de alinear.
-- [ ] Validar la homografía: rechazar si el determinante o la escala son absurdos (escala < 0.2 o > 5,
+- [x] Detectar el "marco" de capturas de pantalla (barras de WhatsApp o del navegador) y recortarlo antes de alinear.
+- [x] Validar la homografía: rechazar si el determinante o la escala son absurdos (escala < 0.2 o > 5,
       perspectiva extrema).
-- [ ] Mostrar la calidad de alineación en la UI (buena / regular / mala) y un botón **"Alinear manualmente"**:
+- [x] Mostrar la calidad de alineación en la UI (buena / regular / mala) y un botón **"Alinear manualmente"**:
       el usuario marca 4 puntos equivalentes en cada imagen.
 
 ### 6.4 Colores CMYK y perfiles ICC (`app/color_mgmt.py`)
-- [ ] PDF (diseño y cliente): activar la gestión de color de PyMuPDF (`pymupdf.TOOLS.set_icc(True)`) antes de
+- [x] PDF (diseño y cliente): activar la gestión de color de PyMuPDF (`pymupdf.TOOLS.set_icc(True)`) antes de
       renderizar, para convertir CMYK → sRGB con el perfil del PDF.
-- [ ] Imágenes: si traen un perfil ICC incrustado (`img.info.get("icc_profile")`), convertir a sRGB con
+- [x] Imágenes: si traen un perfil ICC incrustado (`img.info.get("icc_profile")`), convertir a sRGB con
       `PIL.ImageCms`. Si son CMYK sin perfil, usar un perfil CMYK por defecto configurable
       (`"cmyk_profile"` en `config.json`; si está vacío, usar la conversión estándar de Pillow y avisar en la UI).
-- [ ] Colores de texto del PDF: PyMuPDF entrega RGB; si el span original es CMYK, convertirlo igual que el render.
-- [ ] Mostrar en la UI el espacio de color de cada archivo ("Diseño: CMYK (FOGRA39) · Cliente: sRGB").
-- [ ] Caso sintético CMYK: 0 falsos positivos de color.
+- [x] Colores de texto del PDF: PyMuPDF entrega RGB; si el span original es CMYK, convertirlo igual que el render.
+- [x] Mostrar en la UI el espacio de color de cada archivo ("Diseño: CMYK (FOGRA39) · Cliente: sRGB").
+- [x] Caso sintético CMYK: 0 falsos positivos de color.
 
 ### 6.5 Ortografía con Hunspell (`spelling.py`)
-- [ ] Añadir `spylls` (Hunspell en Python puro, licencia MPL-2.0) a `pyproject.toml`.
-- [ ] Diccionarios `es_ES` (y `es_CO` / `es_MX` opcionales) de LibreOffice (github.com/LibreOffice/dictionaries,
+- [x] Añadir `spylls` (Hunspell en Python puro, licencia MPL-2.0) a `pyproject.toml`.
+- [x] Diccionarios `es_ES` (y `es_CO` / `es_MX` opcionales) de LibreOffice (github.com/LibreOffice/dictionaries,
       licencia LGPL/GPL/MPL) en `tools/hunspell/`. Idioma configurable: `"spell_lang": "es_CO"`.
-- [ ] Mantener el diccionario personal y la lista `palabras_es.txt` como complemento.
-- [ ] **Tildes:** si una palabra no existe pero su versión con tilde sí ("informacion" → "información"),
+- [x] Mantener el diccionario personal y la lista `palabras_es.txt` como complemento.
+- [x] **Tildes:** si una palabra no existe pero su versión con tilde sí ("informacion" → "información"),
       subtipo `tilde_faltante` con severidad alta y una sugerencia única.
-- [ ] Ignorar marcas y nombres propios del vocabulario aprendido (Fase 7, nivel 1).
-- [ ] Comparar la velocidad: si Hunspell es lento, usar una caché LRU por palabra.
+- [x] Ignorar marcas y nombres propios del vocabulario aprendido (Fase 7, nivel 1).
+- [x] Comparar la velocidad: si Hunspell es lento, usar una caché LRU por palabra.
 
 ### 6.6 Otros
-- [ ] Corregir el mensaje obsoleto "Ejecuta instalar.bat".
-- [ ] Barra de progreso por etapas en la UI (endpoint de estado o Server-Sent Events).
-- [ ] Revisar que `_dedupe` no oculte errores reales al cambiar el OCR (validar con el banco).
+- [x] Corregir el mensaje obsoleto "Ejecuta instalar.bat".
+- [x] Barra de progreso por etapas en la UI (endpoint de estado o Server-Sent Events).
+- [x] Revisar que `_dedupe` no oculte errores reales al cambiar el OCR (validar con el banco).
 
 ### Checklist Fase 6
-- [ ] 6.1 · [ ] 6.2 · [ ] 6.3 · [ ] 6.4 · [ ] 6.5 · [ ] 6.6
-- [ ] Corrida `--etiqueta "F6 precision"` guardada y comparada con la línea base
+- [x] 6.1 · [ ] 6.2 · [ ] 6.3 · [ ] 6.4 · [ ] 6.5 · [ ] 6.6
+- [x] Corrida `--etiqueta "F6 precision"` guardada y comparada con la línea base
 
 ---
 

@@ -1,0 +1,15 @@
+{
+ "caso": "sint_013_d1_cmyk_pdf",
+ "tipo": "sintetico",
+ "cliente": "cliente.jpg",
+ "diseno": "diseno.pdf",
+ "pagina_cliente": 1,
+ "pagina_diseno": 1,
+ "degradaciones": {
+  "design_cmyk": true,
+  "jpeg": 90
+ },
+ "errores": [],
+ "texto_cliente": "Oferta de Verano Precio 10.000 Aprovecha nuestras ofertas especiales de temporada en todos los productos de la tienda hasta agotar stock. Descuento hasta 40% Más información en www.tiendaejemplo.com Teléfono: 555-1234 · abierto los sábados",
+ "notas": ""
+}

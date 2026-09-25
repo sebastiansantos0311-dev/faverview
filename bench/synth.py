@@ -136,22 +136,32 @@ def design_spec(key: str) -> dict:
 DESIGN_KEYS = ["d1_volante", "d2_texto_pequeno", "d3_fondo_oscuro", "d4_tabla_precios", "d5_bandas", "d6_mixto"]
 
 
-def build_pdf(spec: dict, path: Path) -> None:
+def _cmyk(col):
+    """RGB (0-1) → CMYK (0-1), conversión estándar."""
+    r, g, b = col
+    k = 1 - max(r, g, b)
+    if k >= 1:
+        return (0.0, 0.0, 0.0, 1.0)
+    return ((1 - r - k) / (1 - k), (1 - g - k) / (1 - k), (1 - b - k) / (1 - k), k)
+
+
+def build_pdf(spec: dict, path: Path, cmyk: bool = False) -> None:
+    c = _cmyk if cmyk else (lambda col: col)
     doc = pymupdf.open()
     page = doc.new_page(width=PAGE_W, height=PAGE_H)
     if spec.get("bg"):
-        page.draw_rect(page.rect, color=None, fill=spec["bg"])
+        page.draw_rect(page.rect, color=None, fill=c(spec["bg"]))
     for it in spec["items"]:
         if it["t"] == "text":
-            page.insert_text((it["x"], it["y"]), it["s"], fontsize=it["size"], fontname=it["font"], color=it["color"])
+            page.insert_text((it["x"], it["y"]), it["s"], fontsize=it["size"], fontname=it["font"], color=c(it["color"]))
         elif it["t"] == "rect":
-            page.draw_rect(pymupdf.Rect(*it["rect"]), color=None, fill=it["fill"])
+            page.draw_rect(pymupdf.Rect(*it["rect"]), color=None, fill=c(it["fill"]))
         elif it["t"] == "circle":
-            page.draw_circle(it["c"], it["r"], color=None, fill=it["fill"])
+            page.draw_circle(it["c"], it["r"], color=None, fill=c(it["fill"]))
             inner = (1, 1, 1) if spec.get("bg") is None else (0.08, 0.10, 0.18)
             if it["fill"] == (1, 1, 1):
                 inner = (0.08, 0.10, 0.18)
-            page.draw_circle(it["c"], it["r"] * 0.4, color=None, fill=inner)
+            page.draw_circle(it["c"], it["r"] * 0.4, color=None, fill=c(inner))
     doc.save(path)
     doc.close()
 
@@ -444,6 +454,7 @@ def variants():
         ("mixto", [inject_number, inject_tilde, make_inject_color(30)], {"rotate": -4.0, "jpeg": 60}),
         ("color_sutil", [make_inject_color(5)], {"jpeg": 70}),
         ("cmyk_marco", [], {"cmyk": True, "frame": True, "jpeg": 88}),
+        ("cmyk_pdf", [], {"design_cmyk": True, "jpeg": 90}),  # diseño y arte del cliente salen de un PDF en CMYK
     ]
 
 
@@ -468,8 +479,9 @@ def generate(out: Path = OUT_DEFAULT, seed: int = 1000, quiet=False) -> int:
                 except (ValueError, StopIteration, IndexError):
                     continue  # el diseño no admite ese error; el caso queda con menos errores
             design_pdf, client_pdf = cdir / "diseno.pdf", cdir / "_cliente.pdf"
-            build_pdf(dspec, design_pdf)
-            build_pdf(cspec, client_pdf)
+            dc = bool(deg.get("design_cmyk"))
+            build_pdf(dspec, design_pdf, cmyk=dc)
+            build_pdf(cspec, client_pdf, cmyk=dc)
             spans = extract_pdf_layout(design_pdf, DPI)
             cspans = extract_pdf_layout(client_pdf, DPI)
             errors = []

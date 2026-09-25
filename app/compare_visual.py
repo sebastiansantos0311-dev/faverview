@@ -18,6 +18,13 @@ def save_png(path, rgb: np.ndarray) -> None:
     Path(path).write_bytes(buf.tobytes())
 
 
+def save_jpg(path, rgb: np.ndarray, quality: int = 88) -> None:
+    ok, buf = cv2.imencode(".jpg", cv2.cvtColor(rgb, cv2.COLOR_RGB2BGR), [cv2.IMWRITE_JPEG_QUALITY, quality])
+    if not ok:
+        raise RuntimeError("No se pudo guardar la imagen")
+    Path(path).write_bytes(buf.tobytes())
+
+
 @dataclass
 class VisualResult:
     score: float  # 0..1

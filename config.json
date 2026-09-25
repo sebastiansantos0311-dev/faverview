@@ -1,21 +1,27 @@
-﻿{
-    "tesseract_cmd":  "",
-    "tessdata_dir":  "tools/tessdata",
-    "ocr_lang":  "spa+eng",
-    "render_dpi":  200,
-    "ssim_threshold":  0.85,
-    "pixel_diff_threshold":  40,
-    "min_region_area":  150,
-    "delta_e_tolerance":  10,
-    "text_similarity_min":  0.85,
-    "font_size_tolerance_pct":  12,
-    "max_upload_mb":  50,
-    "weights":  {
-                    "visual":  0.30,
-                    "text":  0.35,
-                    "color":  0.15,
-                    "spelling":  0.10,
-                    "font":  0.10
-                }
+{
+  "tesseract_cmd": "",
+  "tessdata_dir": "tools/tessdata",
+  "ocr_lang": "spa+eng",
+  "render_dpi": 200,
+  "ssim_threshold": 0.85,
+  "pixel_diff_threshold": 40,
+  "min_region_area": 150,
+  "delta_e_tolerance": 10,
+  "text_similarity_min": 0.85,
+  "font_size_tolerance_pct": 12,
+  "max_upload_mb": 50,
+  "weights": {
+    "visual": 0.3,
+    "text": 0.35,
+    "color": 0.15,
+    "spelling": 0.1,
+    "font": 0.1
+  },
+  "ocr_mode": "guiado",
+  "spell_lang": "es_CO",
+  "cmyk_profile": "",
+  "learning_enabled": true,
+  "learning_min_confusion_count": 3,
+  "learning_autotune_every": 5,
+  "update_check": true
 }
-

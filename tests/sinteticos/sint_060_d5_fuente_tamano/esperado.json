@@ -1,0 +1,25 @@
+{
+ "caso": "sint_060_d5_fuente_tamano",
+ "tipo": "sintetico",
+ "cliente": "cliente.jpg",
+ "diseno": "diseno.pdf",
+ "pagina_cliente": 1,
+ "pagina_diseno": 1,
+ "degradaciones": {
+  "jpeg": 80
+ },
+ "errores": [
+  {
+   "categoria": "font",
+   "bbox": [
+    111,
+    1230,
+    1028,
+    115
+   ],
+   "subtipo": "tamano"
+  }
+ ],
+ "texto_cliente": "Vivero Los Andes Ofertas de Primavera Descuentos en jardinería Nueva colección de flores Visita nuestra tienda esta semana Teléfono: 555-7788",
+ "notas": ""
+}

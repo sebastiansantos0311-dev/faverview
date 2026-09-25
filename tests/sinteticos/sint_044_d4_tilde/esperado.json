@@ -1,0 +1,39 @@
+{
+ "caso": "sint_044_d4_tilde",
+ "tipo": "sintetico",
+ "cliente": "cliente.jpg",
+ "diseno": "diseno.pdf",
+ "pagina_cliente": 1,
+ "pagina_diseno": 1,
+ "degradaciones": {
+  "jpeg": 50,
+  "noise": 4
+ },
+ "errores": [
+  {
+   "categoria": "text",
+   "bbox": [
+    329,
+    486,
+    104,
+    50
+   ],
+   "subtipo": "cambiada",
+   "cliente_dice": "básica",
+   "diseno_dice": "basica"
+  },
+  {
+   "categoria": "spelling",
+   "bbox": [
+    329,
+    486,
+    104,
+    50
+   ],
+   "subtipo": "tilde_faltante",
+   "diseno_dice": "basica"
+  }
+ ],
+ "texto_cliente": "Lista de Precios Producto Cantidad Precio Camiseta básica 12 unidades $25.000 Pantalón clásico 8 unidades $68.500 Chaqueta ligera 5 unidades $120.000 Zapatos deportivos 10 unidades $89.900 Gorra de verano 20 unidades $18.000 Precios incluyen impuestos y envío gratis",
+ "notas": ""
+}

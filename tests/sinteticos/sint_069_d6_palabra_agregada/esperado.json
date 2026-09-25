@@ -1,0 +1,29 @@
+{
+ "caso": "sint_069_d6_palabra_agregada",
+ "tipo": "sintetico",
+ "cliente": "cliente.jpg",
+ "diseno": "diseno.pdf",
+ "pagina_cliente": 1,
+ "pagina_diseno": 1,
+ "degradaciones": {
+  "scale": 0.7,
+  "blur": 0.8,
+  "jpeg": 80
+ },
+ "errores": [
+  {
+   "categoria": "text",
+   "bbox": [
+    709,
+    764,
+    95,
+    53
+   ],
+   "subtipo": "faltante",
+   "cliente_dice": "gratis",
+   "diseno_dice": ""
+  }
+ ],
+ "texto_cliente": "Clínica Dental Sonrisa Cuidamos tu sonrisa cada día - Limpieza dental profesional - Blanqueamiento con garantía gratis - Ortodoncia para niños y adultos - Atención de urgencias todos los días Primera consulta gratis este mes Teléfono: 555-9876 Calle Principal número 123, Bogotá",
+ "notas": ""
+}

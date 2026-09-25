@@ -1,0 +1,27 @@
+{
+ "caso": "sint_028_d3_numero",
+ "tipo": "sintetico",
+ "cliente": "cliente.jpg",
+ "diseno": "diseno.pdf",
+ "pagina_cliente": 1,
+ "pagina_diseno": 1,
+ "degradaciones": {
+  "jpeg": 75
+ },
+ "errores": [
+  {
+   "categoria": "text",
+   "bbox": [
+    422,
+    1306,
+    238,
+    107
+   ],
+   "subtipo": "cambiada",
+   "cliente_dice": "59.900",
+   "diseno_dice": "29.900"
+  }
+ ],
+ "texto_cliente": "Gran Venta Nocturna Solo esta semana en todas las tiendas Descuentos de hasta 50% en toda la colección Llévate dos por uno Desde 59.900 Visítanos en la avenida principal número 45",
+ "notas": ""
+}

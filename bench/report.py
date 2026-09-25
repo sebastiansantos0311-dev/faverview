@@ -19,7 +19,7 @@ def _arrow(new, old, higher_better=True):
     return f" ↑{abs(new - old):.1f}" if better else f" ↓{abs(new - old):.1f}"
 
 
-def load_previous(dirpath: Path, current_name: str, scope: str) -> dict | None:
+def load_previous(dirpath: Path, current_name: str, scope: str, contra: str | None = None) -> dict | None:
     files = sorted((p for p in dirpath.glob("*.json") if p.stem != current_name), key=lambda p: p.stat().st_mtime,
                    reverse=True)
     for p in files:
@@ -27,7 +27,7 @@ def load_previous(dirpath: Path, current_name: str, scope: str) -> dict | None:
             d = json.loads(p.read_text(encoding="utf-8"))
         except Exception:
             continue
-        if d.get("scope") == scope:
+        if d.get("scope") == scope and (not contra or contra.lower() in d.get("etiqueta", "").lower()):
             return d
     return None
 

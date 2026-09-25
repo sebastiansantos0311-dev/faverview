@@ -10,7 +10,7 @@ from fastapi.responses import FileResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 
-from . import history
+from . import history, jobs
 from .config import DATOS_DIR, RESULTS_DIR, UPLOADS_DIR, WEB_DIR, load_config, setup_tesseract
 from .loaders import ALLOWED_EXT, FileError, page_count, validate_file
 from .models import Result
@@ -89,7 +89,9 @@ def pages(file: UploadFile = File(...)):
 def compare(client_file: UploadFile = File(...), design_file: UploadFile = File(...),
             client_page: int = Form(1), design_page: int = Form(1),
             ssim_threshold: float | None = Form(None), delta_e_tolerance: float | None = Form(None),
-            min_region_area: float | None = Form(None)):
+            min_region_area: float | None = Form(None), wait: bool = False):
+    """Sube los archivos y arranca la comparación en segundo plano (consultar /api/jobs/{id}).
+    Con ?wait=1 espera y devuelve el resultado directamente."""
     cfg = load_config()
     job_id = uuid.uuid4().hex[:12]
     job_dir = UPLOADS_DIR / job_id
@@ -98,15 +100,21 @@ def compare(client_file: UploadFile = File(...), design_file: UploadFile = File(
         dpath = _save_upload(design_file, job_dir, "design", cfg["max_upload_mb"])
         (job_dir / "meta.json").write_text(json.dumps(
             {"client_name": client_file.filename, "design_name": design_file.filename}), encoding="utf-8")
-        result = run_comparison(
-            job_id, cpath, dpath,
-            {"ssim_threshold": ssim_threshold, "delta_e_tolerance": delta_e_tolerance,
-             "min_region_area": min_region_area},
-            client_page - 1, design_page - 1, client_file.filename or "", design_file.filename or "")
     except FileError:
         shutil.rmtree(job_dir, ignore_errors=True)
         raise
-    return {"job_id": job_id, "result": result.model_dump()}
+    params = {"ssim_threshold": ssim_threshold, "delta_e_tolerance": delta_e_tolerance,
+              "min_region_area": min_region_area}
+
+    def work(progress=None):
+        return run_comparison(job_id, cpath, dpath, params, client_page - 1, design_page - 1,
+                              client_file.filename or "", design_file.filename or "",
+                              progress=progress).model_dump()
+
+    if wait:
+        return {"job_id": job_id, "result": work()}
+    jobs.start(job_id, work)
+    return {"job_id": job_id}
 
 
 class Recompute(BaseModel):
@@ -115,23 +123,38 @@ class Recompute(BaseModel):
     min_region_area: float | None = None
     client_page: int = 1
     design_page: int = 1
+    manual_points: dict | None = None  # {"client": [[x, y] x4], "design": [[x, y] x4]}
 
 
 @app.post("/api/recompute/{job_id}")
-def recompute(job_id: str, body: Recompute):
+def recompute(job_id: str, body: Recompute, wait: bool = False):
     _check_job(job_id)
     job_dir = UPLOADS_DIR / job_id
     cpath, dpath = _find_upload(job_dir, "client"), _find_upload(job_dir, "design")
     meta = {}
     if (job_dir / "meta.json").exists():
         meta = json.loads((job_dir / "meta.json").read_text(encoding="utf-8"))
-    result = run_comparison(
-        job_id, cpath, dpath,
-        {"ssim_threshold": body.ssim_threshold, "delta_e_tolerance": body.delta_e_tolerance,
-         "min_region_area": body.min_region_area},
-        body.client_page - 1, body.design_page - 1,
-        meta.get("client_name", ""), meta.get("design_name", ""))
-    return {"job_id": job_id, "result": result.model_dump()}
+    params = {"ssim_threshold": body.ssim_threshold, "delta_e_tolerance": body.delta_e_tolerance,
+              "min_region_area": body.min_region_area, "manual_points": body.manual_points}
+
+    def work(progress=None):
+        return run_comparison(job_id, cpath, dpath, params, body.client_page - 1, body.design_page - 1,
+                              meta.get("client_name", ""), meta.get("design_name", ""),
+                              progress=progress).model_dump()
+
+    if wait:
+        return {"job_id": job_id, "result": work()}
+    jobs.start(job_id, work)
+    return {"job_id": job_id}
+
+
+@app.get("/api/jobs/{job_id}")
+def job_status(job_id: str):
+    _check_job(job_id)
+    j = jobs.get(job_id)
+    if j is None:
+        raise HTTPException(404, "Trabajo no encontrado.")
+    return j.public()
 
 
 @app.get("/api/results/{job_id}/{filename}")

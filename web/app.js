@@ -49,7 +49,7 @@ function showError(msg) {
   b.textContent = msg;
   b.classList.remove("hidden");
 }
-function setLoading(on) { $("#loading").classList.toggle("hidden", !on); }
+function setLoading(on) { $("#loading").classList.toggle("hidden", !on); if (on) setProgress("Procesando…", 0); }
 
 async function api(url, opts) {
   let r;
@@ -104,14 +104,30 @@ async function compare() {
   setLoading(true);
   try {
     const j = await (await api("/api/compare", { method: "POST", body: fd })).json();
-    showResult(j.result);
+    showResult(await pollJob(j.job_id));
     loadHistory();
   } catch (e) { showError(e.message); }
   finally { setLoading(false); }
 }
 
-async function recalc() {
+/* consulta el progreso por etapas hasta que termina */
+async function pollJob(id) {
+  for (;;) {
+    const st = await (await api("/api/jobs/" + id)).json();
+    setProgress(st.message, st.pct);
+    if (st.status === "done") return st.result;
+    if (st.status === "error") throw new Error(st.error || "Ocurrió un error inesperado.");
+    await new Promise(r => setTimeout(r, 350));
+  }
+}
+function setProgress(msg, pct) {
+  $("#loading-msg").textContent = msg || "Procesando…";
+  $("#loading-bar").style.width = Math.round((pct || 0) * 100) + "%";
+}
+
+async function recalc(manualPoints) {
   if (!data) return;
+  if (manualPoints instanceof Event) manualPoints = null;
   showError("");
   setLoading(true);
   try {
@@ -119,10 +135,11 @@ async function recalc() {
       ssim_threshold: +$("#r-ssim").value, delta_e_tolerance: +$("#r-de").value, min_region_area: +$("#r-area").value,
       client_page: +($("#pages-client select").value || data.pages?.client || 1),
       design_page: +($("#pages-design select").value || data.pages?.design || 1),
+      manual_points: manualPoints || data.params?.manual_points || null,
     };
     const j = await (await api("/api/recompute/" + data.job_id, {
       method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) })).json();
-    showResult(j.result, true);
+    showResult(await pollJob(j.job_id), true);
   } catch (e) { showError(e.message); }
   finally { setLoading(false); }
 }
@@ -166,7 +183,53 @@ function renderSummary() {
     })),
     h("div", { class: "meta" },
       h("div", {}, `A: ${data.client_name}`), h("div", {}, `B: ${data.design_name}`),
+      data.color_spaces && data.color_spaces.design
+        ? h("div", {}, `Color · Diseño: ${data.color_spaces.design} · Cliente: ${data.color_spaces.client}`) : null,
+      h("div", {}, `Alineación: ${alignLabel()} (${data.alignment_method || "—"})`),
       h("div", {}, `${data.differences.length} errores · ${data.elapsed_s}s`)));
+}
+
+function alignLabel() {
+  if (!data.aligned) return "mala";
+  if (data.alignment_method === "manual") return "manual";
+  const q = data.alignment_quality;
+  return q >= 0.6 ? "buena" : q >= 0.35 ? "regular" : "mala";
+}
+
+/* ---------- alineación manual: 4 puntos equivalentes en cada imagen ---------- */
+function manualAlign() {
+  if (!data) return;
+  const pts = { client: [], design: [] };
+  const mk = (which, src) => {
+    const wrap = h("div", { class: "al-wrap" });
+    const img = h("img", { src, class: "al-img" });
+    wrap.append(img);
+    img.addEventListener("click", e => {
+      if (pts[which].length >= 4) return;
+      const r = img.getBoundingClientRect();
+      const x = (e.clientX - r.left) * img.naturalWidth / r.width, y = (e.clientY - r.top) * img.naturalHeight / r.height;
+      pts[which].push([Math.round(x), Math.round(y)]);
+      wrap.append(h("span", { class: "al-pt", style: { left: (e.clientX - r.left) + "px", top: (e.clientY - r.top) + "px" } }, pts[which].length));
+      status();
+    });
+    return wrap;
+  };
+  const st = h("div", { class: "hint" });
+  const status = () => { st.textContent = `Cliente: ${pts.client.length}/4 · Diseño: ${pts.design.length}/4 (mismo orden en ambos, p. ej. esquinas)`;
+    ok.disabled = !(pts.client.length === 4 && pts.design.length === 4); };
+  const close = () => bg.remove();
+  const ok = h("button", { class: "primary", disabled: true, onclick: async () => {
+    close();
+    await recalc({ client: pts.client, design: pts.design });
+  } }, "Aplicar y recalcular");
+  const bg = h("div", { class: "dialog-bg" }, h("div", { class: "dialog wide" },
+    h("b", {}, "Alineación manual: marca 4 puntos equivalentes en cada imagen"),
+    h("div", { class: "al-grid" },
+      h("div", {}, h("div", { class: "hint" }, "Arte del cliente (original)"), mk("client", `/api/results/${data.job_id}/${data.images.client_original}`)),
+      h("div", {}, h("div", { class: "hint" }, "Mi diseño"), mk("design", imgUrl("design.png")))),
+    st, h("div", { class: "row" }, h("button", { onclick: close }, "Cancelar"), ok)));
+  document.body.append(bg);
+  status();
 }
 
 function renderWarnings() {
@@ -494,7 +557,8 @@ setupDrop("design");
 $("#btn-compare").addEventListener("click", compare);
 $("#btn-fit").addEventListener("click", fit);
 $("#btn-sens").addEventListener("click", () => { $("#sens").classList.toggle("hidden"); fit(); });
-$("#btn-recalc").addEventListener("click", recalc);
+$("#btn-recalc").addEventListener("click", () => recalc());
+$("#btn-align").addEventListener("click", manualAlign);
 $("#btn-review").addEventListener("click", () => {
   reviewMode = !reviewMode;
   $("#review-panel").classList.toggle("hidden", !reviewMode);

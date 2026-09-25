@@ -58,6 +58,7 @@
         <button id="btn-fit" class="ghost">Ajustar</button>
         <button id="btn-sens" class="ghost">Sensibilidad</button>
         <button id="btn-review" class="ghost">Modo revisión</button>
+        <button id="btn-align" class="ghost">Alinear manualmente</button>
         <a id="btn-report" class="button" href="#" target="_blank">Descargar reporte PDF</a>
       </div>
       <div id="sens" class="sens hidden">
@@ -98,7 +99,8 @@
   </div>
 </section>
 
-<div id="loading" class="loading hidden"><div class="spinner"></div><div>Procesando…</div></div>
+<div id="loading" class="loading hidden"><div class="spinner"></div><div id="loading-msg">Procesando…</div>
+  <div class="bar"><div id="loading-bar"></div></div></div>
 <script src="/static/app.js"></script>
 </body>
 </html>

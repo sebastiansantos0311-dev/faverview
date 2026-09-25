@@ -143,6 +143,7 @@ def main(argv=None) -> int:
     ap.add_argument("--ci", action="store_true")
     ap.add_argument("--set", action="append", default=[], metavar="clave=valor",
                     help="sobrescribe un valor de config.json solo para esta corrida")
+    ap.add_argument("--contra", help="compara contra la corrida anterior cuya etiqueta contenga este texto")
     ap.add_argument("--guardar-umbral", action="store_true", help="guarda los F1 actuales en bench/umbral_ci.json")
     a = ap.parse_args(argv)
     if not a.real and not a.sinteticos:
@@ -187,7 +188,7 @@ def main(argv=None) -> int:
 
     run.update({"etiqueta": a.etiqueta, "fecha": datetime.now().isoformat(timespec="seconds"), "scope": scope,
                 "overrides": overrides})
-    prev = load_previous(OUT_DIR, name, scope)
+    prev = load_previous(OUT_DIR, name, scope, a.contra)
     md = render_markdown(run, prev, media.name)
     (OUT_DIR / f"{name}.json").write_text(json.dumps(run, ensure_ascii=False, indent=1), encoding="utf-8")
     (OUT_DIR / f"{name}.md").write_text(md, encoding="utf-8")

@@ -55,7 +55,7 @@ def test_save_review_as_case(tmp_path, monkeypatch):
     monkeypatch.setattr(m, "DATOS_DIR", tmp_path / "datos")
     client = TestClient(m.app)
     with open("samples/cliente_errores.png", "rb") as c, open("samples/diseno.pdf", "rb") as d:
-        r = client.post("/api/compare", files={"client_file": ("c.png", c), "design_file": ("d.pdf", d)})
+        r = client.post("/api/compare", files={"client_file": ("c.png", c), "design_file": ("d.pdf", d)}, params={"wait": 1})
     assert r.status_code == 200
     res = r.json()["result"]
     job = res["job_id"]
@@ -72,3 +72,30 @@ def test_save_review_as_case(tmp_path, monkeypatch):
     assert (cdir / "cliente.png").exists() and (cdir / "diseno.pdf").exists()
     shutil.rmtree(m.RESULTS_DIR / job, ignore_errors=True)
     shutil.rmtree(m.UPLOADS_DIR / job, ignore_errors=True)
+
+
+def test_async_job_reports_progress(monkeypatch):
+    import time
+    import app.main as m
+    client = TestClient(m.app)
+    with open("samples/cliente_ok.png", "rb") as c, open("samples/diseno.pdf", "rb") as d:
+        r = client.post("/api/compare", files={"client_file": ("c.png", c), "design_file": ("d.pdf", d)})
+    job = r.json()["job_id"]
+    seen = set()
+    for _ in range(200):
+        st = client.get(f"/api/jobs/{job}").json()
+        seen.add(st["stage"])
+        if st["status"] != "running":
+            break
+        time.sleep(0.3)
+    assert st["status"] == "done" and st["result"]["status"] == "aprobado"
+    assert len(seen) >= 3  # pasó por varias etapas
+    shutil.rmtree(m.RESULTS_DIR / job, ignore_errors=True)
+    shutil.rmtree(m.UPLOADS_DIR / job, ignore_errors=True)
+
+
+def test_bad_upload_returns_spanish_error():
+    import app.main as m
+    client = TestClient(m.app)
+    r = client.post("/api/compare", files={"client_file": ("a.txt", b"hola"), "design_file": ("d.pdf", b"x")})
+    assert r.status_code == 400 and "Formato no admitido" in r.json()["detail"]

@@ -1,0 +1,28 @@
+{
+ "caso": "sint_055_d5_palabra_quitada",
+ "tipo": "sintetico",
+ "cliente": "cliente.jpg",
+ "diseno": "diseno.pdf",
+ "pagina_cliente": 1,
+ "pagina_diseno": 1,
+ "degradaciones": {
+  "rotate": 3.0,
+  "jpeg": 80
+ },
+ "errores": [
+  {
+   "categoria": "text",
+   "bbox": [
+    384,
+    1230,
+    384,
+    115
+   ],
+   "subtipo": "sobrante",
+   "cliente_dice": "",
+   "diseno_dice": "colección"
+  }
+ ],
+ "texto_cliente": "Vivero Los Andes Ofertas de Primavera Descuentos en jardinería Nueva de flores Visita nuestra tienda esta semana Teléfono: 555-7788",
+ "notas": ""
+}

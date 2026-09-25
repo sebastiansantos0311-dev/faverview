@@ -31,6 +31,13 @@ DEFAULTS = {
     "text_similarity_min": 0.85,
     "font_size_tolerance_pct": 12,
     "max_upload_mb": 50,
+    "ocr_mode": "guiado",  # "guiado" (por línea, guiado por el PDF) | "pagina" (página completa)
+    "spell_lang": "es_CO",
+    "cmyk_profile": "",  # ruta a un perfil ICC CMYK por defecto (vacío: conversión estándar)
+    "learning_enabled": True,
+    "learning_min_confusion_count": 3,
+    "learning_autotune_every": 5,
+    "update_check": True,
     "weights": {"visual": 0.30, "text": 0.35, "color": 0.15, "spelling": 0.10, "font": 0.10},
 }
 

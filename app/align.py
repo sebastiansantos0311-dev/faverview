@@ -146,7 +146,20 @@ def _ecc_refine(design: np.ndarray, warped: np.ndarray, mask: np.ndarray):
     return ref, refm, float(cc)
 
 
-def align_images(design: np.ndarray, client: np.ndarray) -> AlignResult:
+def align_manual(design: np.ndarray, client: np.ndarray, pts_client, pts_design) -> AlignResult:
+    """Alineación indicada por el usuario: 4 puntos equivalentes (coordenadas del cliente ORIGINAL y del diseño)."""
+    h, w = design.shape[:2]
+    H = cv2.getPerspectiveTransform(np.float32(pts_client), np.float32(pts_design))
+    warped = cv2.warpPerspective(client, H, (w, h), flags=cv2.INTER_CUBIC, borderMode=cv2.BORDER_CONSTANT,
+                                 borderValue=(255, 255, 255))
+    mask = cv2.warpPerspective(np.ones(client.shape[:2], np.uint8), H, (w, h), flags=cv2.INTER_NEAREST,
+                               borderMode=cv2.BORDER_CONSTANT, borderValue=0)
+    return AlignResult(warped, H, 1.0, True, None, "manual", mask, ["Alineación manual"])
+
+
+def align_images(design: np.ndarray, client: np.ndarray, manual: dict | None = None) -> AlignResult:
+    if manual and manual.get("client") and manual.get("design"):
+        return align_manual(design, client, manual["client"], manual["design"])
     h, w = design.shape[:2]
     notes = []
     orig_shape = client.shape[:2]

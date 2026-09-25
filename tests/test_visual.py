@@ -40,3 +40,26 @@ def test_alignment_recovers_small_rotation():
     res = align_images(a, b)
     assert res.aligned
     assert compare_visual(a, res.aligned_client, load_config()).score > 0.9
+
+
+def test_manual_alignment_with_four_points():
+    import cv2
+    a = _base()
+    m = cv2.getRotationMatrix2D((400, 300), 3.0, 1.0)
+    b = cv2.warpAffine(a, m, (800, 600), borderValue=(255, 255, 255))
+    src = np.float32([[100, 100], [700, 100], [700, 500], [100, 500]])          # puntos en el diseño
+    moved = cv2.transform(src.reshape(-1, 1, 2), m).reshape(-1, 2)              # dónde caen en el cliente
+    from app.align import align_images
+    res = align_images(a, b, {"client": moved.tolist(), "design": src.tolist()})
+    assert res.method == "manual"
+    assert compare_visual(a, res.aligned_client, load_config(), res.valid_mask).score > 0.95
+
+
+def test_stripping_a_screenshot_frame():
+    from app.align import strip_frame
+    a = _base()
+    framed = np.full((a.shape[0] + 100, a.shape[1] + 40, 3), (32, 33, 36), np.uint8)
+    framed[60:60 + a.shape[0], 20:20 + a.shape[1]] = a
+    out, _ = strip_frame(framed, a)
+    assert abs(out.shape[0] - a.shape[0]) <= 4 and abs(out.shape[1] - a.shape[1]) <= 4
+    assert strip_frame(a, a)[0].shape == a.shape  # sin marco no se recorta nada

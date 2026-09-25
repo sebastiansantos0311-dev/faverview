@@ -1,6 +1,7 @@
 """Ortografía en español con pyspellchecker + diccionario personal."""
 import re
 import threading
+from functools import lru_cache
 
 from spellchecker import SpellChecker
 
@@ -39,6 +40,79 @@ def add_to_dictionary(word: str) -> None:
             with open(DICT_PATH, "a", encoding="utf-8") as f:
                 f.write(w + "\n")
     get_spell().word_frequency.load_words([w])
+
+
+# ---------------------------------------------------------------------------------- Hunspell (spylls)
+HUNSPELL_DIR = BASE_DIR / "tools" / "hunspell"
+_hun = None
+_hun_lang = None
+
+
+def _hunspell():
+    """Diccionario Hunspell de LibreOffice (es_CO por defecto; configurable con "spell_lang")."""
+    global _hun, _hun_lang
+    from .config import load_config
+    lang = load_config().get("spell_lang", "es_CO")
+    if _hun is not None and _hun_lang == lang:
+        return _hun
+    with _lock:
+        try:
+            from spylls.hunspell import Dictionary
+            base = HUNSPELL_DIR / lang
+            if not base.with_suffix(".dic").exists():
+                base = HUNSPELL_DIR / "es_ES"
+            _hun = Dictionary.from_files(str(base)) if base.with_suffix(".dic").exists() else False
+        except Exception:
+            _hun = False
+        _hun_lang = lang
+        _hun_cache.cache_clear()
+    return _hun
+
+
+@lru_cache(maxsize=100_000)
+def _hun_cache(word: str) -> bool:
+    d = _hun
+    if not d:
+        return False
+    try:
+        return bool(d.lookup(word) or d.lookup(word.capitalize()))
+    except Exception:
+        return False
+
+
+def _hun_ok(word: str) -> bool:
+    _hunspell()
+    return _hun_cache(word)
+
+
+def _hun_suggest(word: str, n: int = 3) -> list[str]:
+    d = _hunspell()
+    if not d:
+        return []
+    try:
+        return [s for s in d.suggest(word) if s.lower() != word][:n]
+    except Exception:
+        return []
+
+
+def _learned() -> set[str]:
+    try:
+        from .learning import vocab
+        return vocab.known_words()
+    except Exception:
+        return set()
+
+
+_ACCENT_MAP = {"a": "á", "e": "é", "i": "í", "o": "ó", "u": "ú"}
+
+
+def accent_variants(w: str) -> list[str]:
+    """Palabras que resultan de ponerle UNA tilde a `w` (informacion → información)."""
+    out = []
+    for i, ch in enumerate(w):
+        if ch in _ACCENT_MAP:
+            out.append(w[:i] + _ACCENT_MAP[ch] + w[i + 1:])
+    return out
 
 
 EXTRA_LIST = BASE_DIR / "tools" / "palabras_es.txt"
@@ -85,8 +159,10 @@ def _known(spell: SpellChecker, w: str) -> bool:
     """Palabra válida: diccionario base, lista ampliada o derivable por plural/género/conjugación."""
     extra = _extra_words()
 
+    learned = _learned()
+
     def base(x: str) -> bool:
-        return (x in extra) or (not spell.unknown([x]))
+        return (x in extra) or (x in learned) or _hun_ok(x) or (not spell.unknown([x]))
 
     if base(w):
         return True
@@ -156,13 +232,22 @@ def check_spelling(words: list[Word], known_keys: set[str] | None = None) -> tup
             checked += 1
             if w in known_keys or _known(spell, w):
                 continue
-            cands = spell.candidates(w) or set()
-            sugg = sorted(cands - {w}, key=lambda c: -spell.word_frequency[c])[:3]
             x0, y0, x1, y1 = wd.bbox
+            bbox = (int(x0), int(y0), max(1, int(x1 - x0)), max(1, int(y1 - y0)))
+            # ¿existe la palabra con una tilde? (informacion → información): error de tilde, sugerencia única
+            tv = [v for v in accent_variants(w) if _known(spell, v)]
+            if len(tv) == 1:
+                fix = tv[0].capitalize() if raw[:1].isupper() else tv[0]
+                diffs.append(Difference(
+                    category="spelling", subtype="tilde_faltante", bbox=bbox, severity="alta",
+                    message=f"Falta la tilde: «{raw}» → «{fix}»", found=raw, suggestions=[fix]))
+                continue
+            sugg = _hun_suggest(raw)
+            if not sugg:
+                cands = spell.candidates(w) or set()
+                sugg = sorted(cands - {w}, key=lambda c: -spell.word_frequency[c])[:3]
             diffs.append(Difference(
-                category="spelling", subtype="ortografia",
-                bbox=(int(x0), int(y0), max(1, int(x1 - x0)), max(1, int(y1 - y0))),
-                severity="media",
+                category="spelling", subtype="ortografia", bbox=bbox, severity="media",
                 message=f"Posible error de ortografía: «{raw}»"
                         + (f". Sugerencias: {', '.join(sugg)}" if sugg else ""),
                 found=raw, suggestions=sugg))

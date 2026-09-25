@@ -1,0 +1,15 @@
+{
+ "caso": "sint_065_d5_cmyk_pdf",
+ "tipo": "sintetico",
+ "cliente": "cliente.jpg",
+ "diseno": "diseno.pdf",
+ "pagina_cliente": 1,
+ "pagina_diseno": 1,
+ "degradaciones": {
+  "design_cmyk": true,
+  "jpeg": 90
+ },
+ "errores": [],
+ "texto_cliente": "Vivero Los Andes Ofertas de Primavera Descuentos en jardinería Nueva colección de flores Visita nuestra tienda esta semana Teléfono: 555-7788",
+ "notas": ""
+}
