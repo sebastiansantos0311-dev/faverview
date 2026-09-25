@@ -1,0 +1,11 @@
+.venv/
+__pycache__/
+.pytest_cache/
+build/
+dist/
+*.spec
+_antiguo/
+data/uploads/
+data/results/
+data/historial.json
+data/diccionario_personal.txt

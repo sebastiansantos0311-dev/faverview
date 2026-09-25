@@ -1,0 +1,89 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>FAVERVIEW</title>
+<link rel="stylesheet" href="/static/styles.css">
+</head>
+<body>
+<header class="topbar">
+  <h1>FAVER<span>VIEW</span></h1>
+  <span class="tag">Comparador de arte del cliente vs. diseño</span>
+  <div class="spacer"></div>
+  <label class="hist">Historial
+    <select id="history"><option value="">—</option></select>
+  </label>
+</header>
+
+<section id="setup" class="setup">
+  <div class="drops">
+    <div class="drop" id="drop-client" data-kind="client">
+      <div class="drop-title">A · Arte del cliente</div>
+      <div class="drop-hint">Arrastra aquí o haz clic<br><small>JPG, PNG, WEBP, BMP, TIFF o PDF</small></div>
+      <div class="drop-file" id="file-client"></div>
+      <label class="pagesel hidden" id="pages-client">Página <select></select></label>
+      <input type="file" hidden accept=".jpg,.jpeg,.png,.webp,.bmp,.tif,.tiff,.pdf">
+    </div>
+    <div class="drop" id="drop-design" data-kind="design">
+      <div class="drop-title">B · Mi diseño</div>
+      <div class="drop-hint">Arrastra aquí o haz clic<br><small>PDF exportado</small></div>
+      <div class="drop-file" id="file-design"></div>
+      <label class="pagesel hidden" id="pages-design">Página <select></select></label>
+      <input type="file" hidden accept=".pdf,.jpg,.jpeg,.png,.webp,.bmp,.tif,.tiff">
+    </div>
+  </div>
+  <div class="actions">
+    <button id="btn-compare" class="primary" disabled>Comparar</button>
+    <span id="status" class="status"></span>
+  </div>
+</section>
+
+<div id="error" class="banner error hidden"></div>
+
+<section id="results" class="results hidden">
+  <div class="summary" id="summary"></div>
+  <div id="warnings"></div>
+
+  <div class="workspace">
+    <div class="viewer-col">
+      <div class="toolbar">
+        <div class="tabs" id="tabs">
+          <button data-mode="side" class="active">Lado a lado</button>
+          <button data-mode="slider">Deslizador</button>
+          <button data-mode="diff">Diferencia</button>
+          <button data-mode="overlay">Superpuesto</button>
+        </div>
+        <div class="spacer"></div>
+        <button id="btn-fit" class="ghost">Ajustar</button>
+        <button id="btn-sens" class="ghost">Sensibilidad</button>
+        <a id="btn-report" class="button" href="#" target="_blank">Descargar reporte PDF</a>
+      </div>
+      <div id="sens" class="sens hidden">
+        <label>Umbral SSIM <b id="v-ssim"></b><input type="range" id="r-ssim" min="0.5" max="0.99" step="0.01"></label>
+        <label>Tolerancia de color (ΔE) <b id="v-de"></b><input type="range" id="r-de" min="1" max="30" step="1"></label>
+        <label>Área mínima de región (px) <b id="v-area"></b><input type="range" id="r-area" min="20" max="2000" step="10"></label>
+        <button id="btn-recalc" class="primary">Recalcular</button>
+      </div>
+      <div class="viewer" id="viewer"></div>
+      <div class="legend">
+        <span><i class="c-text"></i>Texto</span><span><i class="c-spelling"></i>Ortografía</span>
+        <span><i class="c-color"></i>Color</span><span><i class="c-visual"></i>Elemento visual</span>
+        <span><i class="c-font"></i>Fuente</span>
+        <span class="hint">Rueda: zoom · Arrastrar: mover</span>
+      </div>
+    </div>
+    <aside class="side">
+      <h2>Lista de errores</h2>
+      <div id="filters" class="filters"></div>
+      <div id="errors" class="errors"></div>
+      <div id="restore" class="restore hidden"></div>
+      <details class="fonts"><summary>Fuentes del diseño</summary><div id="fonts"></div></details>
+    </aside>
+  </div>
+</section>
+
+<div id="loading" class="loading hidden"><div class="spinner"></div><div>Procesando…</div></div>
+<script src="/static/app.js"></script>
+</body>
+</html>
