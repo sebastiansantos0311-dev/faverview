@@ -78,12 +78,26 @@ def _dedupe(visual: list[Difference], others: list[Difference], colors: list[Dif
     return kept_v, kept_c
 
 
+class _Timer:
+    def __init__(self):
+        self.t = {}
+        self._last = time.time()
+
+    def mark(self, name: str):
+        now = time.time()
+        self.t[name] = round(self.t.get(name, 0.0) + now - self._last, 2)
+        self._last = now
+
+
 def run_comparison(job_id: str, client_path, design_path, params: dict | None = None,
                    client_page: int = 0, design_page: int = 0,
-                   client_name: str = "", design_name: str = "") -> Result:
+                   client_name: str = "", design_name: str = "",
+                   persist: bool = True, out_dir: Path | None = None) -> Result:
     t0 = time.time()
+    tm = _Timer()
     cfg = load_config()
     used = {}
+    cfg.update((params or {}).get("overrides") or {})
     for k in TUNABLE:
         if params and params.get(k) is not None:
             cfg[k] = float(params[k])
@@ -98,6 +112,7 @@ def run_comparison(job_id: str, client_path, design_path, params: dict | None = 
     client_raw = load_as_image(client_path, dpi, client_page)
     spans = extract_pdf_layout(design_path, dpi, design_page)
 
+    tm.mark("cargar")
     al = align_images(design, client_raw)
     client = al.aligned_client
     if al.warning:
@@ -105,7 +120,9 @@ def run_comparison(job_id: str, client_path, design_path, params: dict | None = 
     H, W = design.shape[:2]
 
     # ---- visual
+    tm.mark("alinear")
     vis = compare_visual(design, client, cfg)
+    tm.mark("visual")
 
     # ---- texto
     text_diffs: list[Difference] = []
@@ -132,11 +149,13 @@ def run_comparison(job_id: str, client_path, design_path, params: dict | None = 
         text_ok = False
         warnings.append(f"Falló el OCR ({e}). Se omitió la comparación de texto.")
 
+    tm.mark("ocr")
     # ---- ortografía
     spell_diffs, spell_total = [], 0
     if text_ok:
         spell_diffs, spell_total = check_spelling(design_words, matched_keys)
 
+    tm.mark("ortografia")
     # ---- color
     text_boxes = [(int(w.bbox[0]), int(w.bbox[1]), int(w.bbox[2] - w.bbox[0]),
                    int(w.bbox[3] - w.bbox[1])) for w in design_words + client_words]
@@ -148,12 +167,14 @@ def run_comparison(job_id: str, client_path, design_path, params: dict | None = 
     zone_diffs, _ = grid_color_diffs(design, client, text_boxes, tol)
     color_diffs += zone_diffs
 
+    tm.mark("color")
     # ---- fuentes
     font_diffs, font_total = [], 0
     if spans and text_ok:
         font_diffs, font_total = compare_fonts(design, client, spans, pairs,
                                                float(cfg["font_size_tolerance_pct"]))
 
+    tm.mark("fuentes")
     # ---- limpieza de duplicados
     visual_diffs, color_diffs = _dedupe(vis.differences, text_diffs + spell_diffs + font_diffs,
                                         color_diffs, (H, W), text_boxes)
@@ -168,7 +189,7 @@ def run_comparison(job_id: str, client_path, design_path, params: dict | None = 
         vis.score, matched, total, color_area, W * H,
         len(spell_diffs), spell_total, len(font_diffs), font_total, cfg["weights"])
 
-    out_dir = RESULTS_DIR / job_id
+    out_dir = out_dir or (RESULTS_DIR / job_id)
     images = make_outputs(design, client, vis.diff_strength, out_dir)
 
     counts: dict[str, int] = {}
@@ -184,7 +205,10 @@ def run_comparison(job_id: str, client_path, design_path, params: dict | None = 
         created=datetime.now().isoformat(timespec="seconds"), counts=counts, params=used,
         pages={"client": client_page + 1, "design": design_page + 1,
                "client_total": page_count(client_path), "design_total": page_count(design_path)},
-        elapsed_s=round(time.time() - t0, 1))
+        elapsed_s=round(time.time() - t0, 1), timings=tm.t,
+        client_text=" ".join(w.text for w in client_words) if text_ok else None)
+    if not persist:
+        return result
     (out_dir / "result.json").write_text(result.model_dump_json(indent=1), encoding="utf-8")
     history.add_entry({"job_id": job_id, "created": result.created,
                        "client_name": result.client_name, "design_name": result.design_name,

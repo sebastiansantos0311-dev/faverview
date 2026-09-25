@@ -57,6 +57,7 @@
         <div class="spacer"></div>
         <button id="btn-fit" class="ghost">Ajustar</button>
         <button id="btn-sens" class="ghost">Sensibilidad</button>
+        <button id="btn-review" class="ghost">Modo revisión</button>
         <a id="btn-report" class="button" href="#" target="_blank">Descargar reporte PDF</a>
       </div>
       <div id="sens" class="sens hidden">
@@ -74,6 +75,20 @@
       </div>
     </div>
     <aside class="side">
+      <div id="review-panel" class="review hidden">
+        <h2>Revisión</h2>
+        <p class="hint">Marca cada error como <b>✔ Real</b> o <b>✘ Falso positivo</b>. Si la app no detectó algo, usa
+          «Marcar error no detectado» y dibuja un rectángulo sobre el visor.</p>
+        <label>Tipo de arte del cliente
+          <select id="rv-tipo"><option>exportado</option><option>whatsapp</option><option>foto</option>
+            <option>escaneo</option><option>captura</option><option>cmyk</option><option>curvas</option></select></label>
+        <button id="btn-missed" class="ghost">Marcar error no detectado</button>
+        <div id="missed-list"></div>
+        <label>Texto del cliente (opcional, para medir el OCR)
+          <textarea id="rv-text" rows="3" placeholder="Transcribe exactamente lo que dice el arte"></textarea></label>
+        <button id="btn-savecase" class="primary">Guardar como caso de prueba</button>
+        <div id="rv-msg" class="hint"></div>
+      </div>
       <h2>Lista de errores</h2>
       <div id="filters" class="filters"></div>
       <div id="errors" class="errors"></div>

@@ -1,0 +1,29 @@
+{
+ "caso": "sint_028_d3_palabra_agregada",
+ "tipo": "sintetico",
+ "cliente": "cliente.jpg",
+ "diseno": "diseno.pdf",
+ "pagina_cliente": 1,
+ "pagina_diseno": 1,
+ "degradaciones": {
+  "scale": 0.7,
+  "blur": 0.8,
+  "jpeg": 80
+ },
+ "errores": [
+  {
+   "categoria": "text",
+   "bbox": [
+    766,
+    1018,
+    151,
+    77
+   ],
+   "subtipo": "faltante",
+   "cliente_dice": "gratis",
+   "diseno_dice": ""
+  }
+ ],
+ "texto_cliente": "Gran Venta Nocturna Solo esta semana en todas las tiendas Descuentos de hasta 50% en toda la colección Llévate dos por uno gratis Desde 29.900 Visítanos en la avenida principal número 45",
+ "notas": ""
+}

@@ -1,0 +1,50 @@
+{
+ "caso": "sint_058_d5_mixto",
+ "tipo": "sintetico",
+ "cliente": "cliente.jpg",
+ "diseno": "diseno.pdf",
+ "pagina_cliente": 1,
+ "pagina_diseno": 1,
+ "degradaciones": {
+  "rotate": -4.0,
+  "jpeg": 60
+ },
+ "errores": [
+  {
+   "categoria": "text",
+   "bbox": [
+    139,
+    1702,
+    200,
+    61
+   ],
+   "subtipo": "cambiada",
+   "cliente_dice": "Teléfono:",
+   "diseno_dice": "Telefono:"
+  },
+  {
+   "categoria": "spelling",
+   "bbox": [
+    139,
+    1702,
+    200,
+    61
+   ],
+   "subtipo": "tilde_faltante",
+   "diseno_dice": "Telefono:"
+  },
+  {
+   "categoria": "color",
+   "bbox": [
+    0,
+    417,
+    1653,
+    306
+   ],
+   "subtipo": "zona",
+   "delta_e": 30.0
+  }
+ ],
+ "texto_cliente": "Vivero Los Andes Ofertas de Primavera Descuentos en jardinería Nueva colección de flores Visita nuestra tienda esta semana Teléfono: 555-7788",
+ "notas": ""
+}

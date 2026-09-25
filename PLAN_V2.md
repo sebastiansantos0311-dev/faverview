@@ -140,22 +140,22 @@ Cada caso real debe tener entre 0 y 8 errores conocidos, idealmente de categorí
 
 ### 3.3 Modo "Revisión" en la UI (para anotar sin escribir JSON)
 Botón **"Guardar como caso de prueba"** en la pantalla de resultados:
-- [ ] Cada error detectado muestra ✔ **Real** / ✘ **Falso positivo**.
-- [ ] Herramienta **"Marcar error no detectado"**: dibujar un rectángulo, elegir la categoría y escribir el texto
+- [x] Cada error detectado muestra ✔ **Real** / ✘ **Falso positivo**.
+- [x] Herramienta **"Marcar error no detectado"**: dibujar un rectángulo, elegir la categoría y escribir el texto
       correcto si aplica.
-- [ ] Campo opcional "Texto del cliente" para medir el CER.
-- [ ] Al guardar, se crea `datos_locales/casos/caso_NNN/` con los dos archivos y `esperado.json`
+- [x] Campo opcional "Texto del cliente" para medir el CER.
+- [x] Al guardar, se crea `datos_locales/casos/caso_NNN/` con los dos archivos y `esperado.json`
       (= errores ✔ + errores marcados a mano).
-- [ ] Esta misma revisión alimenta el aprendizaje (Fase 7). Es el ciclo central: **comparar → revisar → aprende**.
+- [x] Esta misma revisión alimenta el aprendizaje (Fase 7). Es el ciclo central: **comparar → revisar → aprende**.
 
 ### 3.4 Casos sintéticos (`bench/synth.py`)
-- [ ] Generar **≥ 60 casos** reproducibles (semilla fija) a partir de 6 diseños PDF sintéticos con fuentes libres:
+- [x] Generar **≥ 60 casos** reproducibles (semilla fija) a partir de 6 diseños PDF sintéticos con fuentes libres:
       fondos de color, texto pequeño (7–9 pt), texto blanco sobre oscuro, tablas de precios y logos.
-- [ ] Errores inyectados con verdad conocida: número cambiado, palabra quitada o agregada, tilde quitada, color
+- [x] Errores inyectados con verdad conocida: número cambiado, palabra quitada o agregada, tilde quitada, color
       ΔE 5–40, logo removido o movido, tamaño de fuente ±20%, negrita.
-- [ ] Degradaciones: JPEG calidad 40–90, rotación ±5°, perspectiva, desenfoque, ruido, iluminación irregular,
+- [x] Degradaciones: JPEG calidad 40–90, rotación ±5°, perspectiva, desenfoque, ruido, iluminación irregular,
       recorte de bordes, escala 50–150%, conversión CMYK y un "marco" de captura de pantalla.
-- [ ] Guardar en `tests/sinteticos/` con el mismo formato `esperado.json`.
+- [x] Guardar en `tests/sinteticos/` con el mismo formato `esperado.json`.
 
 ### 3.5 `bench/metrics.py` y `bench/run.py`
 - Emparejamiento detectado ↔ esperado: misma categoría y **IoU ≥ 0.3** (o el centro del esperado dentro del
@@ -168,13 +168,13 @@ Botón **"Guardar como caso de prueba"** en la pantalla de resultados:
   la corrida anterior (↑ mejoró / ↓ empeoró en cada métrica) y la lista de FP/FN de cada caso con miniaturas.
 
 ### Checklist Fase 5
-- [ ] `datos_locales/` en `.gitignore`
-- [ ] Modo Revisión + "Guardar como caso de prueba"
-- [ ] `bench/` (synth, metrics, run, report)
-- [ ] ≥ 60 casos sintéticos en `tests/sinteticos/`
-- [ ] **Guía para el usuario** en `README.md` → sección "Cómo crear casos de prueba"
+- [x] `datos_locales/` en `.gitignore`
+- [x] Modo Revisión + "Guardar como caso de prueba"
+- [x] `bench/` (synth, metrics, run, report)
+- [x] ≥ 60 casos sintéticos en `tests/sinteticos/`
+- [x] **Guía para el usuario** en `README.md` → sección "Cómo crear casos de prueba"
 - [ ] El usuario carga los **20 casos reales** (tarea del usuario; el agente espera o sigue con los sintéticos)
-- [ ] **Línea base:** `bench.run --etiqueta "v1 linea base"` sobre sintéticos + reales, guardada
+- [x] **Línea base:** `bench.run --etiqueta "v1 linea base"` sobre sintéticos + reales, guardada
 
 ---
 

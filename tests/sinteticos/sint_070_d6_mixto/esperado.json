@@ -1,0 +1,62 @@
+{
+ "caso": "sint_070_d6_mixto",
+ "tipo": "sintetico",
+ "cliente": "cliente.jpg",
+ "diseno": "diseno.pdf",
+ "pagina_cliente": 1,
+ "pagina_diseno": 1,
+ "degradaciones": {
+  "rotate": -4.0,
+  "jpeg": 60
+ },
+ "errores": [
+  {
+   "categoria": "text",
+   "bbox": [
+    511,
+    1714,
+    65,
+    46
+   ],
+   "subtipo": "cambiada",
+   "cliente_dice": "223,",
+   "diseno_dice": "123,"
+  },
+  {
+   "categoria": "text",
+   "bbox": [
+    998,
+    327,
+    59,
+    60
+   ],
+   "subtipo": "cambiada",
+   "cliente_dice": "día",
+   "diseno_dice": "dia"
+  },
+  {
+   "categoria": "spelling",
+   "bbox": [
+    998,
+    327,
+    59,
+    60
+   ],
+   "subtipo": "tilde_faltante",
+   "diseno_dice": "dia"
+  },
+  {
+   "categoria": "color",
+   "bbox": [
+    139,
+    1167,
+    1375,
+    278
+   ],
+   "subtipo": "zona",
+   "delta_e": 30.0
+  }
+ ],
+ "texto_cliente": "Clínica Dental Sonrisa Cuidamos tu sonrisa cada día - Limpieza dental profesional - Blanqueamiento con garantía - Ortodoncia para niños y adultos - Atención de urgencias todos los días Primera consulta gratis este mes Teléfono: 555-9876 Calle Principal número 223, Bogotá",
+ "notas": ""
+}

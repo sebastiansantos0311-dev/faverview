@@ -20,6 +20,10 @@ let ignored = new Set();
 let activeCats = new Set(CATS.map(c => c[0]));
 let selectedId = null;
 let showIgnored = false;
+let reviewMode = false;
+let drawMode = false;
+let verdicts = {};      // id -> "real" | "falso_positivo"
+let missed = [];        // errores no detectados marcados a mano
 
 function h(tag, attrs = {}, ...kids) {
   const el = document.createElement(tag);
@@ -129,6 +133,8 @@ function showResult(res, keepUi = false) {
   ignored = new Set();
   selectedId = null;
   showIgnored = false;
+  verdicts = {}; missed = []; drawMode = false;
+  renderMissed();
   if (!keepUi) activeCats = new Set(CATS.map(c => c[0]));
   $("#results").classList.remove("hidden");
   renderSummary();
@@ -223,6 +229,12 @@ function errItem(d) {
     says.push(h("div", { class: "says" }, "Tu diseño: " + d.found));
   }
   const btns = h("div", { class: "btns" });
+  if (reviewMode) {
+    const v = verdicts[d.id];
+    btns.append(
+      h("button", { class: v === "real" ? "on-real" : "", onclick: e => { e.stopPropagation(); verdicts[d.id] = "real"; renderErrors(); } }, "✔ Real"),
+      h("button", { class: v === "falso_positivo" ? "on-fp" : "", onclick: e => { e.stopPropagation(); verdicts[d.id] = "falso_positivo"; renderErrors(); } }, "✘ Falso positivo"));
+  }
   if (d.category === "spelling") btns.append(h("button", { onclick: async e => {
     e.stopPropagation();
     try { await api("/api/dictionary", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ word: d.found }) });
@@ -305,6 +317,12 @@ function renderBoxes() {
         title: d.message, onclick: e => { e.stopPropagation(); selectError(d.id, false); } }, h("span", { class: "n" }, d.id));
       p.stage.append(b);
     });
+    missed.forEach((m, i) => {
+      const [x, y, w, h_] = m.bbox;
+      p.stage.append(h("div", { class: "box missed", title: "No detectado: " + CAT_NAME[m.categoria],
+        style: { left: x + "px", top: y + "px", width: w + "px", height: h_ + "px", "--col": CAT_COLOR[m.categoria] } },
+        h("span", { class: "n" }, "M" + (i + 1))));
+    });
   });
 }
 
@@ -342,6 +360,7 @@ function bindPane(pane) {
   }, { passive: false });
   pane.addEventListener("pointerdown", e => {
     if (e.button !== 0) return;
+    if (drawMode) return startDraw(pane, e);
     pane.setPointerCapture(e.pointerId);
     pane.classList.add("dragging");
     let lx = e.clientX, ly = e.clientY;
@@ -374,6 +393,71 @@ function selectError(id, zoom) {
     const b = p.stage.querySelector(`.box[data-id="${id}"]`);
     if (b) { b.classList.remove("blink"); void b.offsetWidth; b.classList.add("blink"); }
   });
+}
+
+/* ---------- revisión: marcar errores no detectados y guardar caso ---------- */
+function toImg(pane, e) {
+  const r = pane.getBoundingClientRect();
+  return [(e.clientX - r.left - view.tx) / view.s, (e.clientY - r.top - view.ty) / view.s];
+}
+
+function startDraw(pane, e) {
+  const stage = pane.querySelector(".stage");
+  const [x0, y0] = toImg(pane, e);
+  const el = h("div", { class: "box drawing" });
+  stage.append(el);
+  pane.setPointerCapture(e.pointerId);
+  const rect = ev => {
+    const [x1, y1] = toImg(pane, ev);
+    return [Math.min(x0, x1), Math.min(y0, y1), Math.abs(x1 - x0), Math.abs(y1 - y0)];
+  };
+  const mv = ev => { const [x, y, w, h_] = rect(ev);
+    Object.assign(el.style, { left: x + "px", top: y + "px", width: w + "px", height: h_ + "px" }); };
+  pane.addEventListener("pointermove", mv);
+  pane.addEventListener("pointerup", ev => {
+    pane.removeEventListener("pointermove", mv);
+    el.remove();
+    const [x, y, w, h_] = rect(ev).map(Math.round);
+    if (w > 6 && h_ > 6) askMissed([x, y, w, h_]);
+  }, { once: true });
+}
+
+function askMissed(bbox) {
+  const cat = h("select", {}, CATS.map(([k, n]) => h("option", { value: k }, n)));
+  const cli = h("input", { placeholder: "El cliente dice (texto correcto)" });
+  const dis = h("input", { placeholder: "Tu diseño dice (opcional)" });
+  const close = () => bg.remove();
+  const bg = h("div", { class: "dialog-bg" }, h("div", { class: "dialog" },
+    h("b", {}, "Error no detectado"), h("label", {}, "Categoría", cat), cli, dis,
+    h("div", { class: "row" }, h("button", { onclick: close }, "Cancelar"),
+      h("button", { class: "primary", onclick: () => {
+        missed.push({ categoria: cat.value, bbox, cliente_dice: cli.value || null, diseno_dice: dis.value || null });
+        close(); setDrawMode(false); renderMissed(); renderBoxes(); } }, "Agregar"))));
+  document.body.append(bg);
+}
+
+function setDrawMode(on) {
+  drawMode = on;
+  document.querySelectorAll(".pane").forEach(p => p.classList.toggle("drawmode", on));
+  $("#btn-missed").textContent = on ? "Dibuja el rectángulo en el visor… (clic para cancelar)" : "Marcar error no detectado";
+}
+
+function renderMissed() {
+  const box = $("#missed-list"); if (!box) return;
+  box.replaceChildren(...missed.map((m, i) => h("div", { class: "missed-item" },
+    `M${i + 1} · ${CAT_NAME[m.categoria]}${m.cliente_dice ? " · " + m.cliente_dice : ""}`,
+    h("button", { onclick: () => { missed.splice(i, 1); renderMissed(); renderBoxes(); } }, "✕"))));
+}
+
+async function saveCase() {
+  if (!data) return;
+  const pend = data.differences.filter(d => !verdicts[d.id]).length;
+  if (pend && !confirm(`${pend} error(es) sin revisar se guardarán como REALES. ¿Continuar?`)) return;
+  try {
+    const r = await (await api("/api/cases/" + data.job_id, { method: "POST", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ verdicts, missed, client_text: $("#rv-text").value || null, tipo: $("#rv-tipo").value }) })).json();
+    $("#rv-msg").textContent = `Guardado como ${r.caso} (${r.errores} errores esperados) en datos_locales/casos.`;
+  } catch (e) { showError(e.message); }
 }
 
 /* ---------- sensibilidad / historial ---------- */
@@ -411,6 +495,15 @@ $("#btn-compare").addEventListener("click", compare);
 $("#btn-fit").addEventListener("click", fit);
 $("#btn-sens").addEventListener("click", () => { $("#sens").classList.toggle("hidden"); fit(); });
 $("#btn-recalc").addEventListener("click", recalc);
+$("#btn-review").addEventListener("click", () => {
+  reviewMode = !reviewMode;
+  $("#review-panel").classList.toggle("hidden", !reviewMode);
+  $("#btn-review").classList.toggle("primary", reviewMode);
+  if (!reviewMode) setDrawMode(false);
+  renderErrors();
+});
+$("#btn-missed").addEventListener("click", () => setDrawMode(!drawMode));
+$("#btn-savecase").addEventListener("click", saveCase);
 ["#r-ssim", "#r-de", "#r-area"].forEach(s => $(s).addEventListener("input", updateSensLabels));
 $("#history").addEventListener("change", e => openHistory(e.target.value));
 $("#tabs").addEventListener("click", e => {

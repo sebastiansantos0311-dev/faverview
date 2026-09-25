@@ -1,0 +1,62 @@
+{
+ "caso": "sint_010_d1_mixto",
+ "tipo": "sintetico",
+ "cliente": "cliente.jpg",
+ "diseno": "diseno.pdf",
+ "pagina_cliente": 1,
+ "pagina_diseno": 1,
+ "degradaciones": {
+  "rotate": -4.0,
+  "jpeg": 60
+ },
+ "errores": [
+  {
+   "categoria": "text",
+   "bbox": [
+    364,
+    367,
+    221,
+    99
+   ],
+   "subtipo": "cambiada",
+   "cliente_dice": "40.000",
+   "diseno_dice": "10.000"
+  },
+  {
+   "categoria": "text",
+   "bbox": [
+    139,
+    1909,
+    63,
+    46
+   ],
+   "subtipo": "cambiada",
+   "cliente_dice": "Más",
+   "diseno_dice": "Mas"
+  },
+  {
+   "categoria": "spelling",
+   "bbox": [
+    139,
+    1909,
+    63,
+    46
+   ],
+   "subtipo": "tilde_faltante",
+   "diseno_dice": "Mas"
+  },
+  {
+   "categoria": "color",
+   "bbox": [
+    139,
+    833,
+    694,
+    333
+   ],
+   "subtipo": "zona",
+   "delta_e": 30.0
+  }
+ ],
+ "texto_cliente": "Oferta de Verano Precio 40.000 Aprovecha nuestras ofertas especiales de temporada en todos los productos de la tienda hasta agotar stock. Descuento hasta 40% Más información en www.tiendaejemplo.com Teléfono: 555-1234 · abierto los sábados",
+ "notas": ""
+}

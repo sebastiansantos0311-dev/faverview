@@ -1,0 +1,29 @@
+{
+ "caso": "sint_052_d5_palabra_agregada",
+ "tipo": "sintetico",
+ "cliente": "cliente.jpg",
+ "diseno": "diseno.pdf",
+ "pagina_cliente": 1,
+ "pagina_diseno": 1,
+ "degradaciones": {
+  "scale": 0.7,
+  "blur": 0.8,
+  "jpeg": 80
+ },
+ "errores": [
+  {
+   "categoria": "text",
+   "bbox": [
+    721,
+    193,
+    182,
+    92
+   ],
+   "subtipo": "faltante",
+   "cliente_dice": "gratis",
+   "diseno_dice": ""
+  }
+ ],
+ "texto_cliente": "Vivero Los Andes gratis Ofertas de Primavera Descuentos en jardinería Nueva colección de flores Visita nuestra tienda esta semana Teléfono: 555-7788",
+ "notas": ""
+}

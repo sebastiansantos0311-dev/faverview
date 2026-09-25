@@ -11,7 +11,7 @@ from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 
 from . import history
-from .config import RESULTS_DIR, UPLOADS_DIR, WEB_DIR, load_config, setup_tesseract
+from .config import DATOS_DIR, RESULTS_DIR, UPLOADS_DIR, WEB_DIR, load_config, setup_tesseract
 from .loaders import ALLOWED_EXT, FileError, page_count, validate_file
 from .models import Result
 from .pipeline import run_comparison
@@ -161,6 +161,64 @@ def report(job_id: str):
 @app.get("/api/history")
 def get_history():
     return history.list_entries()
+
+
+class Review(BaseModel):
+    verdicts: dict[int, str] = {}  # id de error -> "real" | "falso_positivo"
+    missed: list[dict] = []  # errores no detectados marcados a mano
+    client_text: str | None = None
+    tipo: str | None = None
+    notas: str | None = None
+
+
+def _next_case_dir() -> Path:
+    base = DATOS_DIR / "casos"
+    base.mkdir(parents=True, exist_ok=True)
+    nums = [int(p.name.split("_")[1]) for p in base.glob("caso_*") if p.name.split("_")[1].isdigit()]
+    d = base / f"caso_{1 + max(nums or [0]):03d}"
+    d.mkdir()
+    return d
+
+
+@app.post("/api/cases/{job_id}")
+def save_case(job_id: str, body: Review):
+    """Guarda la revisión como caso de prueba en datos_locales/casos/ (no se sube a git)."""
+    _check_job(job_id)
+    rj = RESULTS_DIR / job_id / "result.json"
+    if not rj.exists():
+        raise HTTPException(404, "Resultado no encontrado.")
+    result = Result.model_validate_json(rj.read_text(encoding="utf-8"))
+    job_dir = UPLOADS_DIR / job_id
+    cpath, dpath = _find_upload(job_dir, "client"), _find_upload(job_dir, "design")
+    cdir = _next_case_dir()
+    shutil.copy(cpath, cdir / f"cliente{cpath.suffix}")
+    shutil.copy(dpath, cdir / f"diseno{dpath.suffix}")
+    errores = []
+    for d in result.differences:
+        verdict = body.verdicts.get(d.id, "real")
+        d.review = verdict if verdict in ("real", "falso_positivo") else "pendiente"
+        if d.review == "real":
+            e = {"categoria": d.category, "subtipo": d.subtype, "bbox": list(d.bbox)}
+            if d.category == "text":
+                e["cliente_dice"], e["diseno_dice"] = d.expected, d.found
+            elif d.category == "spelling":
+                e["diseno_dice"] = d.found
+            errores.append(e)
+    for m in body.missed:
+        errores.append({k: m[k] for k in ("categoria", "subtipo", "bbox", "cliente_dice", "diseno_dice") if m.get(k)})
+    esperado = {
+        "caso": cdir.name, "tipo": body.tipo or result.image_type or "exportado",
+        "cliente": f"cliente{cpath.suffix}", "diseno": f"diseno{dpath.suffix}",
+        "pagina_cliente": result.pages.get("client", 1), "pagina_diseno": result.pages.get("design", 1),
+        "errores": errores, "texto_cliente": body.client_text or "", "notas": body.notas or ""}
+    (cdir / "esperado.json").write_text(json.dumps(esperado, ensure_ascii=False, indent=1), encoding="utf-8")
+    rj.write_text(result.model_dump_json(indent=1), encoding="utf-8")  # conserva el veredicto de cada error
+    try:
+        from .learning import store
+        store.record_review(result, body.model_dump(), cdir, dpath, cpath)
+    except ImportError:
+        pass
+    return {"caso": cdir.name, "errores": len(errores)}
 
 
 class Word(BaseModel):

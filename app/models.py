@@ -16,6 +16,11 @@ class Difference(BaseModel):
     expected_hex: str | None = None
     found_hex: str | None = None
     delta_e: float | None = None
+    review: Literal["pendiente", "real", "falso_positivo"] = "pendiente"  # revisión (Fase 5.3 / 7)
+    status: Literal["pendiente", "corregido", "no_aplica"] = "pendiente"  # checklist (Fase 8.5)
+    comment: str | None = None
+    ocr_confidence: float | None = None
+    ignored_by_zone: bool = False
 
 
 class Result(BaseModel):
@@ -37,3 +42,10 @@ class Result(BaseModel):
     params: dict = Field(default_factory=dict)
     pages: dict = Field(default_factory=dict)
     elapsed_s: float = 0.0
+    image_type: str | None = None  # exportado / whatsapp / foto / escaneo / captura
+    color_spaces: dict[str, str] = Field(default_factory=dict)  # {"design": "CMYK", "client": "sRGB"}
+    alignment_method: str | None = None  # orb / sift / ecc / manual
+    template: str | None = None
+    timings: dict[str, float] = Field(default_factory=dict)  # segundos por etapa
+    learning_version: str | None = None
+    client_text: str | None = None  # texto leído del arte del cliente (para medir CER)

@@ -1,0 +1,62 @@
+{
+ "caso": "sint_034_d3_mixto",
+ "tipo": "sintetico",
+ "cliente": "cliente.jpg",
+ "diseno": "diseno.pdf",
+ "pagina_cliente": 1,
+ "pagina_diseno": 1,
+ "degradaciones": {
+  "rotate": -4.0,
+  "jpeg": 60
+ },
+ "errores": [
+  {
+   "categoria": "text",
+   "bbox": [
+    422,
+    1306,
+    238,
+    107
+   ],
+   "subtipo": "cambiada",
+   "cliente_dice": "59.900",
+   "diseno_dice": "29.900"
+  },
+  {
+   "categoria": "text",
+   "bbox": [
+    139,
+    2131,
+    135,
+    46
+   ],
+   "subtipo": "cambiada",
+   "cliente_dice": "Visítanos",
+   "diseno_dice": "Visitanos"
+  },
+  {
+   "categoria": "spelling",
+   "bbox": [
+    139,
+    2131,
+    135,
+    46
+   ],
+   "subtipo": "tilde_faltante",
+   "diseno_dice": "Visitanos"
+  },
+  {
+   "categoria": "color",
+   "bbox": [
+    167,
+    917,
+    778,
+    278
+   ],
+   "subtipo": "zona",
+   "delta_e": 30.0
+  }
+ ],
+ "texto_cliente": "Gran Venta Nocturna Solo esta semana en todas las tiendas Descuentos de hasta 50% en toda la colección Llévate dos por uno Desde 59.900 Visítanos en la avenida principal número 45",
+ "notas": ""
+}

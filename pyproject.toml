@@ -18,6 +18,7 @@ dependencies = [
     "rapidfuzz>=3.9",
     "pyspellchecker>=0.8.1",
     "imagehash>=4.3",
+    "scipy>=1.11",
 ]
 
 [project.scripts]

@@ -1,0 +1,25 @@
+{
+ "caso": "sint_032_d3_fuente_tamano",
+ "tipo": "sintetico",
+ "cliente": "cliente.jpg",
+ "diseno": "diseno.pdf",
+ "pagina_cliente": 1,
+ "pagina_diseno": 1,
+ "degradaciones": {
+  "jpeg": 80
+ },
+ "errores": [
+  {
+   "categoria": "font",
+   "bbox": [
+    139,
+    357,
+    954,
+    76
+   ],
+   "subtipo": "tamano"
+  }
+ ],
+ "texto_cliente": "Gran Venta Nocturna Solo esta semana en todas las tiendas Descuentos de hasta 50% en toda la colección Llévate dos por uno Desde 29.900 Visítanos en la avenida principal número 45",
+ "notas": ""
+}

@@ -67,7 +67,49 @@ Semáforo: ≥ 98 % Aprobado · 90–98 % Revisar · < 90 % Con errores.
 
 ---
 
+## Cómo crear casos de prueba
+
+Cada caso que revises sirve para **medir** qué tan bien funciona la app y, más adelante, para que el OCR **aprenda**.
+Los casos viven en `datos_locales/casos/` y **nunca se suben a GitHub** (son archivos de tus clientes).
+
+1. Compara normalmente el arte del cliente con tu diseño.
+2. Pulsa **Modo revisión** (barra sobre el visor).
+3. En cada error de la lista marca **✔ Real** o **✘ Falso positivo**.
+4. Si hay algo que la app **no detectó**, pulsa **Marcar error no detectado**, dibuja un rectángulo sobre la
+   zona en el visor, elige la categoría y escribe lo que dice el cliente.
+5. Elige el **tipo de arte** (exportado, WhatsApp, foto, escaneo, captura, CMYK, curvas) y, si quieres medir el
+   OCR, transcribe el texto exacto del cliente.
+6. Pulsa **Guardar como caso de prueba**. Se crea `datos_locales/casos/caso_NNN/`.
+
+**Qué casos reunir (meta: 20)**
+
+| Tipo de arte del cliente | Casos |
+|---|---|
+| PNG/JPG exportado limpio (sin errores) | 3 |
+| PNG/JPG exportado con errores de texto (precio, fecha, nombre, teléfono) | 3 |
+| Captura de WhatsApp | 3 |
+| Foto con el celular (torcida, con luz) | 3 |
+| Escaneo | 2 |
+| PDF del cliente en CMYK | 2 |
+| Texto pequeño, fondo de color o texto claro sobre oscuro | 2 |
+| PDF de varias páginas | 1 |
+| Diseño con el texto convertido a curvas | 1 |
+
+Cada caso debería tener entre 0 y 8 errores conocidos, de categorías variadas.
+
+**Medir la precisión**
+```bash
+uv run python -m bench.run --etiqueta "mi prueba"
+```
+Genera un reporte (`.md` y `.html`) en `datos_locales/bench_resultados/` con precisión, recall, F1, falsos
+positivos por caso, CER del OCR y tiempos, comparado con la corrida anterior. Opciones: `--real`, `--sinteticos`,
+`--caso caso_007`, `--workers 3`. Los 72 casos sintéticos (`tests/sinteticos/`) se regeneran con
+`uv run python -m bench.synth`.
+
+---
+
 ## Actualizar a la última versión
+
 
 ```bash
 cd $HOME\FAVERVIEW; git pull

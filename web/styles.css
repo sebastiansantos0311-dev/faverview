@@ -135,3 +135,20 @@ select { background: var(--panel2); color: var(--text); border: 1px solid var(--
   .side { max-height: none; }
   .drops { grid-template-columns: 1fr; }
 }
+
+.review { background: var(--panel2); border: 1px solid var(--line); border-radius: 8px; padding: 10px; margin-bottom: 12px; }
+.review h2 { margin-top: 0; }
+.review label { display: flex; flex-direction: column; gap: 4px; color: var(--muted); margin: 8px 0; }
+.review textarea { background: var(--bg); color: var(--text); border: 1px solid var(--line); border-radius: 6px; padding: 6px; font: inherit; }
+.hint { color: var(--muted); font-size: 12px; }
+.missed-item { display: flex; gap: 8px; align-items: center; margin: 4px 0; font-size: 12px; }
+.box.missed { border-style: dashed; background: transparent; }
+.box.drawing { border: calc(2px / var(--s, 1)) dashed #fff; background: rgba(255,255,255,.12); pointer-events: none; position: absolute; }
+.pane.drawmode { cursor: crosshair; }
+.err .verdict { display: flex; gap: 6px; margin-top: 6px; }
+.err .btns button.on-real { background: #14532d; border-color: var(--ok); }
+.err .btns button.on-fp { background: #5b1a1a; border-color: var(--bad); }
+.dialog-bg { position: fixed; inset: 0; background: rgba(8,10,14,.7); z-index: 60; display: flex; align-items: center; justify-content: center; }
+.dialog { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 16px; width: 380px; display: flex; flex-direction: column; gap: 10px; }
+.dialog input, .dialog select { background: var(--bg); color: var(--text); border: 1px solid var(--line); border-radius: 6px; padding: 6px; font: inherit; }
+.dialog .row { display: flex; gap: 8px; justify-content: flex-end; }

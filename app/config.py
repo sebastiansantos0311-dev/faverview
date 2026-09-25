@@ -12,6 +12,7 @@ DATA_DIR = BASE_DIR / "data"
 UPLOADS_DIR = DATA_DIR / "uploads"
 RESULTS_DIR = DATA_DIR / "results"
 WEB_DIR = BASE_DIR / "web"
+DATOS_DIR = BASE_DIR / "datos_locales"  # casos reales y aprendizaje: NUNCA va a git
 
 _TESS_CANDIDATES = [
     r"C:\Program Files\Tesseract-OCR\tesseract.exe",
