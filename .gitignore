@@ -10,3 +10,4 @@ data/results/
 data/historial.json
 data/diccionario_personal.txt
 datos_locales/
+*.lnk

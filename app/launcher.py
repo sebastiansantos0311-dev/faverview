@@ -25,22 +25,25 @@ MARKER = BASE_DIR / "data" / ".acceso_directo_creado"
 
 
 def create_shortcut(quiet: bool = False) -> bool:
-    """Crea 'FAVERVIEW' en el Escritorio (con el logo) apuntando a `uv run faverview` en esta carpeta."""
+    """Crea 'FAVERVIEW' (con el logo) en el Escritorio y en la carpeta de la app, apuntando a `uv run faverview`."""
     uv = shutil.which("uv")
     if not uv:
         if not quiet:
             print("No se encontró 'uv'. Instálalo con: winget install astral-sh.uv")
         return False
     ps = (
-        "$d=[Environment]::GetFolderPath('Desktop');"
-        "$l=Join-Path $d 'FAVERVIEW.lnk';"
-        "$s=(New-Object -ComObject WScript.Shell).CreateShortcut($l);"
+        "function Nuevo($ruta){"
+        "$s=(New-Object -ComObject WScript.Shell).CreateShortcut($ruta);"
         "$s.TargetPath=$env:FV_UV;"
         "$s.Arguments='run faverview';"
         "$s.WorkingDirectory=$env:FV_DIR;"
         "$s.Description='FAVERVIEW - comparador de diseños';"
         "if (Test-Path $env:FV_ICON) { $s.IconLocation=$env:FV_ICON };"
-        "$s.Save();"
+        "$s.Save()};"
+        "$d=[Environment]::GetFolderPath('Desktop');"
+        "$l=Join-Path $d 'FAVERVIEW.lnk';"
+        "Nuevo $l;"
+        "Nuevo (Join-Path $env:FV_DIR 'FAVERVIEW.lnk');"
         "Write-Output $l"
     )
     env = {"FV_UV": uv, "FV_DIR": str(BASE_DIR), "FV_ICON": str(ICON)}
@@ -64,10 +67,12 @@ def create_shortcut(quiet: bool = False) -> bool:
 def ensure_shortcut() -> None:
     """Primer arranque: crea el acceso directo del Escritorio una sola vez (si lo borras, no se vuelve a crear;
     para recrearlo usa `uv run faverview --acceso-directo`)."""
-    if sys.platform != "win32" or MARKER.exists():
+    if sys.platform != "win32":
+        return
+    if MARKER.exists() and (BASE_DIR / "FAVERVIEW.lnk").exists():
         return
     if create_shortcut(quiet=True):
-        print("Se creó el acceso directo «FAVERVIEW» en tu Escritorio.")
+        print("Se creó el acceso directo «FAVERVIEW» en tu Escritorio y en la carpeta de la app.")
 
 
 def main() -> None:
