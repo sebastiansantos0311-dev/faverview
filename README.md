@@ -1,5 +1,7 @@
 # FAVERVIEW
 
+[![Pruebas](https://github.com/sebastiansantos0311-dev/faverview/actions/workflows/tests.yml/badge.svg)](https://github.com/sebastiansantos0311-dev/faverview/actions/workflows/tests.yml)
+
 Compara el **arte del cliente** (JPG, PNG, WEBP, BMP, TIFF o PDF) con **tu diseño** (PDF exportado) y marca las
 diferencias de texto, ortografía, color, elementos visuales y fuente. Todo corre en tu equipo y se usa desde el
 navegador. Solo necesita internet durante la instalación.
@@ -53,17 +55,57 @@ Desde entonces basta con hacer **doble clic en "FAVERVIEW"** en el Escritorio.
 
 1. Doble clic en el acceso directo **FAVERVIEW**, o ejecuta `uv run faverview` dentro de la carpeta.
 2. Se abre una ventana negra (el servidor) y el navegador con la app. **No cierres la ventana negra** mientras uses la app.
-3. Arrastra el arte del cliente (A) y tu diseño (B). Si algún PDF tiene varias páginas, elige la página.
-4. Pulsa **Comparar**.
+3. Arrastra el arte del cliente (A) y tu diseño (B). También puedes **pegar una imagen con Ctrl+V** o arrastrarla desde
+   WhatsApp Web o el correo. Si algún PDF tiene varias páginas, elige la página.
+4. Pulsa **Comparar**. Verás el progreso por etapas.
 5. Revisa las vistas: lado a lado, deslizador, diferencia y superpuesto. Rueda del ratón = zoom; arrastrar = mover.
 6. Haz clic en un error de la lista para hacer zoom en la zona. Usa los filtros, **Ignorar** o
    **Agregar al diccionario** (para marcas y nombres del cliente).
 7. **Sensibilidad** → ajusta los umbrales y pulsa **Recalcular**.
-8. **Descargar reporte PDF** genera el informe con miniaturas.
+8. **Descargar reporte PDF** genera el informe con miniaturas, el estado de cada error y tus comentarios.
 9. Para salir, cierra la ventana negra.
 
 Colores: 🔴 texto · 🟡 ortografía · 🟠 color · 🔵 elemento visual · 🟣 fuente.
 Semáforo: ≥ 98 % Aprobado · 90–98 % Revisar · < 90 % Con errores.
+
+### Funciones para el trabajo diario
+| Función | Cómo se usa |
+|---|---|
+| **Zonas a ignorar** | En el visor pulsa **Ignorar zona**, elige *todo / solo color / solo texto* y dibuja un rectángulo. Lo que caiga dentro se oculta y no cuenta en el %. Pulsa **Guardar como plantilla…** para reutilizarla con ese cliente (se sugiere sola por el nombre del archivo o el tamaño). |
+| **Alinear manualmente** | Si la alineación automática sale «mala» o «regular», marca 4 puntos equivalentes en cada imagen. |
+| **Versiones de mi diseño** | En «Qué quieres comparar» elige *Versiones (v1 vs. v2)*: compara el texto exacto (sin OCR), fuentes, colores y el render de dos PDF tuyos. |
+| **Verificar correcciones** | Con un resultado abierto pulsa **Verificar correcciones…** y sube el diseño corregido: te dice qué errores quedaron corregidos ✔, cuáles siguen ✘ y cuáles son nuevos. |
+| **Todas las páginas** | Si los PDF tienen varias páginas aparece **Comparar todas las páginas**: empareja por orden (o por parecido visual si el número difiere), resume cada página y genera un solo reporte PDF. |
+| **Checklist de aprobación** | Cada error tiene *Pendiente / Corregido / No aplica* y un comentario. Cuando no queda ninguno pendiente aparece **✔ Listo para enviar**. |
+| **Aprendizaje** | El botón **Aprendizaje** muestra lo que el OCR ha aprendido de tus casos revisados (vocabulario, confusiones, ajustes, modelo) y permite exportarlo o importarlo en otro equipo. |
+
+---
+
+## Cómo aprende el OCR
+
+Cada vez que guardas un caso revisado (**Modo revisión → Guardar como caso de prueba**) FAVERVIEW aprende, todo en local
+(`datos_locales/aprendizaje/`, nunca se sube a GitHub):
+
+1. **Vocabulario y patrones**: las marcas y nombres del diseño que no están en el diccionario dejan de marcarse como
+   error y se le pasan a Tesseract (`--user-words`, `--user-patterns`).
+2. **Confusiones**: si marcas un error de texto como *✘ Falso positivo*, se aprende qué letras suele confundir
+   (`rn→m`, `l→i`, `e→é`…). Una diferencia que se explique solo con confusiones vistas 3+ veces aparece como
+   «posible error de lectura» de severidad baja. **Nunca** se oculta un cambio de número (`10.000 → 12.000`).
+3. **Ajuste por tipo de imagen** (exportado, WhatsApp, foto, escaneo, captura): cada 5 casos se busca el mejor
+   preprocesado del OCR para cada tipo.
+4. **Re-entrenamiento** (opcional, con 300+ líneas revisadas): ajusta el modelo español de Tesseract; solo se activa si
+   mejora el banco de pruebas.
+
+```bash
+uv run faverview-aprender --resumen
+```
+```bash
+uv run faverview-aprender --ajustar
+```
+```bash
+uv run faverview-aprender --entrenar
+```
+También: `--original` (volver al modelo de fábrica), `--exportar aprendizaje.zip` y `--importar aprendizaje.zip`.
 
 ---
 
@@ -141,7 +183,16 @@ uv run python tests/make_samples.py
 ```bash
 uv run pytest
 ```
+```bash
+uv run python -m bench.run --sinteticos --etiqueta "mi cambio"
+```
+Cada `push` corre las pruebas y el banco de pruebas en GitHub Actions (pestaña *Actions*); el banco falla si el F1 de
+alguna categoría baja más de 2 puntos respecto a `bench/umbral_ci.json`. Para fijar un umbral nuevo después de una
+mejora: `uv run python -m bench.run --sinteticos --guardar-umbral`.
+
 Los resultados y el historial se guardan en `data/`. Se conservan 30 días, y `data/uploads` se vacía al iniciar.
+La app avisa (una vez al día, si hay internet) cuando hay una versión nueva; versión actual y cambios en
+[CHANGELOG.md](CHANGELOG.md).
 
 ---
 

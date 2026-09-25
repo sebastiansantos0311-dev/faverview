@@ -27,7 +27,7 @@ def load_previous(dirpath: Path, current_name: str, scope: str, contra: str | No
             d = json.loads(p.read_text(encoding="utf-8"))
         except Exception:
             continue
-        if d.get("scope") == scope and (not contra or contra.lower() in d.get("etiqueta", "").lower()):
+        if isinstance(d, dict) and d.get("scope") == scope and (not contra or contra.lower() in d.get("etiqueta", "").lower()):
             return d
     return None
 

@@ -64,7 +64,7 @@ def best_channel(crop: np.ndarray) -> np.ndarray:
     return best
 
 
-def binarize(chan: np.ndarray, method: str = "sauvola") -> np.ndarray:
+def binarize(chan: np.ndarray, method: str = "sauvola", k: float = 0.2) -> np.ndarray:
     """Devuelve una imagen 0/255 con texto oscuro sobre fondo claro."""
     if method == "otsu":
         _, th = cv2.threshold(chan, 0, 255, cv2.THRESH_BINARY + cv2.THRESH_OTSU)
@@ -75,18 +75,21 @@ def binarize(chan: np.ndarray, method: str = "sauvola") -> np.ndarray:
         if min(chan.shape[:2]) < win:
             win = (min(chan.shape[:2]) // 2) * 2 - 1
         win = max(win, 3)
-        th = threshold_sauvola(chan, window_size=win, k=0.2)
+        th = threshold_sauvola(chan, window_size=win, k=k)
         out = ((chan > th) * 255).astype(np.uint8)
     if out.mean() < 127:  # fondo oscuro (texto claro) -> invertir
         out = 255 - out
     return out
 
 
-def prep_crop(crop_rgb: np.ndarray, scale: float, method: str = "sauvola", channel: str = "best") -> np.ndarray:
+def prep_crop(crop_rgb: np.ndarray, scale: float, method: str = "sauvola", channel: str = "best",
+              k: float = 0.2, blur: float = 0.0) -> np.ndarray:
     chan = best_channel(crop_rgb) if channel == "best" else cv2.cvtColor(crop_rgb, cv2.COLOR_RGB2GRAY)
     interp = cv2.INTER_CUBIC if scale > 1 else cv2.INTER_AREA
     chan = cv2.resize(chan, None, fx=scale, fy=scale, interpolation=interp)
-    b = binarize(chan, method)
+    if blur > 0:
+        chan = cv2.GaussianBlur(chan, (0, 0), blur)
+    b = binarize(chan, method, k)
     return cv2.copyMakeBorder(b, BORDER, BORDER, BORDER, BORDER, cv2.BORDER_CONSTANT, value=255)
 
 
@@ -118,11 +121,12 @@ def _mean_conf(words: list[Word]) -> float:
 
 
 # ---------------------------------------------------------------------------------- lectura por línea
-def line_zone(line: Line, lines: list[Line], quality: float, W: int, H: int) -> tuple[int, int, int, int]:
+def line_zone(line: Line, lines: list[Line], quality: float, W: int, H: int,
+              base: float = 0.25) -> tuple[int, int, int, int]:
     """Zona de recorte de una línea: 25% de margen (más si la alineación es mala) y, hacia los lados, todo el
     espacio libre (hasta 35% del ancho) para no cortar texto si el cliente usa una fuente más grande."""
     h = max(line.h, 8.0)
-    slack = 0.25 + (0.5 * (1 - min(max(quality, 0.0), 1.0)) if quality < 0.9 else 0.0)
+    slack = base + (0.5 * (1 - min(max(quality, 0.0), 1.0)) if quality < 0.9 else 0.0)
     left = right = slack * h
     lw = line.bbox[2] - line.bbox[0]
     free = 0.35 * lw
@@ -145,25 +149,31 @@ def line_zone(line: Line, lines: list[Line], quality: float, W: int, H: int) -> 
                  and min(o.bbox[3], line.bbox[3]) - max(o.bbox[1], line.bbox[1]) >= 0.3 * min(o.h, line.h)
                  for o in lines):
         right = max(right, free)
-    my = 0.25 * h
+    my = base * h
     return (max(0, int(line.bbox[0] - left)), max(0, int(line.bbox[1] - my)),
             min(W, int(line.bbox[2] + right)), min(H, int(line.bbox[3] + my)))
 
 
+DEFAULT_TUNE = {"target_px": 40, "method": "sauvola", "k": 0.2, "blur": 0.0, "psm": 7, "margin": 0.25}
+
+
 def read_line(img: np.ndarray, line: Line, cfg: dict, quality: float, extra: str = "",
-              zone: tuple | None = None) -> tuple[list[Word], float]:
+              zone: tuple | None = None, tune: dict | None = None) -> tuple[list[Word], float]:
+    t = {**DEFAULT_TUNE, **(tune or {})}
     H, W = img.shape[:2]
     h = max(line.h, 8.0)
-    x0, y0, x1, y1 = zone or line_zone(line, [line], quality, W, H)
+    x0, y0, x1, y1 = zone or line_zone(line, [line], quality, W, H, t["margin"])
     crop = img[y0:y1, x0:x1]
     if crop.shape[0] < 4 or crop.shape[1] < 4:
         return [], 0.0
-    scale = float(np.clip(TARGET_LETTER_PX / h, 0.5, 4.0))
+    scale = float(np.clip(t["target_px"] / h, 0.5, 4.0))
     expected = " ".join(w.text for w in line.words)
-    attempts = [("sauvola", "best", 7, 1.0), ("otsu", "gray", 7, 1.0), ("sauvola", "gray", 6, 1.3), ("sauvola", "best", 7, 0.75)]
+    other = "otsu" if t["method"] == "sauvola" else "sauvola"
+    attempts = [(t["method"], "best", t["psm"], 1.0), (other, "gray", 7, 1.0), ("sauvola", "gray", 6, 1.3),
+                (t["method"], "best", 7, 0.75)]
     best, best_key = ([], 0.0), None
     for k, (method, chan, psm, sm) in enumerate(attempts):
-        img_p = prep_crop(crop, scale * sm, method, chan)
+        img_p = prep_crop(crop, scale * sm, method, chan, t["k"], t["blur"])
         words = _words_from_data(_tess(img_p, cfg, psm, extra), x0, y0, scale * sm)
         conf = _mean_conf(words)
         sim = fuzz.ratio(" ".join(w.text for w in words).lower(), expected.lower()) if words else 0
@@ -189,7 +199,7 @@ def _fill_zones(img: np.ndarray, boxes) -> np.ndarray:
 
 def ocr_page_adaptive(img: np.ndarray, cfg: dict, min_conf: float = 50, extra: str = "") -> list[Word]:
     """OCR de página completa con umbral adaptativo (mejor que Otsu global con fondos de color o degradados)."""
-    if not setup_tesseract():
+    if not setup_tesseract(cfg):
         raise OcrUnavailable("Tesseract no está instalado. Instálalo con: winget install UB-Mannheim.TesseractOCR")
     scale = 2.0 if img.shape[1] < 1500 else 1.0
     chan = best_channel(img)
@@ -279,15 +289,17 @@ def _alnum_ok(t: str) -> bool:
 
 
 def compare_guided(spans: list[TextSpan], client: np.ndarray, cfg: dict, quality: float,
-                   extra: str = "") -> TextResult:
-    if not setup_tesseract():
+                   extra: str = "", tune: dict | None = None) -> TextResult:
+    if not setup_tesseract(cfg):
         raise OcrUnavailable("Tesseract no está instalado. Instálalo con: winget install UB-Mannheim.TesseractOCR")
     lines = lines_from_layout(spans)
     H, W = client.shape[:2]
 
     with ThreadPoolExecutor(max_workers=4) as ex:
-        zones_px = [line_zone(ln, lines, quality, W, H) for ln in lines]
-        reads = list(ex.map(lambda a: read_line(client, a[0], cfg, quality, extra, a[1]), zip(lines, zones_px)))
+        base = float((tune or {}).get("margin", 0.25))
+        zones_px = [line_zone(ln, lines, quality, W, H, base) for ln in lines]
+        reads = list(ex.map(lambda a: read_line(client, a[0], cfg, quality, extra, a[1], tune),
+                            zip(lines, zones_px)))
 
     res = TextResult()
     zones = []

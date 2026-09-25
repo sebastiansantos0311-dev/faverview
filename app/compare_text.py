@@ -45,7 +45,7 @@ class OcrUnavailable(RuntimeError):
 
 
 def ocr_words(img: np.ndarray, cfg: dict) -> list[Word]:
-    if not setup_tesseract():
+    if not setup_tesseract(cfg):
         raise OcrUnavailable("Tesseract no está instalado. Instálalo con: winget install UB-Mannheim.TesseractOCR")
     gray = cv2.cvtColor(img, cv2.COLOR_RGB2GRAY)
     scale = 2.0 if img.shape[1] < 1500 else 1.0

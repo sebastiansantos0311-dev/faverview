@@ -458,6 +458,15 @@ def variants():
     ]
 
 
+# tipo de arte que imita cada variante (para las tablas por tipo de imagen)
+TIPO_POR_VARIANTE = {
+    "identico": "exportado", "numero": "exportado", "fuente_tamano": "exportado", "color_sutil": "exportado",
+    "tilde": "whatsapp", "palabra_agregada": "whatsapp",
+    "palabra_quitada": "foto", "color": "foto", "logo": "foto", "mixto": "foto", "negrita": "foto",
+    "cmyk_marco": "captura", "cmyk_pdf": "cmyk",
+}
+
+
 def generate(out: Path = OUT_DEFAULT, seed: int = 1000, quiet=False) -> int:
     if out.exists():
         shutil.rmtree(out)
@@ -491,7 +500,7 @@ def generate(out: Path = OUT_DEFAULT, seed: int = 1000, quiet=False) -> int:
             degrade(client_img, deg, rng, cdir / "cliente.jpg")
             words = order_words(layout_words(cspans))
             (cdir / "esperado.json").write_text(json.dumps({
-                "caso": case, "tipo": "sintetico", "cliente": "cliente.jpg", "diseno": "diseno.pdf",
+                "caso": case, "tipo": TIPO_POR_VARIANTE.get(vname, "exportado"), "variante": vname, "cliente": "cliente.jpg", "diseno": "diseno.pdf",
                 "pagina_cliente": 1, "pagina_diseno": 1, "degradaciones": deg,
                 "errores": errors, "texto_cliente": " ".join(w.text for w in words), "notas": ""},
                 ensure_ascii=False, indent=1), encoding="utf-8")

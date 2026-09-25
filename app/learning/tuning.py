@@ -1,0 +1,183 @@
+"""Nivel 3 – auto-ajuste del preprocesado del OCR por tipo de imagen.
+
+Las etiquetas salen gratis: en las líneas donde el usuario NO marcó un error de texto, el arte del cliente dice
+exactamente lo que dice el PDF del diseño. Se busca (búsqueda por coordenadas sobre una rejilla) la combinación de
+parámetros de preprocesado que minimiza el CER en esas líneas, por tipo de imagen."""
+import json
+import threading
+import time
+from concurrent.futures import ThreadPoolExecutor
+from datetime import datetime
+from pathlib import Path
+
+import numpy as np
+from rapidfuzz.distance import Levenshtein
+
+from ..config import DATOS_DIR, load_config
+from . import store
+
+OPTIONS = {
+    "target_px": [30, 40, 50, 60],
+    "method": ["sauvola", "otsu"],
+    "k": [0.1, 0.2, 0.3],
+    "blur": [0.0, 1.0],
+    "psm": [7, 13],
+    "margin": [0.15, 0.25, 0.4],
+}
+MIN_LINES = 8
+MIN_GAIN = 0.05  # se adopta solo si el CER baja al menos 5% (relativo)
+_running = threading.Event()
+
+
+def params_for(tipo: str | None) -> dict | None:
+    if not tipo or not store.enabled():
+        return None
+    ent = store.load_json("ajustes_ocr.json", {}).get(tipo)
+    return ent["params"] if ent else None
+
+
+def _norm(t: str) -> str:
+    return " ".join(t.lower().split())
+
+
+def collect_samples(tipo: str | None, max_per_case: int = 12, max_total: int = 70) -> dict[str, list]:
+    """Recortes de líneas 'de verdad conocida' agrupados por tipo de imagen."""
+    from ..align import align_images
+    from ..loaders import extract_pdf_layout, load_as_image
+    from ..ocr_guided import Line, lines_from_layout
+    from ..photometry import normalize_illumination
+
+    cfg = load_config()
+    dpi = float(cfg["render_dpi"])
+    casos = DATOS_DIR / "casos"
+    out: dict[str, list] = {}
+    if not casos.exists():
+        return out
+    for cdir in sorted(casos.iterdir()):
+        ej = cdir / "esperado.json"
+        if not ej.exists():
+            continue
+        exp = json.loads(ej.read_text(encoding="utf-8"))
+        t = exp.get("tipo", "exportado")
+        if tipo and t != tipo:
+            continue
+        if len(out.get(t, [])) >= max_total:
+            continue
+        try:
+            design_p, client_p = cdir / exp["diseno"], cdir / exp["cliente"]
+            pd, pc = exp.get("pagina_diseno", 1) - 1, exp.get("pagina_cliente", 1) - 1
+            design = load_as_image(design_p, dpi, pd)
+            client_raw = load_as_image(client_p, dpi, pc)
+            spans = extract_pdf_layout(design_p, dpi, pd)
+            al = align_images(design, client_raw)
+            client, _ = normalize_illumination(design, al.aligned_client, al.valid_mask)
+        except Exception:
+            continue
+        errs = [e["bbox"] for e in exp.get("errores", []) if e.get("categoria") in ("text", "spelling")]
+        lines = lines_from_layout(spans)
+        good = []
+        for ln in lines:
+            x0, y0, x1, y1 = ln.bbox
+            if any(min(x1, bx + bw) > max(x0, bx) and min(y1, by + bh) > max(y0, by) for bx, by, bw, bh in errs):
+                continue
+            good.append(ln)
+        rng = np.random.default_rng(len(good))
+        if len(good) > max_per_case:
+            good = [good[i] for i in rng.choice(len(good), max_per_case, replace=False)]
+        H, W = client.shape[:2]
+        for ln in good:
+            h = max(ln.h, 8.0)
+            mx, my = int(0.6 * (ln.bbox[2] - ln.bbox[0])) + 20, int(1.2 * h)
+            x0, y0 = max(0, int(ln.bbox[0]) - mx), max(0, int(ln.bbox[1]) - my)
+            x1, y1 = min(W, int(ln.bbox[2]) + mx), min(H, int(ln.bbox[3]) + my)
+            sub = client[y0:y1, x0:x1].copy()
+            rel = Line(ln.spans, [type(w)(w.text, (w.bbox[0] - x0, w.bbox[1] - y0, w.bbox[2] - x0, w.bbox[3] - y0))
+                                  for w in ln.words],
+                       (ln.bbox[0] - x0, ln.bbox[1] - y0, ln.bbox[2] - x0, ln.bbox[3] - y0))
+            out.setdefault(t, []).append((sub, rel, al.alignment_quality))
+    return out
+
+
+def evaluate(params: dict, samples: list, cfg: dict, extra: str = "") -> float:
+    """CER medio de leer las líneas con estos parámetros."""
+    from ..ocr_guided import read_line
+
+    def one(s):
+        sub, ln, q = s
+        H, W = sub.shape[:2]
+        words, _ = read_line(sub, ln, cfg, q, extra, None, params)
+        want = _norm(" ".join(w.text for w in ln.words))
+        got = _norm(" ".join(w.text for w in sorted(words, key=lambda w: w.bbox[0])))
+        return Levenshtein.distance(want, got) / max(1, len(want))
+
+    with ThreadPoolExecutor(max_workers=4) as ex:
+        vals = list(ex.map(one, samples))
+    return float(np.mean(vals)) if vals else 1.0
+
+
+def tune_type(tipo: str, samples: list, log=print) -> dict:
+    from ..ocr_guided import DEFAULT_TUNE
+    from . import vocab
+
+    cfg = load_config()
+    extra = vocab.ocr_extra_config()
+    cur = dict(DEFAULT_TUNE)
+    base = evaluate(cur, samples, cfg, extra)
+    best = base
+    log(f"[{tipo}] {len(samples)} líneas · CER inicial {base * 100:.2f}%")
+    for _ in range(2):  # dos pasadas de búsqueda por coordenadas
+        improved = False
+        for key, values in OPTIONS.items():
+            for v in values:
+                if v == cur[key]:
+                    continue
+                trial = {**cur, key: v}
+                c = evaluate(trial, samples, cfg, extra)
+                if c < best - 0.002:
+                    best, cur, improved = c, trial, True
+                    log(f"  {key}={v} → CER {c * 100:.2f}%")
+        if not improved:
+            break
+    adopted = best <= base * (1 - MIN_GAIN)
+    return {"params": cur, "cer_antes": round(base, 4), "cer_despues": round(best, 4), "lineas": len(samples),
+            "fecha": datetime.now().isoformat(timespec="seconds"), "adoptado": adopted}
+
+
+def autotune(tipo: str | None = None, log=print) -> dict:
+    """Ajusta el preprocesado para cada tipo con suficientes líneas revisadas. Devuelve un resumen."""
+    if _running.is_set():
+        return {"estado": "ya se está ejecutando"}
+    _running.set()
+    try:
+        groups = collect_samples(tipo)
+        ajustes = store.load_json("ajustes_ocr.json", {})
+        resumen = {}
+        for t, samples in groups.items():
+            if len(samples) < MIN_LINES:
+                resumen[t] = {"estado": f"pocas líneas ({len(samples)} < {MIN_LINES})"}
+                continue
+            res = tune_type(t, samples, log)
+            resumen[t] = res
+            if res["adoptado"]:
+                ajustes[t] = {k: res[k] for k in ("params", "cer_antes", "cer_despues", "lineas", "fecha")}
+            else:
+                ajustes.pop(t, None)
+        store.save_json("ajustes_ocr.json", ajustes)
+        st = store.state()
+        st["ultimo_autoajuste_en"] = st["casos_revisados"]
+        st["ultimo_autoajuste"] = datetime.now().isoformat(timespec="seconds")
+        store.save_json("estado.json", st)
+        return resumen
+    finally:
+        _running.clear()
+
+
+def is_running() -> bool:
+    return _running.is_set()
+
+
+def autotune_background() -> None:
+    """Se ejecuta cada N casos revisados, en segundo plano."""
+    if _running.is_set():
+        return
+    threading.Thread(target=lambda: autotune(log=lambda *_: None), daemon=True).start()

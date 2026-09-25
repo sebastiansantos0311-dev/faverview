@@ -1,0 +1,38 @@
+name: Pruebas
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  pruebas:
+    runs-on: windows-latest
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Instalar uv
+        uses: astral-sh/setup-uv@v5
+
+      - name: Instalar Tesseract (OCR)
+        shell: pwsh
+        run: |
+          choco install tesseract --no-progress -y
+          "C:\Program Files\Tesseract-OCR" | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
+
+      - name: Instalar dependencias
+        run: uv sync
+
+      - name: Pruebas unitarias
+        run: uv run pytest -q
+
+      - name: Banco de pruebas (casos sintéticos)
+        run: uv run python -m bench.run --sinteticos --ci --workers 2 --etiqueta "CI"
+
+      - name: Guardar reporte del banco de pruebas
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: bench-reporte
+          path: datos_locales/bench_resultados/
+          if-no-files-found: ignore

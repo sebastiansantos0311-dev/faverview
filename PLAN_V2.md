@@ -270,56 +270,56 @@ potente. Todo es local y se guarda en `datos_locales/aprendizaje/`.
 > - cualquier cambio de modelo o de ajustes se adopta solo si mejora el banco de pruebas.
 
 ### Nivel 1 – Vocabulario y patrones (inmediato)
-- [ ] Cada caso revisado agrega las palabras del diseño confirmadas (marcas, nombres, productos, direcciones) a
+- [x] Cada caso revisado agrega las palabras del diseño confirmadas (marcas, nombres, productos, direcciones) a
       `vocabulario.txt`, con conteo de frecuencia.
-- [ ] Se pasa a Tesseract como `--user-words` y `--user-patterns` (patrones: precios `\$\d+.\d\d\d`, teléfonos,
+- [x] Se pasa a Tesseract como `--user-words` y `--user-patterns` (patrones: precios `\$\d+.\d\d\d`, teléfonos,
       fechas, porcentajes, correos). Usar `-c load_system_dawg=1` y `-c user_words_suffix` según haga falta.
-- [ ] El corrector ortográfico no marca palabras del vocabulario aprendido.
+- [x] El corrector ortográfico no marca palabras del vocabulario aprendido.
 
 ### Nivel 2 – Confusiones aprendidas
-- [ ] Cuando el usuario marca ✘ un error de texto (el OCR leyó mal), se guarda el par
+- [x] Cuando el usuario marca ✘ un error de texto (el OCR leyó mal), se guarda el par
       `(leído, correcto)` y se extraen las confusiones de caracteres (`rn→m`, `O→0`, `l→1`, `é→e`, `,→.`) con
       su contexto (fuente, tamaño y tipo de imagen). Guardar en `confusiones.json` con conteos.
-- [ ] Al comparar: si la diferencia entre el texto leído y el esperado se explica **solo** por confusiones vistas
+- [x] Al comparar: si la diferencia entre el texto leído y el esperado se explica **solo** por confusiones vistas
       ≥ 3 veces (y no incluye dígito↔dígito), entonces:
       1. reintentar el OCR de ese recorte con más escala u otro preprocesado,
       2. si persiste, reportar como **"posible error de lectura"** (severidad baja, categoría `text`,
          subtipo `ocr_dudoso`), no como error.
-- [ ] Panel "Aprendizaje" en la UI: lista de confusiones aprendidas, con la opción de borrar una.
+- [x] Panel "Aprendizaje" en la UI: lista de confusiones aprendidas, con la opción de borrar una.
 
 ### Nivel 3 – Auto-ajuste del preprocesado por tipo de imagen
-- [ ] Clasificar el arte del cliente con reglas simples (sin IA): `exportado`, `whatsapp` (JPEG con dimensiones
+- [x] Clasificar el arte del cliente con reglas simples (sin IA): `exportado`, `whatsapp` (JPEG con dimensiones
       típicas de WhatsApp y calidad baja), `foto` (EXIF de cámara, perspectiva, iluminación irregular), `escaneo`
       (EXIF de escáner o dpi 150–600 con fondo gris) y `captura` (marco de UI detectado).
-- [ ] `uv run faverview-aprender --ajustar`: búsqueda en rejilla sobre los casos revisados de cada tipo, variando
+- [x] `uv run faverview-aprender --ajustar`: búsqueda en rejilla sobre los casos revisados de cada tipo, variando
       la escala objetivo, el tipo de umbral, el tamaño de la ventana Sauvola, el desenfoque previo, el psm y el
       margen del recorte. Elegir la combinación con el menor CER + mejor F1 de texto.
-- [ ] Guardar en `ajustes_ocr.json` por tipo y usarlo automáticamente.
-- [ ] Se ejecuta automáticamente cada 5 casos nuevos revisados (en segundo plano, con un aviso en la UI).
+- [x] Guardar en `ajustes_ocr.json` por tipo y usarlo automáticamente.
+- [x] Se ejecuta automáticamente cada 5 casos nuevos revisados (en segundo plano, con un aviso en la UI).
 
 ### Nivel 4 – Re-entrenamiento de Tesseract (opcional, con ≥ 300 líneas revisadas)
-- [ ] Por cada línea con OCR confirmado o corregido, guardar en `aprendizaje/lineas/` el recorte `.png` + `.gt.txt`
+- [x] Por cada línea con OCR confirmado o corregido, guardar en `aprendizaje/lineas/` el recorte `.png` + `.gt.txt`
       (texto correcto sacado del PDF). Solo de casos que el usuario revisó.
-- [ ] `uv run faverview-aprender --entrenar`: *fine-tuning* del modelo `spa` (tessdata_best) con
+- [x] `uv run faverview-aprender --entrenar`: *fine-tuning* del modelo `spa` (tessdata_best) con
       `lstmtraining` (herramientas de entrenamiento incluidas en el instalador UB-Mannheim de Tesseract;
       **verificar** que `lstmtraining.exe` y `combine_tessdata.exe` existen; si no, documentar la alternativa con
       WSL + tesstrain).
   - 90% entrenamiento / 10% validación, pocas iteraciones (≈ 400–1000) y tasa de aprendizaje baja para no
     "olvidar" el español general.
   - Resultado: `datos_locales/aprendizaje/modelos/spa_fv.traineddata`.
-- [ ] **Prueba A/B** automática con el banco de pruebas: si el CER y el F1 de texto mejoran respecto al modelo
+- [x] **Prueba A/B** automática con el banco de pruebas: si el CER y el F1 de texto mejoran respecto al modelo
       base, se activa (`"ocr_lang": "spa_fv+spa+eng"`). Si no, se descarta y se informa.
-- [ ] Botón "Volver al modelo original".
+- [x] Botón "Volver al modelo original".
 
 ### Portabilidad del aprendizaje
-- [ ] **Exportar/Importar aprendizaje** (ZIP) desde la UI, para llevarlo a otro equipo. Por defecto incluye solo el
+- [x] **Exportar/Importar aprendizaje** (ZIP) desde la UI, para llevarlo a otro equipo. Por defecto incluye solo el
       vocabulario, los patrones, las confusiones, los ajustes y el modelo entrenado; **no** incluye imágenes de
       clientes (casilla opcional "incluir recortes de entrenamiento", con aviso de privacidad).
 
 ### Checklist Fase 7
-- [ ] Nivel 1 · [ ] Nivel 2 · [ ] Nivel 3 · [ ] Nivel 4 (opcional)
-- [ ] Exportar/Importar
-- [ ] Pruebas: una confusión aprendida no oculta `10.000 → 12.000`; el vocabulario evita la marca ortográfica
+- [x] Nivel 1 · [ ] Nivel 2 · [ ] Nivel 3 · [ ] Nivel 4 (opcional)
+- [x] Exportar/Importar
+- [x] Pruebas: una confusión aprendida no oculta `10.000 → 12.000`; el vocabulario evita la marca ortográfica
       de una marca registrada
 - [ ] Corrida `--etiqueta "F7 aprendizaje"`, con la curva de CER vs número de casos revisados (5, 10, 15, 20)
 
@@ -328,63 +328,63 @@ potente. Todo es local y se guarda en `datos_locales/aprendizaje/`.
 ## 6. Fase 8 – Funciones para el trabajo diario
 
 ### 8.1 Zonas a ignorar y plantillas por cliente (`ignore_zones.py`)
-- [ ] En el visor: herramienta **"Ignorar zona"** (dibujar un rectángulo). Las diferencias dentro de la zona se
+- [x] En el visor: herramienta **"Ignorar zona"** (dibujar un rectángulo). Las diferencias dentro de la zona se
       ocultan y no cuentan en el %.
-- [ ] Guardar las zonas como **plantilla** con nombre (p. ej. "Cliente Pérez – volante"), en coordenadas
+- [x] Guardar las zonas como **plantilla** con nombre (p. ej. "Cliente Pérez – volante"), en coordenadas
       relativas (0–1) al diseño, en `datos_locales/plantillas/<nombre>.json`.
-- [ ] Selector de plantilla antes de comparar; sugerencia automática si el nombre del archivo o el tamaño coinciden.
-- [ ] Opción por zona: ignorar todo / solo color / solo texto.
+- [x] Selector de plantilla antes de comparar; sugerencia automática si el nombre del archivo o el tamaño coinciden.
+- [x] Opción por zona: ignorar todo / solo color / solo texto.
 
 ### 8.2 Pegar con Ctrl+V y arrastrar desde el navegador
-- [ ] `paste` en la página: si el portapapeles trae una imagen, cargarla como **arte del cliente** (o preguntar
+- [x] `paste` en la página: si el portapapeles trae una imagen, cargarla como **arte del cliente** (o preguntar
       si es para A o B).
-- [ ] Aceptar imágenes arrastradas desde WhatsApp Web o el correo (`dataTransfer` con `image/*` o URL `blob:`).
+- [x] Aceptar imágenes arrastradas desde WhatsApp Web o el correo (`dataTransfer` con `image/*` o URL `blob:`).
 
 ### 8.3 Comparar versiones de mi diseño (v1 vs v2)
-- [ ] Modo "Versiones": subir `diseno_v1.pdf` y `diseno_v2.pdf`. Como ambos son vectoriales, comparar el texto
+- [x] Modo "Versiones": subir `diseno_v1.pdf` y `diseno_v2.pdf`. Como ambos son vectoriales, comparar el texto
       exacto (sin OCR), las fuentes, los colores de los spans y el render visual.
-- [ ] Opción "verificar correcciones": cargar el resultado anterior y mostrar cuáles errores quedaron
+- [x] Opción "verificar correcciones": cargar el resultado anterior y mostrar cuáles errores quedaron
       **corregidos** ✔ y cuáles **siguen** ✘.
 
 ### 8.4 Lote de páginas
-- [ ] Si ambos PDF tienen varias páginas: "Comparar todas", emparejando por orden (o por similitud visual si el
+- [x] Si ambos PDF tienen varias páginas: "Comparar todas", emparejando por orden (o por similitud visual si el
       número de páginas difiere).
-- [ ] Resumen por página (%, estado) y reporte PDF único con todas las páginas.
-- [ ] Procesar en segundo plano con progreso por página.
+- [x] Resumen por página (%, estado) y reporte PDF único con todas las páginas.
+- [x] Procesar en segundo plano con progreso por página.
 
 ### 8.5 Checklist de aprobación
-- [ ] En cada error: **Pendiente / Corregido / No aplica**, con un comentario opcional.
-- [ ] Estado global: "Listo para enviar" cuando no queda ningún error pendiente.
-- [ ] El reporte PDF incluye el estado y los comentarios de cada error.
-- [ ] Se guarda en el historial.
+- [x] En cada error: **Pendiente / Corregido / No aplica**, con un comentario opcional.
+- [x] Estado global: "Listo para enviar" cuando no queda ningún error pendiente.
+- [x] El reporte PDF incluye el estado y los comentarios de cada error.
+- [x] Se guarda en el historial.
 
 ### Checklist Fase 8
-- [ ] 8.1 · [ ] 8.2 · [ ] 8.3 · [ ] 8.4 · [ ] 8.5
+- [x] 8.1 · [ ] 8.2 · [ ] 8.3 · [ ] 8.4 · [ ] 8.5
 
 ---
 
 ## 7. Fase 9 – Mantenimiento
 
 ### 9.1 GitHub Actions (`.github/workflows/tests.yml`)
-- [ ] En cada `push` y pull request: runner `windows-latest`, instalar uv (`astral-sh/setup-uv`), instalar Tesseract
+- [x] En cada `push` y pull request: runner `windows-latest`, instalar uv (`astral-sh/setup-uv`), instalar Tesseract
       (`choco install tesseract` o descarga del instalador UB-Mannheim), `uv sync`, `uv run pytest` y
       `uv run python -m bench.run --sinteticos --ci`.
-- [ ] `--ci` falla si el F1 de alguna categoría baja más de 2 puntos respecto a `bench/umbral_ci.json`
+- [x] `--ci` falla si el F1 de alguna categoría baja más de 2 puntos respecto a `bench/umbral_ci.json`
       (versionado).
-- [ ] Insignia de estado de las pruebas en el `README.md`.
+- [x] Insignia de estado de las pruebas en el `README.md`.
 
 ### 9.2 Aviso de actualización (`app/updates.py`)
-- [ ] Al iniciar (máximo 1 vez al día y solo si hay internet, con un timeout de 3 s): `git fetch` y comparar con
+- [x] Al iniciar (máximo 1 vez al día y solo si hay internet, con un timeout de 3 s): `git fetch` y comparar con
       `origin/main`. Si hay commits nuevos, mostrar un aviso en la UI: "Hay una versión nueva. Cierra la app y
       ejecuta `git pull`." (o un botón "Actualizar" que ejecute `git pull` y pida reiniciar).
-- [ ] Nunca bloquear el arranque si no hay red.
+- [x] Nunca bloquear el arranque si no hay red.
 
 ### 9.3 Versionado
-- [ ] `version` en `pyproject.toml` (1.x → 2.0.0 al terminar la v2), `CHANGELOG.md` en español y etiquetas git `v2.0.0`.
-- [ ] La versión se muestra en el pie de la UI.
+- [x] `version` en `pyproject.toml` (1.x → 2.0.0 al terminar la v2), `CHANGELOG.md` en español y etiquetas git `v2.0.0`.
+- [x] La versión se muestra en el pie de la UI.
 
 ### Checklist Fase 9
-- [ ] 9.1 · [ ] 9.2 · [ ] 9.3
+- [x] 9.1 · [ ] 9.2 · [ ] 9.3
 
 ---
 

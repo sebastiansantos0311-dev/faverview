@@ -75,7 +75,7 @@ def _thumb(design, client, bbox) -> np.ndarray:
 def build_report(result: Result, results_dir: Path, out_path: Path) -> Path:
     design = _load(results_dir / result.images["design"])
     client = _load(results_dir / result.images["client"])
-    diffs = result.differences
+    diffs = [d for d in result.differences if not d.ignored_by_zone]
     doc = pymupdf.open()
 
     # ---- portada
@@ -102,6 +102,15 @@ def build_report(result: Result, results_dir: Path, out_path: Path) -> Path:
         p.insert_text((490, y + 10), f"{v:.1f}%", fontsize=11)
         y += 26
     y += 14
+    vivos = [d for d in result.differences if not d.ignored_by_zone]
+    pend = sum(d.status == "pendiente" for d in vivos)
+    ok = (pend == 0)
+    p.insert_text((50, y), "Listo para enviar" if ok else f"{pend} error(es) pendiente(s) de corregir",
+                  fontsize=14, fontname="hebo", color=(0.09, 0.64, 0.29) if ok else (0.8, 0.15, 0.15))
+    y += 22
+    if result.fix_report:
+        p.insert_text((50, y), "Verificación de correcciones: " + result.fix_report["resumen"], fontsize=11)
+        y += 18
     p.insert_text((50, y), f"Errores encontrados: {len(diffs)}", fontsize=14, fontname="hebo")
     y += 22
     for cat, n in sorted(result.counts.items()):
@@ -136,7 +145,8 @@ def build_report(result: Result, results_dir: Path, out_path: Path) -> Path:
     for start in range(0, max(1, len(diffs)), per_page):
         tp = doc.new_page(width=595, height=842)
         tp.insert_text((40, 36), "Lista de errores", fontsize=14, fontname="hebo")
-        heads = [(40, "#"), (62, "Categoría"), (140, "Cliente dice"), (270, "Diseño dice"), (410, "Zona (cliente | diseño)")]
+        heads = [(40, "#"), (62, "Categoría"), (128, "Cliente dice"), (222, "Diseño dice"), (318, "Zona (cliente | diseño)"),
+                 (470, "Estado / comentario")]
         for x, t in heads:
             tp.insert_text((x, 54), t, fontsize=9, fontname="hebo")
         if not diffs:
@@ -148,14 +158,18 @@ def build_report(result: Result, results_dir: Path, out_path: Path) -> Path:
             tp.draw_rect(pymupdf.Rect(40, y0 + 2, 54, y0 + 16), color=None, fill=_norm(c))
             tp.insert_text((42, y0 + 13), str(d.id), fontsize=8, color=(1, 1, 1))
             lbl = CAT_NAME[d.category] + ("\n" + d.subtype.replace("_", " ") if d.subtype else "")
-            tp.insert_textbox(pymupdf.Rect(62, y0, 136, y0 + row_h - 4), lbl, fontsize=9)
+            tp.insert_textbox(pymupdf.Rect(62, y0, 124, y0 + row_h - 4), lbl, fontsize=8)
             left, right = _sides(d)
-            tp.insert_textbox(pymupdf.Rect(140, y0, 266, y0 + row_h - 4), _clean(left), fontsize=9)
-            tp.insert_textbox(pymupdf.Rect(270, y0, 406, y0 + row_h - 4), _clean(right), fontsize=9)
+            tp.insert_textbox(pymupdf.Rect(128, y0, 218, y0 + row_h - 4), _clean(left), fontsize=8)
+            tp.insert_textbox(pymupdf.Rect(222, y0, 314, y0 + row_h - 4), _clean(right), fontsize=8)
             th = _thumb(design, client, d.bbox)
             tw = min(140.0, th.shape[1] * 0.75)
-            tp.insert_image(pymupdf.Rect(410, y0, 410 + tw, y0 + tw * th.shape[0] / th.shape[1]),
+            tp.insert_image(pymupdf.Rect(318, y0, 318 + tw, y0 + tw * th.shape[0] / th.shape[1]),
                             stream=_png(th))
+            est = {"pendiente": "Pendiente", "corregido": "Corregido", "no_aplica": "No aplica"}[d.status]
+            tp.insert_textbox(pymupdf.Rect(470, y0, 556, y0 + row_h - 4),
+                              est + ("\n" + _clean(d.comment) if d.comment else ""), fontsize=8,
+                              color=(0.09, 0.5, 0.25) if d.status == "corregido" else (0, 0, 0))
         if not diffs:
             break
 

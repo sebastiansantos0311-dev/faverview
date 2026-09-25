@@ -5,13 +5,15 @@ from pathlib import Path
 
 import numpy as np
 
-from . import history
+from . import history, ignore_zones
 from .align import align_images
 from .compare_color import grid_color_diffs, text_color_diffs
 from .compare_text import (OcrUnavailable, Word, _missing_diff, compare_words, layout_words, ocr_words)
 from .compare_visual import compare_visual, make_outputs, save_jpg
 from .config import CFG, RESULTS_DIR, load_config
 from .fonts import compare_fonts, fonts_in_design
+from .learning import confusions, store as learning_store, tuning, vocab
+from .learning.imagetype import classify as classify_image
 from .photometry import normalize_illumination
 from .ocr_guided import compare_guided, ocr_page_adaptive, read_region
 from .loaders import color_space, extract_pdf_layout, load_as_image, page_count, validate_file
@@ -112,6 +114,19 @@ class _Timer:
                 self._cb(nxt[0], STAGES[i][2], nxt[1])
 
 
+def _resolve_zones(params: dict | None) -> tuple[list[dict], str | None]:
+    """Zonas de la plantilla indicada + zonas dibujadas a mano (coordenadas relativas 0–1)."""
+    zones, template = [], None
+    p = params or {}
+    if p.get("template"):
+        t = ignore_zones.load_template(p["template"])
+        if t:
+            zones += t["zonas"]
+            template = t["nombre"]
+    zones += [ignore_zones.normalize_zone(z) for z in (p.get("zones") or [])]
+    return zones, template
+
+
 def run_comparison(job_id: str, client_path, design_path, params: dict | None = None,
                    client_page: int = 0, design_page: int = 0,
                    client_name: str = "", design_name: str = "",
@@ -152,7 +167,19 @@ def run_comparison(job_id: str, client_path, design_path, params: dict | None = 
     if normalized:
         notes_flags.append("iluminación corregida")
     tm.mark("alinear")
-    vis = compare_visual(design, client, cfg, valid)
+    # zonas a ignorar (Fase 8.1): en la comparación visual y de color esas zonas se igualan al diseño
+    zones, template = _resolve_zones(params)
+    if zones:
+        used["zones"] = zones
+        if template:
+            used["template"] = template
+    client_full = client
+    client_v = client
+    if zones:
+        m_all = ignore_zones.zone_mask(zones, W, H, ("todo",))
+        client_v = client.copy()
+        client_v[m_all] = design[m_all]
+    vis = compare_visual(design, client_v, cfg, valid)
     tm.mark("visual")
 
     # ---- texto
@@ -162,9 +189,19 @@ def run_comparison(job_id: str, client_path, design_path, params: dict | None = 
     matched_keys: set[str] = set()
     text_ok = True
     quality = al.alignment_quality if al.aligned else 0.0
+    # tipo de arte y aprendizaje (Fase 7): vocabulario, ajustes por tipo
+    learn_on = bool(cfg.get("learning_enabled", True))
+    perspective = False
+    if al.homography is not None:
+        Hh = al.homography
+        perspective = abs(Hh[2, 0]) * W > 0.02 or abs(Hh[2, 1]) * H > 0.02 or abs(Hh[1, 0]) > 0.026
+    image_type = classify_image(client_path, framed=any("marco" in n for n in al.notes),
+                                illumination_fixed=normalized, perspective=perspective)
+    tune = tuning.params_for(image_type) if learn_on else None
+    extra = vocab.ocr_extra_config() if learn_on else ""
     try:
         if spans and cfg.get("ocr_mode", "guiado") == "guiado":
-            tr = compare_guided(spans, client, cfg, quality)
+            tr = compare_guided(spans, client, cfg, quality, extra, tune)
         else:
             if spans:
                 design_words = layout_words(spans)
@@ -184,6 +221,14 @@ def run_comparison(job_id: str, client_path, design_path, params: dict | None = 
         text_ok = False
         warnings.append(f"Falló el OCR ({e}). Se omitió la comparación de texto.")
 
+    # confusiones aprendidas: si la diferencia se explica SOLO con ellas (y no es dígito↔dígito) no es un error real
+    if learn_on and text_ok:
+        min_c = int(cfg.get("learning_min_confusion_count", 3))
+        for d in text_diffs:
+            if d.subtype == "cambiada" and confusions.explains(d.expected or "", d.found or "", min_c):
+                d.subtype, d.severity = "ocr_dudoso", "baja"
+                d.message = f"Posible error de lectura del OCR: leyó «{d.expected}», el diseño dice «{d.found}»"
+                matched += 1
     # una tilde que falta en el diseño (el cliente la tiene) también es un error de ortografía
     from .ocr_guided import is_tilde_missing
     tilde_diffs: list[Difference] = []
@@ -236,7 +281,12 @@ def run_comparison(job_id: str, client_path, design_path, params: dict | None = 
     if spans and text_ok:
         color_diffs += text_color_diffs(design, client, spans, tol,
                                         [d.bbox for d in text_diffs + spell_diffs])
-    zone_diffs, _ = grid_color_diffs(design, client, text_boxes, tol, valid)
+    client_c = client
+    if zones:
+        m_col = ignore_zones.zone_mask(zones, W, H, ("todo", "color"))
+        client_c = client.copy()
+        client_c[m_col] = design[m_col]
+    zone_diffs, _ = grid_color_diffs(design, client_c, text_boxes, tol, valid)
     color_diffs += zone_diffs
 
     tm.mark("color")
@@ -256,13 +306,22 @@ def run_comparison(job_id: str, client_path, design_path, params: dict | None = 
     for i, d in enumerate(diffs, 1):
         d.id = i
 
-    color_area = sum(d.bbox[2] * d.bbox[3] for d in color_diffs)
+    # diferencias dentro de zonas ignoradas: quedan marcadas y NO cuentan en los porcentajes
+    if zones:
+        for d in diffs:
+            d.ignored_by_zone = ignore_zones.affected(d, zones, W, H)
+    ign = {id(d) for d in diffs if d.ignored_by_zone}
+    matched += sum(1 for d in text_diffs if id(d) in ign)
+    spell_kept = [d for d in spell_diffs if id(d) not in ign]
+    font_kept = [d for d in font_diffs if id(d) not in ign]
+    color_kept = [d for d in color_diffs if id(d) not in ign]
+    color_area = sum(d.bbox[2] * d.bbox[3] for d in color_kept)
     scores, status = compute_scores(
         vis.score, matched, total, color_area, W * H,
-        len(spell_diffs), spell_total, len(font_diffs), font_total, cfg["weights"])
+        len(spell_kept), spell_total, len(font_kept), font_total, cfg["weights"])
 
     out_dir = out_dir or (RESULTS_DIR / job_id)
-    images = make_outputs(design, client, vis.diff_strength, out_dir)
+    images = make_outputs(design, client_full, vis.diff_strength, out_dir)
     save_jpg(out_dir / "client_original.jpg", client_raw)  # para la alineación manual
     images["client_original"] = "client_original.jpg"
     cs = {"design": color_space(design_path, design_page), "client": color_space(client_path, client_page)}
@@ -272,7 +331,8 @@ def run_comparison(job_id: str, client_path, design_path, params: dict | None = 
 
     counts: dict[str, int] = {}
     for d in diffs:
-        counts[d.category] = counts.get(d.category, 0) + 1
+        if not d.ignored_by_zone:
+            counts[d.category] = counts.get(d.category, 0) + 1
 
     result = Result(
         job_id=job_id, width=W, height=H, aligned=al.aligned,
@@ -284,7 +344,8 @@ def run_comparison(job_id: str, client_path, design_path, params: dict | None = 
         pages={"client": client_page + 1, "design": design_page + 1,
                "client_total": page_count(client_path), "design_total": page_count(design_path)},
         elapsed_s=round(time.time() - t0, 1), timings=tm.t,
-        color_spaces=cs,
+        color_spaces=cs, image_type=image_type, template=template,
+        learning_version=learning_store.fingerprint() if learn_on else None,
         client_text=" ".join(w.text for w in client_words) if text_ok else None)
     if not persist:
         return result

@@ -11,12 +11,21 @@
   <h1>FAVER<span>VIEW</span></h1>
   <span class="tag">Comparador de arte del cliente vs. diseño</span>
   <div class="spacer"></div>
+  <button id="btn-learning" class="ghost">Aprendizaje</button>
   <label class="hist">Historial
     <select id="history"><option value="">—</option></select>
   </label>
 </header>
 
 <section id="setup" class="setup">
+  <div class="modebar">
+    <label>Qué quieres comparar
+      <select id="mode-select">
+        <option value="cliente">Arte del cliente vs. mi diseño</option>
+        <option value="versiones">Versiones de mi diseño (v1 vs. v2)</option>
+      </select></label>
+    <span class="hint">Tip: también puedes pegar una imagen con Ctrl+V.</span>
+  </div>
   <div class="drops">
     <div class="drop" id="drop-client" data-kind="client">
       <div class="drop-title">A · Arte del cliente</div>
@@ -34,16 +43,22 @@
     </div>
   </div>
   <div class="actions">
+    <label class="tplsel">Plantilla de zonas
+      <select id="tpl-select"><option value="">(ninguna)</option></select></label>
+    <span id="tpl-hint" class="hint"></span>
     <button id="btn-compare" class="primary" disabled>Comparar</button>
+    <button id="btn-batch" class="hidden" disabled>Comparar todas las páginas</button>
     <span id="status" class="status"></span>
   </div>
 </section>
 
+<div id="update" class="banner update hidden"></div>
 <div id="error" class="banner error hidden"></div>
 
 <section id="results" class="results hidden">
   <div class="summary" id="summary"></div>
   <div id="warnings"></div>
+  <div id="fixpanel"></div>
 
   <div class="workspace">
     <div class="viewer-col">
@@ -59,6 +74,11 @@
         <button id="btn-sens" class="ghost">Sensibilidad</button>
         <button id="btn-review" class="ghost">Modo revisión</button>
         <button id="btn-align" class="ghost">Alinear manualmente</button>
+        <button id="btn-fix" class="ghost" title="Sube el diseño corregido y ve qué errores quedaron resueltos">Verificar correcciones…</button>
+        <input type="file" id="fix-file" accept=".pdf" hidden>
+        <span class="zonetool"><button id="btn-zone" class="ghost">Ignorar zona</button>
+          <select id="zone-mode" title="Qué se ignora dentro de la zona"><option value="todo">todo</option>
+            <option value="color">solo color</option><option value="texto">solo texto</option></select></span>
         <a id="btn-report" class="button" href="#" target="_blank">Descargar reporte PDF</a>
       </div>
       <div id="sens" class="sens hidden">
@@ -90,6 +110,13 @@
         <button id="btn-savecase" class="primary">Guardar como caso de prueba</button>
         <div id="rv-msg" class="hint"></div>
       </div>
+      <div id="zones-panel" class="review hidden">
+        <h2>Zonas ignoradas</h2>
+        <div id="zones-list"></div>
+        <div class="learn-actions">
+          <button id="btn-zones-apply" class="primary">Aplicar y recalcular</button>
+          <button id="btn-zones-save">Guardar como plantilla…</button></div>
+      </div>
       <h2>Lista de errores</h2>
       <div id="filters" class="filters"></div>
       <div id="errors" class="errors"></div>
@@ -99,6 +126,7 @@
   </div>
 </section>
 
+<footer class="foot"><span id="version">FAVERVIEW</span> · Todo se procesa en este equipo, sin internet.</footer>
 <div id="loading" class="loading hidden"><div class="spinner"></div><div id="loading-msg">Procesando…</div>
   <div class="bar"><div id="loading-bar"></div></div></div>
 <script src="/static/app.js"></script>

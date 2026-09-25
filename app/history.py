@@ -35,6 +35,20 @@ def add_entry(entry: dict) -> None:
                                 encoding="utf-8")
 
 
+def update_entry(job_id: str, fields: dict) -> None:
+    with _lock:
+        if not HISTORY_PATH.exists():
+            return
+        try:
+            items = json.loads(HISTORY_PATH.read_text(encoding="utf-8"))
+        except Exception:
+            return
+        for e in items:
+            if e.get("job_id") == job_id:
+                e.update(fields)
+        HISTORY_PATH.write_text(json.dumps(items, ensure_ascii=False, indent=1), encoding="utf-8")
+
+
 def cleanup(max_age_days: int = 30) -> None:
     """Vacía data/uploads y borra resultados con más de `max_age_days` días."""
     if UPLOADS_DIR.exists():

@@ -24,6 +24,10 @@ let reviewMode = false;
 let drawMode = false;
 let verdicts = {};      // id -> "real" | "falso_positivo"
 let missed = [];        // errores no detectados marcados a mano
+let mode2 = "cliente";  // "cliente" | "versiones"
+let lastBatch = null;
+let zones = [];         // zonas a ignorar (coordenadas relativas 0–1 al diseño)
+let drawKind = "missed"; // "missed" | "zone"
 
 function h(tag, attrs = {}, ...kids) {
   const el = document.createElement(tag);
@@ -70,7 +74,7 @@ function setupDrop(kind) {
   input.addEventListener("change", () => input.files[0] && setFile(kind, input.files[0]));
   ["dragenter", "dragover"].forEach(ev => box.addEventListener(ev, e => { e.preventDefault(); box.classList.add("over"); }));
   ["dragleave", "drop"].forEach(ev => box.addEventListener(ev, e => { e.preventDefault(); box.classList.remove("over"); }));
-  box.addEventListener("drop", e => { const f = e.dataTransfer.files[0]; if (f) setFile(kind, f); });
+  box.addEventListener("drop", async e => { const f = await fileFromDrop(e.dataTransfer); if (f) setFile(kind, f); });
 }
 
 async function setFile(kind, file) {
@@ -92,18 +96,30 @@ async function setFile(kind, file) {
     } catch (e) { showError(e.message); files[kind] = null; $("#drop-" + kind).classList.remove("has-file"); $("#file-" + kind).textContent = ""; }
   }
   $("#btn-compare").disabled = !(files.client && files.design);
+  updateBatchBtn();
+  suggestTemplate();
 }
 
 async function compare() {
   showError("");
   const fd = new FormData();
-  fd.append("client_file", files.client);
-  fd.append("design_file", files.design);
-  fd.append("client_page", $("#pages-client select").value || 1);
-  fd.append("design_page", $("#pages-design select").value || 1);
+  let url = "/api/compare";
+  if (mode2 === "versiones") {
+    url = "/api/compare-versions";
+    fd.append("v1_file", files.client);
+    fd.append("v2_file", files.design);
+    fd.append("v1_page", $("#pages-client select").value || 1);
+    fd.append("v2_page", $("#pages-design select").value || 1);
+  } else {
+    fd.append("client_file", files.client);
+    fd.append("design_file", files.design);
+    fd.append("client_page", $("#pages-client select").value || 1);
+    fd.append("design_page", $("#pages-design select").value || 1);
+    if ($("#tpl-select").value) fd.append("template", $("#tpl-select").value);
+  }
   setLoading(true);
   try {
-    const j = await (await api("/api/compare", { method: "POST", body: fd })).json();
+    const j = await (await api(url, { method: "POST", body: fd })).json();
     showResult(await pollJob(j.job_id));
     loadHistory();
   } catch (e) { showError(e.message); }
@@ -136,6 +152,8 @@ async function recalc(manualPoints) {
       client_page: +($("#pages-client select").value || data.pages?.client || 1),
       design_page: +($("#pages-design select").value || data.pages?.design || 1),
       manual_points: manualPoints || data.params?.manual_points || null,
+      zones: zones.length ? zones : null,
+      template: null,
     };
     const j = await (await api("/api/recompute/" + data.job_id, {
       method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) })).json();
@@ -151,11 +169,13 @@ function showResult(res, keepUi = false) {
   selectedId = null;
   showIgnored = false;
   verdicts = {}; missed = []; drawMode = false;
-  renderMissed();
+  zones = (res.params && res.params.zones) ? res.params.zones.map(z => ({ ...z })) : [];
+  renderMissed(); renderZones();
   if (!keepUi) activeCats = new Set(CATS.map(c => c[0]));
   $("#results").classList.remove("hidden");
   renderSummary();
   renderWarnings();
+  renderFix();
   renderFilters();
   renderErrors();
   renderFonts();
@@ -186,7 +206,9 @@ function renderSummary() {
       data.color_spaces && data.color_spaces.design
         ? h("div", {}, `Color · Diseño: ${data.color_spaces.design} · Cliente: ${data.color_spaces.client}`) : null,
       h("div", {}, `Alineación: ${alignLabel()} (${data.alignment_method || "—"})`),
-      h("div", {}, `${data.differences.length} errores · ${data.elapsed_s}s`)));
+      h("div", {}, `${data.differences.filter(d => !d.ignored_by_zone).length} errores · ${data.elapsed_s}s`),
+      h("div", { id: "ready" })));
+  renderReady();
 }
 
 function alignLabel() {
@@ -232,6 +254,24 @@ function manualAlign() {
   status();
 }
 
+function renderFix() {
+  const box = $("#fixpanel"); box.replaceChildren();
+  const f = data.fix_report; if (!f) return;
+  box.append(h("div", { class: "banner fix" }, h("b", {}, "Verificación de correcciones: "), f.resumen,
+    f.corregidos.length ? h("details", {}, h("summary", {}, `Errores corregidos ✔ (${f.corregidos.length})`),
+      f.corregidos.map(c => h("div", { class: "hint" }, `#${c.id} · ${CAT_NAME[c.category]} · ${c.message}`))) : null,
+    f.persisten.length ? h("details", { open: true }, h("summary", {}, `Siguen ✘ (${f.persisten.length})`),
+      f.persisten.map(c => h("div", { class: "hint" }, h("a", { onclick: () => c.nuevo_id && selectError(c.nuevo_id, true) },
+        `#${c.nuevo_id || c.id} · ${CAT_NAME[c.category]} · ${c.message}`)))) : null));
+}
+
+function applyModeLabels() {
+  const ver = data && data.mode === "versiones";
+  document.querySelectorAll(".pane .cap").forEach(c => {
+    if (ver) c.textContent = c.textContent.replace("A · Cliente", "A · Versión 1").replace("B · Mi diseño", "B · Versión 2");
+  });
+}
+
 function renderWarnings() {
   const box = $("#warnings"); box.replaceChildren();
   const list = [...data.warnings];
@@ -251,7 +291,7 @@ function renderFilters() {
 }
 
 function visibleDiffs() {
-  return data.differences.filter(d => activeCats.has(d.category) && (showIgnored || !ignored.has(d.id)));
+  return data.differences.filter(d => activeCats.has(d.category) && (showIgnored || (!ignored.has(d.id) && !d.ignored_by_zone)));
 }
 
 function swatch(hex, label) {
@@ -305,10 +345,40 @@ function errItem(d) {
   } }, "Agregar al diccionario"));
   btns.append(h("button", { onclick: e => { e.stopPropagation(); ignored.add(d.id); renderErrors(); renderBoxes(); } },
     ignored.has(d.id) ? "Ignorado" : "Ignorar"));
-  return h("div", { class: "err" + (d.id === selectedId ? " sel" : ""), "data-id": d.id,
+  return h("div", { class: "err" + (d.id === selectedId ? " sel" : "") + (d.ignored_by_zone ? " ign" : ""), "data-id": d.id,
     style: { "--col": CAT_COLOR[d.category] }, onclick: () => selectError(d.id, true) },
     h("div", { class: "top" }, h("span", { class: "num" }, d.id), h("span", { class: "msg" }, d.message.replace(/ΔE/g, "ΔE"))),
-    says, btns);
+    says, btns, checklistRow(d));
+}
+
+function checklistRow(d) {
+  const sel = h("select", { onclick: e => e.stopPropagation(), onchange: e => { e.stopPropagation(); setStatus(d, { status: e.target.value }); } },
+    [["pendiente", "Pendiente"], ["corregido", "Corregido ✔"], ["no_aplica", "No aplica"]].map(([v, t]) => h("option", { value: v }, t)));
+  sel.value = d.status || "pendiente";
+  const inp = h("input", { class: "cmt", placeholder: "Comentario (opcional)", value: d.comment || "",
+    onclick: e => e.stopPropagation(), onchange: e => setStatus(d, { comment: e.target.value }) });
+  return h("div", { class: "checklist" }, sel, inp);
+}
+
+async function setStatus(d, patch) {
+  Object.assign(d, patch);
+  try {
+    const r = await (await api(`/api/results/${data.job_id}/checklist`, { method: "PATCH", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ items: { [d.id]: patch } }) })).json();
+    renderReady(r);
+  } catch (e) { showError(e.message); }
+}
+
+function readyInfo() {
+  const vivos = data.differences.filter(d => !d.ignored_by_zone);
+  const pend = vivos.filter(d => (d.status || "pendiente") === "pendiente").length;
+  return { pendientes: pend, listo: pend === 0 };
+}
+function renderReady(r) {
+  const el = $("#ready"); if (!el) return;
+  r = r || readyInfo();
+  el.className = "ready " + (r.listo ? "ok" : "pend");
+  el.textContent = r.listo ? "✔ Listo para enviar" : `${r.pendientes} pendiente(s)`;
 }
 
 function renderFonts() {
@@ -365,6 +435,7 @@ function renderViewer() {
     add("Superpuesto 50%", [["overlay.png"]]);
   }
   renderBoxes();
+  applyModeLabels();
   fit();
 }
 
@@ -379,6 +450,11 @@ function renderBoxes() {
         style: { left: x + "px", top: y + "px", width: w + "px", height: h_ + "px", "--col": CAT_COLOR[d.category] },
         title: d.message, onclick: e => { e.stopPropagation(); selectError(d.id, false); } }, h("span", { class: "n" }, d.id));
       p.stage.append(b);
+    });
+    zones.forEach((z, i) => {
+      p.stage.append(h("div", { class: "box zone", title: `Zona ignorada (${z.modo})`,
+        style: { left: z.x * data.width + "px", top: z.y * data.height + "px", width: z.w * data.width + "px",
+          height: z.h * data.height + "px", "--col": "#94a3b8" } }, h("span", { class: "n" }, "Z" + (i + 1))));
     });
     missed.forEach((m, i) => {
       const [x, y, w, h_] = m.bbox;
@@ -481,7 +557,12 @@ function startDraw(pane, e) {
     pane.removeEventListener("pointermove", mv);
     el.remove();
     const [x, y, w, h_] = rect(ev).map(Math.round);
-    if (w > 6 && h_ > 6) askMissed([x, y, w, h_]);
+    if (w > 6 && h_ > 6) {
+      if (drawKind === "zone") {
+        zones.push({ x: x / data.width, y: y / data.height, w: w / data.width, h: h_ / data.height, modo: $("#zone-mode").value });
+        setDrawMode(false); renderZones(); renderBoxes();
+      } else askMissed([x, y, w, h_]);
+    }
   }, { once: true });
 }
 
@@ -499,10 +580,48 @@ function askMissed(bbox) {
   document.body.append(bg);
 }
 
-function setDrawMode(on) {
+function setDrawMode(on, kind) {
+  if (on && kind) drawKind = kind;
   drawMode = on;
   document.querySelectorAll(".pane").forEach(p => p.classList.toggle("drawmode", on));
-  $("#btn-missed").textContent = on ? "Dibuja el rectángulo en el visor… (clic para cancelar)" : "Marcar error no detectado";
+  $("#btn-missed").textContent = on && drawKind === "missed" ? "Dibuja el rectángulo en el visor… (clic para cancelar)" : "Marcar error no detectado";
+  $("#btn-zone").textContent = on && drawKind === "zone" ? "Dibuja la zona… (clic para cancelar)" : "Ignorar zona";
+}
+
+function renderZones() {
+  const box = $("#zones-list"); if (!box) return;
+  $("#zones-panel").classList.toggle("hidden", !zones.length);
+  box.replaceChildren(...zones.map((z, i) => h("div", { class: "missed-item" }, `Z${i + 1} · ${z.modo}`,
+    h("button", { onclick: () => { zones.splice(i, 1); renderZones(); renderBoxes(); } }, "✕"))));
+}
+
+async function saveTemplate() {
+  const name = prompt("Nombre de la plantilla (por ejemplo «Cliente Pérez – volante»):");
+  if (!name) return;
+  try {
+    await api("/api/templates", { method: "POST", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ nombre: name, zonas: zones, ancho: data.width, alto: data.height }) });
+    loadTemplates(name);
+  } catch (e) { showError(e.message); }
+}
+
+async function loadTemplates(select) {
+  try {
+    const list = await (await api("/api/templates")).json();
+    const sel = $("#tpl-select");
+    sel.replaceChildren(h("option", { value: "" }, "(ninguna)"), ...list.map(t => h("option", { value: t.nombre }, `${t.nombre} (${t.zonas} zonas)`)));
+    if (select) sel.value = select;
+  } catch {}
+}
+
+async function suggestTemplate() {
+  if (!files.design && !files.client) return;
+  try {
+    const f = files.client || files.design;
+    const s = await (await api("/api/templates/suggest?filename=" + encodeURIComponent(f.name))).json();
+    $("#tpl-hint").textContent = s.length ? `Sugerida: ${s[0]}` : "";
+    if (s.length && !$("#tpl-select").value) $("#tpl-select").value = s[0];
+  } catch {}
 }
 
 function renderMissed() {
@@ -551,6 +670,180 @@ async function openHistory(id) {
   finally { setLoading(false); $("#history").value = ""; }
 }
 
+/* ---------- panel «Aprendizaje» (Fase 7) ---------- */
+async function openLearning() {
+  const body = h("div", { class: "learn-body" }, "Cargando…");
+  const close = () => { clearInterval(timer); bg.remove(); };
+  const bg = h("div", { class: "dialog-bg" }, h("div", { class: "dialog wide" },
+    h("b", {}, "Aprendizaje del OCR"), body, h("div", { class: "row" }, h("button", { onclick: close }, "Cerrar"))));
+  document.body.append(bg);
+  let timer = null;
+
+  async function act(url, opts) {
+    try { await api(url, opts); } catch (e) { showError(e.message); }
+    await render();
+  }
+
+  async function render() {
+    let r;
+    try { r = await (await api("/api/learning")).json(); } catch (e) { body.textContent = e.message; return; }
+    const ajustes = Object.entries(r.ajustes_por_tipo);
+    const tarea = r.tarea || {};
+    body.replaceChildren(
+      h("div", { class: "hint" }, "Todo se guarda solo en este equipo (datos_locales/aprendizaje). Cada caso revisado en «Modo revisión» "
+        + "enseña al OCR: vocabulario y patrones → confusiones → ajuste por tipo de imagen → modelo re-entrenado."),
+      h("div", { class: "learn-stats" },
+        stat(r.casos_revisados, "casos revisados"), stat(r.vocabulario, "palabras aprendidas"),
+        stat(r.confusiones, "confusiones"), stat(`${r.lineas_para_entrenar}/300`, "líneas para entrenar"),
+        stat(r.huella || "—", "huella")),
+      h("h3", {}, "Ajuste por tipo de imagen"),
+      ajustes.length ? h("table", { class: "learn-table" }, h("tr", {}, h("th", {}, "Tipo"), h("th", {}, "CER antes"), h("th", {}, "CER después"), h("th", {}, "Líneas")),
+        ajustes.map(([t, a]) => h("tr", {}, h("td", {}, t), h("td", {}, (a.cer_antes * 100).toFixed(2) + "%"),
+          h("td", {}, (a.cer_despues * 100).toFixed(2) + "%"), h("td", {}, a.lineas))))
+        : h("div", { class: "hint" }, "Aún no hay ajustes (se calculan cada 5 casos revisados o con el botón)."),
+      h("div", { class: "learn-actions" },
+        h("button", { class: "primary", disabled: !!tarea.en_curso, onclick: () => act("/api/learning/tune", { method: "POST" }) }, "Ajustar OCR ahora"),
+        h("button", { disabled: !!tarea.en_curso || r.lineas_para_entrenar < 300, title: "Requiere ≥ 300 líneas revisadas",
+          onclick: () => confirm("El re-entrenamiento puede tardar varios minutos. ¿Continuar?") && act("/api/learning/train", { method: "POST" }) }, "Re-entrenar modelo"),
+        r.modelo ? h("button", { onclick: () => act("/api/learning/model", { method: "POST", headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ activo: !r.modelo_activo }) }) }, r.modelo_activo ? "Volver al modelo original" : "Activar modelo entrenado") : null),
+      tarea.en_curso ? h("div", { class: "banner warn" }, `En curso: ${tarea.en_curso}…`, h("pre", {}, (tarea.registro || []).join("\n"))) : null,
+      tarea.resultado ? h("div", { class: "hint" }, "Último resultado: " + (tarea.resultado.mensaje || JSON.stringify(tarea.resultado).slice(0, 300))) : null,
+      r.ab ? h("div", { class: "hint" }, `Prueba A/B: CER ${r.ab.cer_base}% → ${r.ab.cer_nuevo}% · F1 texto ${r.ab.f1_base}% → ${r.ab.f1_nuevo}% · ${r.ab.activado ? "activado" : "descartado"}`) : null,
+      h("h3", {}, "Confusiones aprendidas"),
+      r.confusiones_lista.length ? h("table", { class: "learn-table" }, h("tr", {}, h("th", {}, "Leído"), h("th", {}, "Correcto"), h("th", {}, "Veces"), h("th", {}, "Ejemplo"), h("th", {}, "")),
+        r.confusiones_lista.map(c => h("tr", {}, h("td", {}, `«${c.leido}»`), h("td", {}, `«${c.correcto}»`), h("td", {}, c.veces),
+          h("td", {}, (c.ejemplos[0] || []).join(" → ")),
+          h("td", {}, h("button", { onclick: () => act("/api/learning/confusion?key=" + encodeURIComponent(c.clave), { method: "DELETE" }) }, "Borrar")))))
+        : h("div", { class: "hint" }, "Ninguna todavía. Marca errores de texto como «✘ Falso positivo» al revisar."),
+      h("details", {}, h("summary", {}, `Vocabulario aprendido (${r.vocabulario})`),
+        h("div", { class: "vocab" }, r.vocabulario_lista.map(v => h("span", { class: "vocab-item" }, `${v.palabra} ×${v.veces} `,
+          h("a", { onclick: () => act("/api/learning/vocab?word=" + encodeURIComponent(v.palabra), { method: "DELETE" }) }, "✕"))))),
+      h("h3", {}, "Llevar el aprendizaje a otro equipo"),
+      h("div", { class: "learn-actions" },
+        h("a", { class: "button", href: "/api/learning/export", download: "" }, "Exportar (sin imágenes de clientes)"),
+        h("a", { class: "button", href: "/api/learning/export?recortes=true", download: "",
+          onclick: e => { if (!confirm("El ZIP incluirá recortes de imágenes de tus clientes (datos privados). ¿Continuar?")) e.preventDefault(); } }, "Exportar con recortes (privado)"),
+        h("label", { class: "button" }, "Importar…", h("input", { type: "file", accept: ".zip", hidden: true, onchange: async e => {
+          const f = e.target.files[0]; if (!f) return;
+          const fd = new FormData(); fd.append("file", f);
+          try { const j = await (await api("/api/learning/import", { method: "POST", body: fd })).json();
+            alert("Importado: " + JSON.stringify(j.agregado)); } catch (er) { showError(er.message); }
+          render(); } }))));
+    if (tarea.en_curso && !timer) timer = setInterval(render, 2500);
+    if (!tarea.en_curso && timer) { clearInterval(timer); timer = null; }
+  }
+  const stat = (v, l) => h("div", { class: "chip" }, h("b", {}, v), h("small", {}, l));
+  render();
+}
+
+/* ---------- modo, lote, correcciones, pegar (Fase 8) ---------- */
+function setMode(m) {
+  mode2 = m;
+  const ver = m === "versiones";
+  $("#drop-client .drop-title").textContent = ver ? "A · Mi diseño, versión 1" : "A · Arte del cliente";
+  $("#drop-design .drop-title").textContent = ver ? "B · Mi diseño, versión 2 (nueva)" : "B · Mi diseño";
+  $("#drop-client input").accept = ver ? ".pdf" : ".jpg,.jpeg,.png,.webp,.bmp,.tif,.tiff,.pdf";
+  $("#btn-compare").textContent = ver ? "Comparar versiones" : "Comparar";
+  $("#tpl-select").closest("label").classList.toggle("hidden", ver);
+  updateBatchBtn();
+}
+
+function updateBatchBtn() {
+  const multi = !$("#pages-client").classList.contains("hidden") || !$("#pages-design").classList.contains("hidden");
+  const b = $("#btn-batch");
+  b.classList.toggle("hidden", !(multi && mode2 === "cliente"));
+  b.disabled = !(files.client && files.design);
+}
+
+async function compareBatch() {
+  showError("");
+  const fd = new FormData();
+  fd.append("client_file", files.client);
+  fd.append("design_file", files.design);
+  if ($("#tpl-select").value) fd.append("template", $("#tpl-select").value);
+  setLoading(true);
+  try {
+    const j = await (await api("/api/compare-batch", { method: "POST", body: fd })).json();
+    lastBatch = await pollJob(j.job_id);
+    showBatch(lastBatch);
+  } catch (e) { showError(e.message); }
+  finally { setLoading(false); }
+}
+
+function showBatch(b) {
+  const close = () => bg.remove();
+  const lbl = { aprobado: "Aprobado", revisar: "Revisar", con_errores: "Con errores" };
+  const bg = h("div", { class: "dialog-bg" }, h("div", { class: "dialog wide" },
+    h("b", {}, `Lote: ${b.paginas.length} páginas · similitud promedio ${b.total_promedio}%`),
+    h("table", { class: "learn-table" },
+      h("tr", {}, h("th", {}, "Pág."), h("th", {}, "Cliente"), h("th", {}, "Diseño"), h("th", {}, "%"), h("th", {}, "Estado"), h("th", {}, "Errores"), h("th", {}, "Pend."), h("th", {}, "")),
+      b.paginas.map(p => h("tr", {}, h("td", {}, p.n), h("td", {}, p.client_page), h("td", {}, p.design_page),
+        h("td", {}, p.total + "%"), h("td", {}, h("span", { class: "badge " + p.status }, lbl[p.status])), h("td", {}, p.errores), h("td", {}, p.pendientes),
+        h("td", {}, h("button", { onclick: async () => { close(); await openHistory(p.job_id); } }, "Abrir"))))),
+    (b.sin_pareja_cliente.length || b.sin_pareja_diseno.length)
+      ? h("div", { class: "banner warn" }, `Sin pareja — cliente: ${b.sin_pareja_cliente.join(", ") || "—"} · diseño: ${b.sin_pareja_diseno.join(", ") || "—"}`) : null,
+    h("div", { class: "row" }, h("a", { class: "button", href: "/api/report-batch/" + b.batch_id, target: "_blank" }, "Reporte PDF de todo el lote"),
+      h("button", { class: "primary", onclick: close }, "Cerrar"))));
+  document.body.append(bg);
+}
+
+async function verifyFix(file) {
+  if (!file || !data) return;
+  showError("");
+  const fd = new FormData();
+  fd.append("previous_job_id", data.job_id);
+  fd.append("design_file", file);
+  setLoading(true);
+  try {
+    const j = await (await api("/api/compare-fix", { method: "POST", body: fd })).json();
+    showResult(await pollJob(j.job_id));
+    loadHistory();
+  } catch (e) { showError(e.message); }
+  finally { setLoading(false); $("#fix-file").value = ""; }
+}
+
+/* pegar una imagen con Ctrl+V o arrastrarla desde el navegador / WhatsApp Web */
+function askTarget(file) {
+  if (!files.client) return setFile("client", file);
+  if (!files.design && !file.type.includes("pdf")) return setFile("design", file);
+  const close = () => bg.remove();
+  const bg = h("div", { class: "dialog-bg" }, h("div", { class: "dialog" }, h("b", {}, "¿Para qué es esta imagen?"),
+    h("div", { class: "row" },
+      h("button", { class: "primary", onclick: () => { close(); setFile("client", file); } }, "A · Arte del cliente"),
+      h("button", { onclick: () => { close(); setFile("design", file); } }, "B · Mi diseño"),
+      h("button", { onclick: close }, "Cancelar"))));
+  document.body.append(bg);
+}
+
+document.addEventListener("paste", e => {
+  const it = [...(e.clipboardData?.items || [])].find(i => i.type.startsWith("image/"));
+  if (!it) return;
+  const blob = it.getAsFile(); if (!blob) return;
+  e.preventDefault();
+  const ext = (it.type.split("/")[1] || "png").replace("jpeg", "jpg");
+  askTarget(new File([blob], `pegado_${Date.now()}.${ext}`, { type: it.type }));
+});
+
+async function fileFromDrop(dt) {
+  if (dt.files && dt.files.length) return dt.files[0];
+  let url = (dt.getData("text/uri-list") || "").split("\n")[0].trim();
+  if (!url) {
+    const m = /<img[^>]+src=["']([^"']+)["']/i.exec(dt.getData("text/html") || "");
+    url = m ? m[1] : "";
+  }
+  if (!url) return null;
+  try {
+    const r = await fetch(url);
+    const b = await r.blob();
+    if (!b.type.startsWith("image/")) return null;
+    return new File([b], `arrastrada_${Date.now()}.${(b.type.split("/")[1] || "png").replace("jpeg", "jpg")}`, { type: b.type });
+  } catch {
+    showError("No se pudo leer esa imagen desde el navegador (el sitio no lo permite). Guárdala o cópiala y pégala con Ctrl+V.");
+    return null;
+  }
+}
+
 /* ---------- inicio ---------- */
 setupDrop("client");
 setupDrop("design");
@@ -558,6 +851,11 @@ $("#btn-compare").addEventListener("click", compare);
 $("#btn-fit").addEventListener("click", fit);
 $("#btn-sens").addEventListener("click", () => { $("#sens").classList.toggle("hidden"); fit(); });
 $("#btn-recalc").addEventListener("click", () => recalc());
+$("#mode-select").addEventListener("change", e => setMode(e.target.value));
+$("#btn-batch").addEventListener("click", compareBatch);
+$("#btn-fix").addEventListener("click", () => $("#fix-file").click());
+$("#fix-file").addEventListener("change", e => verifyFix(e.target.files[0]));
+$("#btn-learning").addEventListener("click", openLearning);
 $("#btn-align").addEventListener("click", manualAlign);
 $("#btn-review").addEventListener("click", () => {
   reviewMode = !reviewMode;
@@ -566,7 +864,10 @@ $("#btn-review").addEventListener("click", () => {
   if (!reviewMode) setDrawMode(false);
   renderErrors();
 });
-$("#btn-missed").addEventListener("click", () => setDrawMode(!drawMode));
+$("#btn-missed").addEventListener("click", () => setDrawMode(!(drawMode && drawKind === "missed"), "missed"));
+$("#btn-zone").addEventListener("click", () => setDrawMode(!(drawMode && drawKind === "zone"), "zone"));
+$("#btn-zones-apply").addEventListener("click", () => recalc());
+$("#btn-zones-save").addEventListener("click", saveTemplate);
 $("#btn-savecase").addEventListener("click", saveCase);
 ["#r-ssim", "#r-de", "#r-area"].forEach(s => $(s).addEventListener("input", updateSensLabels));
 $("#history").addEventListener("change", e => openHistory(e.target.value));
@@ -578,3 +879,20 @@ $("#tabs").addEventListener("click", e => {
 });
 window.addEventListener("resize", () => panes.length && fit());
 loadHistory();
+loadTemplates();
+
+/* versión en el pie y aviso de actualización */
+(async function () {
+  try {
+    const u = await (await fetch("/api/update")).json();
+    $("#version").textContent = "FAVERVIEW v" + u.version;
+    if (u.disponible) {
+      const b = $("#update");
+      b.classList.remove("hidden");
+      b.replaceChildren(u.mensaje + " ", h("button", { class: "primary", onclick: async () => {
+        const r = await (await fetch("/api/update/apply", { method: "POST" })).json();
+        b.textContent = r.mensaje;
+      } }, "Actualizar"));
+    }
+  } catch {}
+})();

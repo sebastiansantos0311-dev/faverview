@@ -155,11 +155,11 @@ def _stem_ok(base, stem: str) -> bool:
     return base(stem + "r")
 
 
-def _known(spell: SpellChecker, w: str) -> bool:
+def _known(spell: SpellChecker, w: str, use_learned: bool = True) -> bool:
     """Palabra válida: diccionario base, lista ampliada o derivable por plural/género/conjugación."""
     extra = _extra_words()
 
-    learned = _learned()
+    learned = _learned() if use_learned else set()
 
     def base(x: str) -> bool:
         return (x in extra) or (x in learned) or _hun_ok(x) or (not spell.unknown([x]))
@@ -192,6 +192,11 @@ def _known(spell: SpellChecker, w: str) -> bool:
                 if base(w[: -len(e)] + inf):
                     return True
     return False
+
+
+def is_known_word_dictionaries(w: str) -> bool:
+    """¿Está en los diccionarios (sin contar el vocabulario aprendido)? `w` en minúsculas."""
+    return _known(get_spell(), w, use_learned=False)
 
 
 def is_known_word(word: str) -> bool:

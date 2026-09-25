@@ -49,3 +49,5 @@ class Result(BaseModel):
     timings: dict[str, float] = Field(default_factory=dict)  # segundos por etapa
     learning_version: str | None = None
     client_text: str | None = None  # texto leído del arte del cliente (para medir CER)
+    mode: str = "comparacion"  # "comparacion" (cliente vs diseño) | "versiones" (v1 vs v2 de mi diseño)
+    fix_report: dict | None = None  # verificación de correcciones frente a una revisión anterior

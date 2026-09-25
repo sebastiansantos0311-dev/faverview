@@ -83,7 +83,7 @@ def evaluate(results, media_dir: Path, tmp: Path) -> dict:
         if err:
             errors.append(f"{case}: {err}")
             continue
-        det = [d for d in res["differences"] if not d.get("ignored_by_zone")]
+        det = [d for d in res["differences"] if not d.get("ignored_by_zone") and d.get("subtype") != "ocr_dudoso"]
         expected = exp.get("errores", [])
         cc = metrics.case_counts(det, expected)
         cer = metrics.cer(exp["texto_cliente"], res.get("client_text") or "") if exp.get("texto_cliente") else None
@@ -144,6 +144,7 @@ def main(argv=None) -> int:
     ap.add_argument("--set", action="append", default=[], metavar="clave=valor",
                     help="sobrescribe un valor de config.json solo para esta corrida")
     ap.add_argument("--contra", help="compara contra la corrida anterior cuya etiqueta contenga este texto")
+    ap.add_argument("--salida-json", help="además guarda el resultado en esta ruta (uso interno)")
     ap.add_argument("--guardar-umbral", action="store_true", help="guarda los F1 actuales en bench/umbral_ci.json")
     a = ap.parse_args(argv)
     if not a.real and not a.sinteticos:
@@ -194,6 +195,8 @@ def main(argv=None) -> int:
     (OUT_DIR / f"{name}.md").write_text(md, encoding="utf-8")
     (OUT_DIR / f"{name}.html").write_text(render_html(md, name), encoding="utf-8")
 
+    if a.salida_json:
+        Path(a.salida_json).write_text(json.dumps(run, ensure_ascii=False), encoding="utf-8")
     t = run["totales"]
     print(f"\nTexto: P {t['text']['precision']}% R {t['text']['recall']}% · Color+visual: R {t['color_visual']['recall']}% "
           f"· Ortografía R {t['spelling']['recall']}% · Fuente R {t['font']['recall']}%")

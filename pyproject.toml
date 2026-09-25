@@ -24,6 +24,7 @@ dependencies = [
 
 [project.scripts]
 faverview = "app.launcher:main"
+faverview-aprender = "app.learning.cli:main"
 
 [dependency-groups]
 dev = [

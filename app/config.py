@@ -12,7 +12,7 @@ DATA_DIR = BASE_DIR / "data"
 UPLOADS_DIR = DATA_DIR / "uploads"
 RESULTS_DIR = DATA_DIR / "results"
 WEB_DIR = BASE_DIR / "web"
-DATOS_DIR = BASE_DIR / "datos_locales"  # casos reales y aprendizaje: NUNCA va a git
+DATOS_DIR = Path(os.environ.get("FAVERVIEW_DATOS") or BASE_DIR / "datos_locales")  # casos reales y aprendizaje: NUNCA a git
 
 _TESS_CANDIDATES = [
     r"C:\Program Files\Tesseract-OCR\tesseract.exe",
@@ -47,6 +47,12 @@ def load_config() -> dict:
     if CONFIG_PATH.exists():
         with open(CONFIG_PATH, encoding="utf-8-sig") as f:
             cfg.update(json.load(f))
+    # modelo de OCR re-entrenado con los casos revisados (Fase 7, nivel 4), si está activado
+    modelos = DATOS_DIR / "aprendizaje" / "modelos"
+    if (modelos / "activo.txt").exists() and (modelos / "runtime" / "spa_fv.traineddata").exists() \
+            and cfg.get("learning_enabled", True) and "spa_fv" not in cfg["ocr_lang"]:
+        cfg["tessdata_dir"] = str(modelos / "runtime")
+        cfg["ocr_lang"] = "spa_fv+" + cfg["ocr_lang"]
     return cfg
 
 
@@ -66,10 +72,10 @@ def find_tesseract(cfg: dict) -> str | None:
     return None
 
 
-def setup_tesseract() -> str | None:
+def setup_tesseract(cfg: dict | None = None) -> str | None:
     """Configura pytesseract y TESSDATA_PREFIX. Devuelve la ruta o None."""
-    cfg = load_config()
-    tessdata = (BASE_DIR / cfg["tessdata_dir"]).resolve()
+    cfg = cfg or load_config()
+    tessdata = (BASE_DIR / cfg["tessdata_dir"]).resolve()  # (si es absoluta, `/` la respeta)
     if tessdata.exists():
         os.environ["TESSDATA_PREFIX"] = str(tessdata)
     cmd = find_tesseract(cfg)
