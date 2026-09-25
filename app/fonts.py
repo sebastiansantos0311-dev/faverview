@@ -48,52 +48,84 @@ def _metrics(img: np.ndarray, bbox, pad: int):
     stroke = 2.0 * float(ink.sum()) / max(perim, 1.0)
     m = cv2.moments(ink, binaryImage=True)
     slant = -m["mu11"] / m["mu02"] if m["mu02"] > 1e-6 else 0.0
-    return float(w), float(h), stroke, slant
+    return float(w), float(h), stroke, slant, (x0 + int(xs.min()), y0 + int(ys.min()),
+                                                x0 + int(xs.max()) + 1, y0 + int(ys.max()) + 1)
+
+
+def _sharpness(img: np.ndarray, bbox, pad: int = 4) -> float:
+    H, W = img.shape[:2]
+    x0, y0, x1, y1 = bbox
+    crop = img[max(0, int(y0) - pad):min(H, int(y1) + pad), max(0, int(x0) - pad):min(W, int(x1) + pad)]
+    if crop.size == 0:
+        return 0.0
+    return float(cv2.Laplacian(cv2.cvtColor(crop, cv2.COLOR_RGB2GRAY), cv2.CV_64F).var())
+
+
+def _exact(dw: Word, cw: Word) -> bool:
+    """Solo se usan palabras leídas igual en ambos lados: nunca las marcadas como cambiada/faltante/sobrante."""
+    return dw.text.strip(".,;:") == cw.text.strip(".,;:")
+
+
+MIN_WORDS = 3  # mínimo de palabras coincidentes en un span para concluir algo
 
 
 def compare_fonts(design: np.ndarray, client: np.ndarray, spans: list[TextSpan],
                   pairs: list[tuple[Word, Word]], tol_pct: float) -> tuple[list[Difference], int]:
     """Devuelve (diferencias, total de spans evaluados).
-    Compara la misma palabra en ambas imágenes con la misma medición, así el sesgo se cancela."""
+    Compara la MISMA palabra en ambas imágenes con la misma medición (el sesgo se cancela). El cliente ya viene
+    alineado y escalado al marco del diseño, así que los tamaños son directamente comparables. Solo se reporta si la
+    diferencia supera la tolerancia y es consistente en la mayoría de las palabras del span."""
     diffs: list[Difference] = []
     evaluated = 0
     tol = tol_pct / 100.0
+    exact_pairs = [(d, c) for d, c in pairs if _exact(d, c)]
     for sp in spans:
         sx0, sy0, sx1, sy1 = sp.bbox
-        ratios, stroke_r, slant_d = [], [], []
-        for dw, cw in pairs:
+        size_r, stroke_r, slant_d, sharp = [], [], [], []
+        for dw, cw in exact_pairs:
             cx, cy = (dw.bbox[0] + dw.bbox[2]) / 2, (dw.bbox[1] + dw.bbox[3]) / 2
-            if not (sx0 <= cx <= sx1 and sy0 <= cy <= sy1):
-                continue
-            if len(dw.text) < 3:
+            if not (sx0 <= cx <= sx1 and sy0 <= cy <= sy1) or len(dw.text) < 3:
                 continue
             md = _metrics(design, dw.bbox, 2)
-            mc = _metrics(client, cw.bbox, 4)
-            if md is None or mc is None:
+            if md is None:
                 continue
-            ratios.append(mc[0] / md[0])
-            ratios.append(mc[1] / md[1])
-            stroke_r.append((mc[2] / mc[1]) / max(md[2] / md[1], 1e-6))
-            slant_d.append(mc[3] - md[3])
-        if len(ratios) < 2:
+            # el cliente se mide en la zona de la TINTA del diseño (ampliada 35%/30%): así no entran las líneas
+            # vecinas ni las cajas infladas del OCR
+            ix0, iy0, ix1, iy1 = md[4]
+            ew, eh = 0.08 * (ix1 - ix0), 0.35 * (iy1 - iy0)
+            mc = _metrics(client, (ix0 - ew, iy0 - eh, ix1 + ew, iy1 + eh), 0)
+            if mc is None:
+                continue
+            size_r.append(float(mc[1] / md[1]))  # la altura no depende de las palabras vecinas
+            if md[1] >= 18:  # con letras muy pequeñas grosor e inclinación no son medibles
+                stroke_r.append((mc[2] / mc[1]) / max(md[2] / md[1], 1e-6))
+                slant_d.append(mc[3] - md[3])
+            sd = _sharpness(design, dw.bbox)
+            sharp.append(_sharpness(client, cw.bbox) / sd if sd > 1e-6 else 1.0)
+        if len(size_r) < MIN_WORDS:
             continue
         evaluated += 1
-        ratio = float(np.median(ratios))
         details = []
-        if abs(ratio - 1.0) > tol:
-            cl_pt = sp.size * ratio
-            details.append(f"tamaño aprox. {cl_pt:.0f}pt en el cliente vs {sp.size:.0f}pt en tu diseño")
-        sr = float(np.median(stroke_r))
-        if sr > 1.35:
-            details.append("el cliente parece más grueso (¿negrita?)")
-        elif sr < 0.72:
-            details.append("el cliente parece más delgado (¿sin negrita?)")
-        sl = float(np.median(slant_d))
-        if abs(sl) > 0.15:
-            details.append("distinta inclinación (¿cursiva?)")
+        r = np.array(size_r)
+        ratio = float(np.median(r))
+        # consistente: ≥70% de las palabras se desvían más que la tolerancia y en el mismo sentido
+        big = (r > 1 + tol) if ratio > 1 else (r < 1 - tol)
+        size_diff = abs(ratio - 1.0) > tol and float(big.mean()) >= 0.7
+        if size_diff:
+            details.append(f"tamaño aprox. {sp.size * ratio:.0f}pt en el cliente vs {sp.size:.0f}pt en tu diseño")
+        # grosor e inclinación solo si el cliente está tan nítido como el diseño (con desenfoque no se puede medir)
+        if stroke_r and float(np.median(sharp)) >= 0.5:
+            s_arr = np.array(stroke_r)
+            if np.median(s_arr) > 1.35 and float((s_arr > 1.25).mean()) >= 0.7:
+                details.append("el cliente parece más grueso (¿negrita?)")
+            elif np.median(s_arr) < 0.72 and float((s_arr < 0.8).mean()) >= 0.7:
+                details.append("el cliente parece más delgado (¿sin negrita?)")
+            sl = np.array(slant_d)
+            if abs(float(np.median(sl))) > 0.15 and float((np.abs(sl) > 0.1).mean()) >= 0.7:
+                details.append("distinta inclinación (¿cursiva?)")
         if details:
             diffs.append(Difference(
-                category="font", subtype="tamano" if abs(ratio - 1.0) > tol else "estilo",
+                category="font", subtype="tamano" if size_diff else "estilo",
                 bbox=(int(sx0), int(sy0), max(1, int(sx1 - sx0)), max(1, int(sy1 - sy0))),
                 severity="media" if abs(ratio - 1.0) > 2 * tol else "baja",
                 message="Posible diferencia de fuente: " + "; ".join(details),

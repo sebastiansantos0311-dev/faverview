@@ -9,18 +9,7 @@
   "crop": 0.03,
   "jpeg": 85
  },
- "errores": [
-  {
-   "categoria": "font",
-   "bbox": [
-    167,
-    908,
-    263,
-    50
-   ],
-   "subtipo": "negrita"
-  }
- ],
+ "errores": [],
  "texto_cliente": "Lista de Precios Producto Cantidad Precio Camiseta básica 12 unidades $25.000 Pantalón clásico 8 unidades $68.500 Chaqueta ligera 5 unidades $120.000 Zapatos deportivos 10 unidades $89.900 Gorra de verano 20 unidades $18.000 Precios incluyen impuestos y envío gratis",
  "notas": ""
 }

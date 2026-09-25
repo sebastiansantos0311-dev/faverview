@@ -46,7 +46,7 @@ class OcrUnavailable(RuntimeError):
 
 def ocr_words(img: np.ndarray, cfg: dict) -> list[Word]:
     if not setup_tesseract():
-        raise OcrUnavailable("Tesseract no está instalado. Ejecuta instalar.bat.")
+        raise OcrUnavailable("Tesseract no está instalado. Instálalo con: winget install UB-Mannheim.TesseractOCR")
     gray = cv2.cvtColor(img, cv2.COLOR_RGB2GRAY)
     scale = 2.0 if img.shape[1] < 1500 else 1.0
     if scale != 1.0:
@@ -132,11 +132,30 @@ def _pair_diff(cw: Word, dw: Word) -> Difference:
         expected=cw.text, found=dw.text)
 
 
+def strip_accents(t: str) -> str:
+    return "".join(c for c in unicodedata.normalize("NFD", t) if unicodedata.category(c) != "Mn")
+
+
+def _maybe_pair_diff(cw: Word, dw: Word) -> Difference | None:
+    """Como _pair_diff, pero si la única diferencia son tildes y el DISEÑO las tiene mientras la lectura del
+    cliente no, es una limitación del OCR (pierde acentos con facilidad): no se reporta (devuelve None).
+    Lo contrario (el diseño no tiene la tilde que el cliente sí muestra) sí es un error real."""
+    kc, kd = word_key(cw.text), word_key(dw.text)
+    if kc != kd and strip_accents(kc) == strip_accents(kd):
+        acc_c = sum(a != b for a, b in zip(kc, strip_accents(kc)))
+        acc_d = sum(a != b for a, b in zip(kd, strip_accents(kd)))
+        if acc_d > 0 and acc_c == 0:
+            return None
+    d = _pair_diff(cw, dw)
+    d.ocr_confidence = cw.conf
+    return d
+
+
 def _missing_diff(cw: Word) -> Difference:
     return Difference(
         category="text", subtype="faltante", bbox=_bbox_xywh(cw.bbox), severity="alta",
         message=f"Palabra faltante en tu diseño. Cliente dice: «{cw.text}» · Tu diseño dice: (nada)",
-        expected=cw.text, found="")
+        expected=cw.text, found="", ocr_confidence=cw.conf)
 
 
 def _extra_diff(dw: Word) -> Difference:
@@ -195,7 +214,13 @@ def compare_words(design_words: list[Word], client_words: list[Word]) -> TextRes
             else:
                 pairs, lc, ld = _pair_unequal(cs, ds)
             for i, j in pairs:
-                res.differences.append(_pair_diff(cs[i], ds[j]))
+                d = _maybe_pair_diff(cs[i], ds[j])
+                if d is None:  # el OCR perdió una tilde: cuenta como coincidencia
+                    res.matched += 1
+                    res.pairs.append((ds[j], cs[i]))
+                    res.matched_design_keys.add(word_key(ds[j].text))
+                else:
+                    res.differences.append(d)
             res.differences.extend(_missing_diff(cs[i]) for i in lc)
             res.differences.extend(_extra_diff(ds[j]) for j in ld)
     res.total = max(len(dws), len(cws))

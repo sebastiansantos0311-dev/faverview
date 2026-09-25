@@ -44,3 +44,22 @@ def test_price_changed_detected_via_ocr(tmp_path):
     changed = [d for d in r.differences if d.subtype == "cambiada"]
     assert len(changed) == 1
     assert changed[0].expected == "12.000" and changed[0].found == "10.000"
+
+
+def test_no_font_false_positive_on_sample_errors():
+    """Regresión F6.2: cliente_errores.png tiene otros errores pero NINGÚN cambio de fuente."""
+    from app.pipeline import run_comparison
+    r = run_comparison("t_fontreg", "samples/cliente_errores.png", "samples/diseno.pdf", persist=False,
+                       out_dir=__import__("pathlib").Path(__import__("tempfile").mkdtemp()))
+    assert not [d for d in r.differences if d.category == "font"]
+
+
+@needs_ocr
+def test_font_size_change_is_detected(tmp_path):
+    from app.pipeline import run_comparison
+    a, b = tmp_path / "a.pdf", tmp_path / "b.pdf"
+    t = "Gran Oferta Especial Verano"
+    make_pdf(a, title_size=30, title=t)
+    make_pdf(b, title_size=36, title=t)
+    r = run_comparison("t_font2", b, a, persist=False, out_dir=tmp_path / "o")
+    assert [d for d in r.differences if d.category == "font"]

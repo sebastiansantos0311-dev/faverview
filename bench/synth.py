@@ -74,6 +74,7 @@ def design_spec(key: str) -> dict:
             items.append(T(f"l{i}", 50, 130 + i * 24, ln, 8 if i % 2 else 9))
         items.append(T("price", 50, 420, "Cuota mensual 15.000", 9, "hebo"))
         items.append(T("foot", 50, 800, "Teléfono de atención 555-4321 - Horario continuo", 7, "helv", (0.4, 0.4, 0.4)))
+        items.append(C("logo", (500, 75), 35, (0.1, 0.2, 0.4)))
         items.append(R("bar", (50, 440, 545, 470), (0.85, 0.9, 0.95)))
         items.append(T("bart", 60, 460, "Reunión general el sábado a las diez de la mañana", 9, "hebo", (0.1, 0.2, 0.4)))
     elif key == "d3_fondo_oscuro":
@@ -104,6 +105,7 @@ def design_spec(key: str) -> dict:
             items += [T(f"a{i}", 60, y0 + 24, a, 13), T(f"b{i}", 300, y0 + 24, b, 13),
                       T(f"c{i}", 450, y0 + 24, c, 13, "hebo")]
         items.append(T("foot", 50, 700, "Precios incluyen impuestos y envío gratis", 12, "helv", (0.3, 0.3, 0.3)))
+        items.append(C("logo", (500, 70), 30, (0.15, 0.3, 0.55)))
     elif key == "d5_bandas":
         items = [
             R("b1", (0, 150, 595, 260), (0.85, 0.2, 0.2)), T("t1", 40, 215, "Ofertas de Primavera", 30, "hebo", (1, 1, 1)),
@@ -186,6 +188,10 @@ def get_item(spec, item_id):
 
 def text_items(spec, min_words=1, max_words=99):
     return [i for i in spec["items"] if i["t"] == "text" and min_words <= len(i["s"].split()) <= max_words]
+
+
+def long_words(it) -> int:
+    return sum(len(w) >= 3 for w in it["s"].split())
 
 
 def text_width(it) -> float:
@@ -305,7 +311,7 @@ def make_inject_color(target):
 
 
 def inject_logo_removed(design, client, tmp, rng):
-    target = next(i["id"] for i in client["items"] if i["id"] in ("logo", "band0", "bar"))
+    target = next(i["id"] for i in client["items"] if i["id"] == "logo")
     client["items"] = [i for i in client["items"] if i["id"] != target]
     return lambda spans, cspans=None: [_err("visual", item_bbox_px(design, spans, target), "elemento_sobrante")]
 
@@ -324,8 +330,8 @@ def inject_logo_moved(design, client, tmp, rng):
 
 
 def inject_font_size(design, client, tmp, rng):
-    cands = [i for i in text_items(client, 3) if i["size"] >= 13 and i["x"] + text_width(i) * 1.2 < 560
-             and i["id"] not in ("tel",)]
+    cands = [i for i in text_items(client, 3) if long_words(i) >= 3 and i["size"] >= 13
+             and i["x"] + text_width(i) * 1.2 < 560 and i["id"] not in ("tel",)]
     it = rng.choice(cands)
     it["size"] = round(it["size"] * 1.2, 1)
     iid = it["id"]
@@ -333,7 +339,7 @@ def inject_font_size(design, client, tmp, rng):
 
 
 def inject_bold(design, client, tmp, rng):
-    cands = [i for i in text_items(client, 3) if i["font"] == "helv" and i["size"] >= 13
+    cands = [i for i in text_items(client, 3) if long_words(i) >= 3 and i["font"] == "helv" and i["size"] >= 13
              and i["x"] + text_width(i) * 1.1 < 560]
     it = rng.choice(cands)
     it["font"] = "hebo"

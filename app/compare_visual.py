@@ -63,16 +63,32 @@ def classify_region(design: np.ndarray, client: np.ndarray, bbox) -> tuple[str, 
     return "diferencia_visual", "Diferencia visual leve"
 
 
-def compare_visual(design: np.ndarray, client: np.ndarray, cfg: dict) -> VisualResult:
+def tolerant_excess(d: np.ndarray, c: np.ndarray, k: int = 5) -> np.ndarray:
+    """Cuánto se sale el cliente del rango [mín, máx] local del diseño (ventana k×k).
+    Ignora desajustes de 1–2 px en los bordes, desenfoque y ruido; conserva diferencias reales de contenido."""
+    kern = np.ones((k, k), np.uint8)
+    dmax = cv2.dilate(d, kern).astype(np.int16)
+    dmin = cv2.erode(d, kern).astype(np.int16)
+    ci = c.astype(np.int16)
+    ex = np.maximum(np.maximum(ci - dmax, dmin - ci), 0)
+    return ex.max(axis=2).astype(np.uint8)
+
+
+def compare_visual(design: np.ndarray, client: np.ndarray, cfg: dict, valid: np.ndarray | None = None) -> VisualResult:
     d = cv2.GaussianBlur(design, (3, 3), 0)
     c = cv2.GaussianBlur(client, (3, 3), 0)
     gd = cv2.cvtColor(d, cv2.COLOR_RGB2GRAY)
     gc = cv2.cvtColor(c, cv2.COLOR_RGB2GRAY)
     score, dmap = structural_similarity(gd, gc, full=True, data_range=255)
-    absd = cv2.absdiff(d, c).max(axis=2)
+    ex = tolerant_excess(d, c)
 
+    # el deslizador "umbral SSIM" sube o baja la exigencia: 0,85 = umbral de píxeles configurado
     ssim_thr = float(cfg["ssim_threshold"])
-    mask = ((dmap < ssim_thr) | (absd > float(cfg["pixel_diff_threshold"]))).astype(np.uint8) * 255
+    thr = float(cfg["pixel_diff_threshold"]) * float(np.clip(1.0 - (ssim_thr - 0.85) * 4.0, 0.4, 2.5))
+    mask = (ex > thr).astype(np.uint8) * 255
+    if valid is not None:  # el relleno blanco de la alineación no cuenta como diferencia
+        inner = cv2.erode(valid.astype(np.uint8), np.ones((9, 9), np.uint8))
+        mask[inner == 0] = 0
     k = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (9, 9))
     mask = cv2.dilate(mask, k, iterations=1)
     mask = cv2.morphologyEx(mask, cv2.MORPH_CLOSE, k, iterations=2)
@@ -85,7 +101,7 @@ def compare_visual(design: np.ndarray, client: np.ndarray, cfg: dict) -> VisualR
             continue
         x, y, w, h = cv2.boundingRect(cnt)
         frac = (w * h) / float(W * H)
-        region_strength = float(absd[y:y + h, x:x + w].mean())
+        region_strength = float(ex[y:y + h, x:x + w].mean())
         if frac > 0.02 or region_strength > 90:
             sev = "alta"
         elif frac > 0.003 or region_strength > 40:
@@ -93,10 +109,12 @@ def compare_visual(design: np.ndarray, client: np.ndarray, cfg: dict) -> VisualR
         else:
             sev = "baja"
         sub, msg = classify_region(design, client, (x, y, w, h))
-        diffs.append(Difference(category="visual", subtype=sub, bbox=(x, y, w, h),
-                                severity=sev, message=msg))
+        diffs.append(Difference(category="visual", subtype=sub, bbox=(x, y, w, h), severity=sev, message=msg))
 
-    strength = np.maximum(1.0 - np.clip(dmap, 0, 1), absd.astype(np.float32) / 255.0)
+    strength = np.maximum(ex.astype(np.float32) / 255.0 * 2.0, 1.0 - np.clip(dmap, 0, 1) * 1.0 - 0.6)
+    strength = np.clip(strength, 0, 1)
+    if valid is not None:
+        strength = strength * cv2.erode(valid.astype(np.uint8), np.ones((9, 9), np.uint8))
     return VisualResult(float(score), diffs, strength.astype(np.float32))
 
 

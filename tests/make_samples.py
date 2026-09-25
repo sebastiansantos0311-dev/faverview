@@ -61,7 +61,7 @@ def main(out: Path = SAMPLES) -> None:
 
     tmp = out / "_errores.pdf"
     make_pdf(tmp, price="Precio 12.000", paragraph_drop="especiales", rect=(0.85, 0.45, 0.10),
-             logo=False, title_size=42)
+             logo=False)
     Image.fromarray(jpeg_roundtrip(rotate(render(tmp), 2.0))).save(out / "cliente_errores.png")
     tmp.unlink(missing_ok=True)
     print("Muestras generadas en", out)

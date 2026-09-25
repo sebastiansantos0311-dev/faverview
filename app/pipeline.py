@@ -8,10 +8,12 @@ import numpy as np
 from . import history
 from .align import align_images
 from .compare_color import grid_color_diffs, text_color_diffs
-from .compare_text import (OcrUnavailable, Word, compare_words, layout_words, ocr_words)
+from .compare_text import (OcrUnavailable, Word, _missing_diff, compare_words, layout_words, ocr_words)
 from .compare_visual import compare_visual, make_outputs
 from .config import CFG, RESULTS_DIR, load_config
 from .fonts import compare_fonts, fonts_in_design
+from .photometry import normalize_illumination
+from .ocr_guided import compare_guided, ocr_page_adaptive, read_region
 from .loaders import extract_pdf_layout, load_as_image, page_count, validate_file
 from .models import Difference, Result
 from .scoring import compute_scores
@@ -53,6 +55,12 @@ def _dedupe(visual: list[Difference], others: list[Difference], colors: list[Dif
         if tregion.size and tregion.mean() >= 0.6:
             if v.subtype == "diferencia_visual" or any(_intersects(v.bbox, o.bbox) for o in others):
                 continue
+        # región sobre texto, en la misma línea que un error de texto/fuente: la explican (p. ej. las palabras
+        # que se corren al quitar una)
+        if tregion.size and tregion.mean() >= 0.4 and any(
+                min(y + h, o.bbox[1] + o.bbox[3]) - max(y, o.bbox[1]) >= 0.5 * min(h, o.bbox[3])
+                for o in others):
+            continue
         if v.subtype in ("diferencia_visual", "color_distinto") and any(
                 _intersects(v.bbox, c.bbox) for c in zone_colors):
             continue
@@ -104,6 +112,7 @@ def run_comparison(job_id: str, client_path, design_path, params: dict | None = 
         used[k] = cfg[k]
     dpi = float(cfg["render_dpi"])
     warnings: list[str] = []
+    notes_flags: list[str] = []
 
     validate_file(client_path, cfg["max_upload_mb"])
     validate_file(design_path, cfg["max_upload_mb"])
@@ -120,8 +129,12 @@ def run_comparison(job_id: str, client_path, design_path, params: dict | None = 
     H, W = design.shape[:2]
 
     # ---- visual
+    valid = al.valid_mask
+    client, normalized = normalize_illumination(design, client, valid)
+    if normalized:
+        notes_flags.append("iluminación corregida")
     tm.mark("alinear")
-    vis = compare_visual(design, client, cfg)
+    vis = compare_visual(design, client, cfg, valid)
     tm.mark("visual")
 
     # ---- texto
@@ -130,15 +143,19 @@ def run_comparison(job_id: str, client_path, design_path, params: dict | None = 
     matched = total = 0
     matched_keys: set[str] = set()
     text_ok = True
+    quality = al.alignment_quality if al.aligned else 0.0
     try:
-        if spans:
-            design_words = layout_words(spans)
+        if spans and cfg.get("ocr_mode", "guiado") == "guiado":
+            tr = compare_guided(spans, client, cfg, quality)
         else:
-            warnings.append("El diseño no contiene texto vectorial (¿texto convertido a curvas o "
-                            "imagen?). Se usó OCR también sobre el diseño; la precisión es menor.")
-            design_words = ocr_words(design, cfg)
-        client_words = ocr_words(client, cfg)
-        tr = compare_words(design_words, client_words)
+            if spans:
+                design_words = layout_words(spans)
+            else:
+                warnings.append("El diseño no contiene texto vectorial (¿texto convertido a curvas o "
+                                "imagen?). Se usó OCR también sobre el diseño; la precisión es menor.")
+                design_words = ocr_page_adaptive(design, cfg)
+            client_words = (ocr_words(client, cfg) if spans else ocr_page_adaptive(client, cfg))
+            tr = compare_words(design_words, client_words)
         text_diffs, pairs = tr.differences, tr.pairs
         matched, total, matched_keys = tr.matched, tr.total, tr.matched_design_keys
         design_words, client_words = tr.design_words, tr.client_words
@@ -149,11 +166,48 @@ def run_comparison(job_id: str, client_path, design_path, params: dict | None = 
         text_ok = False
         warnings.append(f"Falló el OCR ({e}). Se omitió la comparación de texto.")
 
+    # una tilde que falta en el diseño (el cliente la tiene) también es un error de ortografía
+    from .ocr_guided import is_tilde_missing
+    tilde_diffs: list[Difference] = []
+    for d in list(text_diffs):
+        if is_tilde_missing(d):
+            tilde_diffs.append(Difference(
+                category="spelling", subtype="tilde_faltante", bbox=d.bbox, severity="alta",
+                message=f"Falta la tilde: «{d.found}» → «{d.expected}»", found=d.found, suggestions=[d.expected]))
+    # regiones visuales sobre papel en blanco del diseño que en realidad son texto del cliente que falta
+    if text_ok and spans:
+        dboxes = np.zeros((H, W), np.uint8)
+        for w_ in design_words:
+            x0_, y0_, x1_, y1_ = (int(v) for v in w_.bbox)
+            dboxes[max(0, y0_):y1_, max(0, x0_):x1_] = 1
+        for v in list(vis.differences):
+            if v.subtype not in ("elemento_faltante", "elemento_cambiado"):
+                continue
+            x, y, w, h = v.bbox
+            if dboxes[max(0, y - 10):y + h + 10, max(0, x - 10):x + w + 10].any():  # hay texto del diseño ahí
+                continue
+            if any(_intersects(v.bbox, t.bbox) for t in text_diffs):  # ya explicado por un error de texto
+                continue
+            found = read_region(client, v.bbox, cfg)
+            if found:
+                vis.differences.remove(v)
+                for wd in found:
+                    text_diffs.append(_missing_diff(wd))
+                    client_words.append(wd)
+    # una misma palabra del cliente hallada por dos caminos cuenta una sola vez
+    uniq: list[Difference] = []
+    for d in text_diffs:
+        if d.subtype == "faltante" and any(u.subtype == "faltante" and _intersects(u.bbox, d.bbox) for u in uniq):
+            continue
+        uniq.append(d)
+    text_diffs = uniq
     tm.mark("ocr")
     # ---- ortografía
     spell_diffs, spell_total = [], 0
     if text_ok:
         spell_diffs, spell_total = check_spelling(design_words, matched_keys)
+        spell_diffs = tilde_diffs + [d for d in spell_diffs
+                                     if not any(_intersects(d.bbox, t.bbox) for t in tilde_diffs)]
 
     tm.mark("ortografia")
     # ---- color
@@ -164,7 +218,7 @@ def run_comparison(job_id: str, client_path, design_path, params: dict | None = 
     if spans and text_ok:
         color_diffs += text_color_diffs(design, client, spans, tol,
                                         [d.bbox for d in text_diffs + spell_diffs])
-    zone_diffs, _ = grid_color_diffs(design, client, text_boxes, tol)
+    zone_diffs, _ = grid_color_diffs(design, client, text_boxes, tol, valid)
     color_diffs += zone_diffs
 
     tm.mark("color")
@@ -198,7 +252,7 @@ def run_comparison(job_id: str, client_path, design_path, params: dict | None = 
 
     result = Result(
         job_id=job_id, width=W, height=H, aligned=al.aligned,
-        alignment_quality=round(al.alignment_quality, 3), scores=scores, status=status,
+        alignment_quality=round(al.alignment_quality, 3), alignment_method=al.method, scores=scores, status=status,
         differences=diffs, fonts_in_design=fonts_in_design(spans), images=images,
         warnings=warnings, client_name=client_name or Path(client_path).name,
         design_name=design_name or Path(design_path).name,

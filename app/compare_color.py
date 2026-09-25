@@ -72,7 +72,14 @@ def text_color_diffs(design: np.ndarray, client: np.ndarray, spans: list[TextSpa
         if cink is None or dink is None:
             continue
         # Se decide con la misma medición en ambas imágenes (cancela el efecto de antialiasing)
-        de = delta_e(cink[0], dink[0])
+        cvec, bgc = cink[0], cink[1]
+        # cliente borroso/reducido: la tinta se diluye hacia el fondo; se compensa el contraste
+        sh_c, sh_d = _sharp(client, sp.bbox), _sharp(design, sp.bbox)
+        nd, nc = np.linalg.norm(dink[0] - dink[1]), np.linalg.norm(cvec - bgc)
+        if sh_d > 1e-6 and sh_c / sh_d < 0.6 and 0 < nc < nd:
+            cvec = bgc + (cvec - bgc) * (nd / nc)
+            cvec = np.clip(cvec, 0, 255)
+        de = delta_e(cvec, dink[0])
         # el texto fino pierde contraste al re-muestrear: se tolera más en cuerpos pequeños
         tol_sp = tol * max(1.0, 24.0 / max(sp.size, 1.0))
         if de > tol_sp:
@@ -85,6 +92,13 @@ def text_color_diffs(design: np.ndarray, client: np.ndarray, spans: list[TextSpa
                 expected_hex=rgb_to_hex(cink[0]), found_hex=rgb_to_hex(dink[0]),
                 delta_e=round(de, 1)))
     return diffs
+
+
+def _sharp(img: np.ndarray, bbox, pad: int = 4) -> float:
+    H, W = img.shape[:2]
+    x0, y0, x1, y1 = (int(v) for v in bbox)
+    crop = img[max(0, y0 - pad):min(H, y1 + pad), max(0, x0 - pad):min(W, x1 + pad)]
+    return float(cv2.Laplacian(cv2.cvtColor(crop, cv2.COLOR_RGB2GRAY), cv2.CV_64F).var()) if crop.size else 0.0
 
 
 def _overlaps_any(box, boxes, min_frac=0.5) -> bool:
@@ -103,7 +117,8 @@ def _cell_medians(img: np.ndarray, hc: int, wc: int) -> np.ndarray:
     return np.median(c, axis=(1, 3))
 
 
-def grid_color_diffs(design: np.ndarray, client: np.ndarray, text_boxes: list, tol: float):
+def grid_color_diffs(design: np.ndarray, client: np.ndarray, text_boxes: list, tol: float,
+                     valid: np.ndarray | None = None):
     """Compara el color mediano por celdas de 32x32 y une celdas vecinas.
     Devuelve (diferencias, área_con_error_px)."""
     H, W = design.shape[:2]
@@ -121,7 +136,14 @@ def grid_color_diffs(design: np.ndarray, client: np.ndarray, text_boxes: list, t
         cv2.rectangle(text_mask, (int(x), int(y)), (int(x + w), int(y + h)), 1, -1)
     tm = text_mask[:hc * CELL, :wc * CELL].reshape(hc, CELL, wc, CELL).mean(axis=(1, 3))
 
-    bad = ((de > tol) & (tm < 0.1)).astype(np.uint8)
+    ok = (tm < 0.1)
+    # celdas con borde (mucha variación interna): su color mediano es inestable; se ignoran
+    sd = design[:hc * CELL, :wc * CELL].reshape(hc, CELL, wc, CELL, 3).astype(np.float32).std(axis=(1, 3)).max(axis=2)
+    ok &= sd < 25
+    if valid is not None:  # celdas con relleno de la alineación (sin contenido del cliente) no cuentan
+        vm = valid[:hc * CELL, :wc * CELL].reshape(hc, CELL, wc, CELL).mean(axis=(1, 3))
+        ok &= vm > 0.98
+    bad = ((de > tol) & ok).astype(np.uint8)
     n, labels, stats, _ = cv2.connectedComponentsWithStats(bad, connectivity=8)
     diffs, area = [], 0
     for i in range(1, n):

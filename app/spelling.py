@@ -65,6 +65,22 @@ def _extra_words() -> set[str]:
     return _extra
 
 
+def _strip_acc(t: str) -> str:
+    import unicodedata
+    return "".join(c for c in unicodedata.normalize("NFD", t) if unicodedata.category(c) != "Mn").replace("n\u0303", "ñ")
+
+
+def _stem_ok(base, stem: str) -> bool:
+    """¿`stem` es una forma verbal válida (imperativo, infinitivo, gerundio)?"""
+    if base(stem):
+        return True
+    for inf, endings in _VERB_ENDINGS.items():
+        for e in endings:
+            if stem.endswith(e) and len(stem) - len(e) >= 3 and base(stem[: -len(e)] + inf):
+                return True
+    return base(stem + "r")
+
+
 def _known(spell: SpellChecker, w: str) -> bool:
     """Palabra válida: diccionario base, lista ampliada o derivable por plural/género/conjugación."""
     extra = _extra_words()
@@ -88,12 +104,25 @@ def _known(spell: SpellChecker, w: str) -> bool:
             forms.add(w[: -len(suf)] + rep)
     if any(base(f) for f in forms):
         return True
+    # verbo + pronombre enclítico: «visítanos», «comunícate», «dímelo»
+    for cl in ("selos", "selas", "selo", "sela", "nos", "les", "los", "las", "me", "te", "se", "le", "lo", "la", "os"):
+        if w.endswith(cl) and len(w) - len(cl) >= 3:
+            stem = _strip_acc(w[: -len(cl)])
+            if _stem_ok(base, stem):
+                return True
     for inf, endings in _VERB_ENDINGS.items():
         for e in endings:
             if w.endswith(e) and len(w) - len(e) >= 3:
                 if base(w[: -len(e)] + inf):
                     return True
     return False
+
+
+def is_known_word(word: str) -> bool:
+    w = _TRIM.sub("", word.strip()).lower()
+    if not w or _should_skip(_TRIM.sub("", word.strip()), w):
+        return True  # números, siglas, correos: no se juzgan
+    return _known(get_spell(), w)
 
 
 def _should_skip(raw: str, w: str) -> bool:

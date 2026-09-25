@@ -24,6 +24,7 @@ class TextSpan:
     color: str  # #RRGGBB
     flags: int
     words: list[tuple[str, tuple[float, float, float, float]]] = field(default_factory=list)
+    line_id: tuple = (0, 0)  # (bloque, línea) de PyMuPDF: spans con el mismo id están en la misma línea
 
     @property
     def bold(self) -> bool:
@@ -138,10 +139,10 @@ def extract_pdf_layout(path, dpi: float = 200, page: int = 0) -> list[TextSpan]:
         s = _effective_dpi(pg, dpi) / 72.0
         d = pg.get_text("rawdict")
         spans: list[TextSpan] = []
-        for block in d.get("blocks", []):
+        for bi, block in enumerate(d.get("blocks", [])):
             if block.get("type") != 0:
                 continue
-            for line in block.get("lines", []):
+            for li, line in enumerate(block.get("lines", [])):
                 for sp in line.get("spans", []):
                     chars = sp.get("chars", [])
                     text = "".join(c["c"] for c in chars)
@@ -165,7 +166,7 @@ def extract_pdf_layout(path, dpi: float = 200, page: int = 0) -> list[TextSpan]:
                     spans.append(TextSpan(
                         text=text.strip(), bbox=(x0, y0, x1, y1), font=sp.get("font", ""),
                         size=float(sp.get("size", 0)), color=_color_hex(sp.get("color", 0)),
-                        flags=int(sp.get("flags", 0)), words=words))
+                        flags=int(sp.get("flags", 0)), words=words, line_id=(bi, li)))
         return spans
     finally:
         doc.close()
