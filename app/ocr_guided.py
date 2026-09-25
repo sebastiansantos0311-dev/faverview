@@ -18,6 +18,9 @@ from .compare_text import (OcrUnavailable, TextResult, Word, _missing_diff, comp
 from .config import setup_tesseract
 from .loaders import TextSpan
 
+import os
+
+WORKERS = max(2, min(8, os.cpu_count() or 4))  # hilos de Tesseract en paralelo
 TARGET_LETTER_PX = 60  # altura de la caja de una línea tras el reescalado
 BORDER = 10
 
@@ -158,7 +161,8 @@ DEFAULT_TUNE = {"target_px": 60, "method": "sauvola", "k": 0.2, "blur": 0.0, "ps
 
 
 def read_line(img: np.ndarray, line: Line, cfg: dict, quality: float, extra: str = "",
-              zone: tuple | None = None, tune: dict | None = None) -> tuple[list[Word], float]:
+              zone: tuple | None = None, tune: dict | None = None,
+              extra_retry: str | None = None) -> tuple[list[Word], float]:
     t = {**DEFAULT_TUNE, **(tune or {})}
     H, W = img.shape[:2]
     h = max(line.h, 8.0)
@@ -174,7 +178,8 @@ def read_line(img: np.ndarray, line: Line, cfg: dict, quality: float, extra: str
     best, best_key = ([], 0.0), None
     for k, (method, chan, psm, sm) in enumerate(attempts):
         img_p = prep_crop(crop, scale * sm, method, chan, t["k"], t["blur"])
-        words = _words_from_data(_tess(img_p, cfg, psm, extra), x0, y0, scale * sm)
+        words = _words_from_data(_tess(img_p, cfg, psm, extra if k == 0 else (extra if extra_retry is None else extra_retry)),
+                                 x0, y0, scale * sm)
         conf = _mean_conf(words)
         sim = fuzz.ratio(" ".join(w.text for w in words).lower(), expected.lower()) if words else 0
         key = (round(conf / 5), sim)  # la similitud solo desempata
@@ -252,7 +257,7 @@ def reads_as_many(img: np.ndarray, items, cfg: dict, extra: str = "") -> list[bo
         if _variant_hit(img, items[i][0], items[i][1], cfg, extra, wide, v):
             hits[i] = True
 
-    with ThreadPoolExecutor(max_workers=6) as ex:
+    with ThreadPoolExecutor(max_workers=WORKERS) as ex:
         list(ex.map(run, tasks))
     return hits
 
@@ -299,16 +304,18 @@ def _alnum_ok(t: str) -> bool:
 
 
 def compare_guided(spans: list[TextSpan], client: np.ndarray, cfg: dict, quality: float,
-                   extra: str = "", tune: dict | None = None) -> TextResult:
+                   extra: str = "", tune: dict | None = None, extra_full: str | None = None) -> TextResult:
+    """`extra`: argumentos de Tesseract baratos (primera lectura); `extra_full`: con el vocabulario (relecturas)."""
+    extra_full = extra if extra_full is None else extra_full
     if not setup_tesseract(cfg):
         raise OcrUnavailable("Tesseract no está instalado. Instálalo con: winget install UB-Mannheim.TesseractOCR")
     lines = lines_from_layout(spans)
     H, W = client.shape[:2]
 
-    with ThreadPoolExecutor(max_workers=4) as ex:
+    with ThreadPoolExecutor(max_workers=WORKERS) as ex:
         base = float((tune or {}).get("margin", 0.25))
         zones_px = [line_zone(ln, lines, quality, W, H, base) for ln in lines]
-        reads = list(ex.map(lambda a: read_line(client, a[0], cfg, quality, extra, a[1], tune),
+        reads = list(ex.map(lambda a: read_line(client, a[0], cfg, quality, extra, a[1], tune, extra_full),
                             zip(lines, zones_px)))
 
     res = TextResult()
@@ -348,7 +355,7 @@ def compare_guided(spans: list[TextSpan], client: np.ndarray, cfg: dict, quality
         res.differences.append(_missing_diff(w))
         all_client.append(w)
         res.total += 1
-    res.differences, verified = verify_diffs(client, res.differences, cfg, extra)
+    res.differences, verified = verify_diffs(client, res.differences, cfg, extra_full)
     for d in verified:  # releído y coincide con el diseño: era un error del OCR
         res.matched += 1
         res.matched_design_keys.add(word_key(d.found))

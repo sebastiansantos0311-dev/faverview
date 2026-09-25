@@ -106,16 +106,19 @@ def add_from_review(result, design_path) -> None:
     add_patterns(tokens)
 
 
-def ocr_extra_config() -> str:
-    """Argumentos de Tesseract con el vocabulario y los patrones aprendidos ("" si no hay)."""
+def ocr_extra_config(full: bool = True) -> str:
+    """Argumentos de Tesseract con lo aprendido ("" si no hay). Los patrones son baratos; el vocabulario
+    (`--user-words`) cuesta ~0,25 s por lectura, así que `full=False` lo omite (primera lectura de cada línea) y
+    `full=True` lo incluye (relecturas y verificaciones, donde de verdad ayuda)."""
     if not store.enabled():
         return ""
     parts = []
-    d = _read()
-    if d:
-        wp = store.path("vocabulario_tesseract.txt")
-        wp.write_text("\n".join(sorted(d)) + "\n", encoding="utf-8")
-        parts.append(f"--user-words {wp.as_posix()}")
+    if full:
+        d = _read()
+        if d:
+            wp = store.path("vocabulario_tesseract.txt")
+            wp.write_text("\n".join(sorted(d)) + "\n", encoding="utf-8")
+            parts.append(f"--user-words {wp.as_posix()}")
     pp = store.path("patrones.txt")
     if pp.exists() and pp.read_text(encoding="utf-8").strip():
         parts.append(f"--user-patterns {pp.as_posix()}")

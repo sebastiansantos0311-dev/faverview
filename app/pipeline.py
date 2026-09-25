@@ -200,10 +200,11 @@ def run_comparison(job_id: str, client_path, design_path, params: dict | None = 
     tune = tuning.params_for(image_type) if learn_on else None
     if params and "tune" in params:  # (uso interno: comprobar un ajuste candidato; {} = valores de fábrica)
         tune = params["tune"]
-    extra = vocab.ocr_extra_config() if learn_on else ""
+    extra = vocab.ocr_extra_config(full=False) if learn_on else ""
+    extra_full = vocab.ocr_extra_config(full=True) if learn_on else ""
     try:
         if spans and cfg.get("ocr_mode", "guiado") == "guiado":
-            tr = compare_guided(spans, client, cfg, quality, extra, tune)
+            tr = compare_guided(spans, client, cfg, quality, extra, tune, extra_full)
         else:
             if spans:
                 design_words = layout_words(spans)

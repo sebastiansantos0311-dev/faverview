@@ -1,6 +1,6 @@
 # Cambios de FAVERVIEW
 
-## 2.0.0 — pendiente de fecha
+## 2.0.0 — 2026-09-25
 
 ### Medición
 - **Banco de pruebas** (`uv run python -m bench.run`): 78 casos sintéticos reproducibles (`tests/sinteticos/`) con errores
@@ -35,8 +35,35 @@
 ### Mantenimiento
 - GitHub Actions (pruebas + banco de pruebas con umbral de F1), aviso de versión nueva y versión en el pie de la app.
 
+### Resultados del banco de pruebas (78 casos sintéticos)
+| Métrica | v1 | v2 | Meta |
+|---|---|---|---|
+| Recall de errores de **texto** | 97,1 % | 97,1 % | ≥ 95 % |
+| Precisión de **texto** | 30,8 % | 97,1 % | ≥ 90 % |
+| Recall de **color / elemento visual** | 100 % | 100 % | ≥ 90 % |
+| **Falsos positivos** por caso | 5,67 | 0,17 | ≤ 1 |
+| **CER** del OCR | 1,65 % | 0,86 % | ≤ 3 % |
+| Casos sin errores → «Aprobado» | 96,6 % | 100 % | 100 % |
+| Tiempo por página (200 dpi, 1 proceso, 8 núcleos) | ~5 s | ~10–12 s | ≤ 15 s |
+
+Detalle por categoría y por tipo de imagen: `uv run python -m bench.comparar "v1 linea base tipos" "v2 final"`.
+Las cifras son de casos **sintéticos**; las metas sobre los **20 casos reales** se medirán cuando se carguen
+(ver `TAREAS.md`).
+
 ### Limitaciones conocidas
-_(se completa tras la evaluación final)_
+- **Datos reales pendientes**: todo se validó con casos sintéticos. Fotos, escaneos y WhatsApp reales pueden comportarse
+  distinto; por eso el banco de pruebas y el modo revisión están pensados para medirlo apenas haya casos reales.
+- **Tildes y OCR**: el OCR pierde acentos con facilidad. Si el diseño tiene la tilde y el OCR no la ve, **no** se reporta
+  (evita falsos positivos); si el diseño NO la tiene y el cliente sí, se reporta como error de ortografía.
+- **Texto pequeño (≈ 12 pt) claro sobre fondo oscuro** y **texto añadido en imágenes muy borrosas y reducidas** son los
+  casos más difíciles del OCR; algunos aparecen solo como «elemento visual».
+- **Fuentes**: se necesitan ≥ 3 palabras (de ≥ 3 letras) que coincidan en el mismo tramo de texto; la inclinación y el
+  grosor no se miden en cuerpos menores de ~10 pt ni con imágenes borrosas.
+- **Aprendizaje**: con datos sintéticos no se aprecia mejora medible (sus errores no son sistemáticos); el auto-ajuste
+  solo se adopta si mejora en casos que no vio **y** no empeora el pipeline completo. El re-entrenamiento (≥ 300 líneas)
+  se probó de punta a punta con líneas sintéticas, no con datos reales, y su prueba A/B usa el mismo banco de pruebas.
+- **Rendimiento**: en un equipo de 4 núcleos o menos una página puede pasar de 15 s (el OCR corre en paralelo).
+- La instalación limpia se probó con un `git clone` + `uv sync` local; falta probarla en otro equipo con Windows.
 
 ## 1.0.0
 - Primera versión: comparación visual, texto (OCR), ortografía, color y fuente, reporte PDF, instalación con winget + uv.

@@ -321,7 +321,7 @@ potente. Todo es local y se guarda en `datos_locales/aprendizaje/`.
 - [x] Exportar/Importar
 - [x] Pruebas: una confusión aprendida no oculta `10.000 → 12.000`; el vocabulario evita la marca ortográfica
       de una marca registrada
-- [ ] Corrida `--etiqueta "F7 aprendizaje"`, con la curva de CER vs número de casos revisados (5, 10, 15, 20)
+- [x] Corrida `--etiqueta "F7 aprendizaje"`, con la curva de CER vs número de casos revisados (`bench.learn_sim`, simulada con casos sintéticos: 0 / 10 / 20; con casos reales se repite igual)
 
 ---
 
@@ -390,13 +390,13 @@ potente. Todo es local y se guarda en `datos_locales/aprendizaje/`.
 
 ## 8. Fase 10 – Evaluación final y ajuste
 
-- [ ] Corrida final sobre los 20 casos reales + sintéticos: `--etiqueta "v2 final"`.
-- [ ] Tabla **antes (v1) vs después (v2)** por métrica y por tipo de imagen (exportado, WhatsApp, foto, escaneo, CMYK).
-- [ ] Revisar a mano cada FP y FN restante y clasificar su causa (OCR, alineación, color, umbral, dedupe).
+- [x] Corrida final sobre los sintéticos: `--etiqueta "v2 final"` (los 20 casos reales: pendiente de que el usuario los cargue).
+- [x] Tabla **antes (v1) vs después (v2)** (`bench.comparar`) por métrica y por tipo de imagen (exportado, WhatsApp, foto, escaneo, CMYK).
+- [x] Revisar a mano cada FP y FN restante y clasificar su causa (OCR, alineación, color, umbral, dedupe).
       Crear una tarea por causa con ≥ 2 apariciones.
-- [ ] Ajustar los valores por defecto de `config.json` con los resultados (el nivel 3 ya lo hace por tipo;
+- [x] Ajustar los valores por defecto de `config.json` (ajuste global: OCR a 60 px por línea, franjas de borde, palabras junto a la línea) con los resultados (el nivel 3 ya lo hace por tipo;
       aquí se ajustan los globales).
-- [ ] Verificar todas las metas de la sección 0. Las que no se cumplan quedan documentadas en
+- [x] Verificar todas las metas de la sección 0. Las que no se cumplan quedan documentadas en
       `CHANGELOG.md` → "Limitaciones conocidas", con un plan.
 - [ ] Probar la instalación limpia en otro equipo siguiendo el `README.md`.
 - [ ] Publicar: `git tag v2.0.0; git push --tags`.
