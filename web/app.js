@@ -708,7 +708,7 @@ async function openLearning() {
           onclick: () => confirm("El re-entrenamiento puede tardar varios minutos. ¿Continuar?") && act("/api/learning/train", { method: "POST" }) }, "Re-entrenar modelo"),
         r.modelo ? h("button", { onclick: () => act("/api/learning/model", { method: "POST", headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ activo: !r.modelo_activo }) }) }, r.modelo_activo ? "Volver al modelo original" : "Activar modelo entrenado") : null),
-      tarea.en_curso ? h("div", { class: "banner warn" }, `En curso: ${tarea.en_curso}…`, h("pre", {}, (tarea.registro || []).join("\n"))) : null,
+      tarea.en_curso ? h("div", { class: "banner warn" }, `En curso: ${tarea.en_curso}…`, h("pre", {}, (tarea.registro || []).join("\n"))) : "",
       tarea.resultado ? h("div", { class: "hint" }, "Último resultado: " + (tarea.resultado.mensaje || JSON.stringify(tarea.resultado).slice(0, 300))) : "",
       r.ab ? h("div", { class: "hint" }, `Prueba A/B: CER ${r.ab.cer_base}% → ${r.ab.cer_nuevo}% · F1 texto ${r.ab.f1_base}% → ${r.ab.f1_nuevo}% · ${r.ab.activado ? "activado" : "descartado"}`) : "",
       h("h3", {}, "Confusiones aprendidas"),
