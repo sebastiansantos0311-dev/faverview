@@ -43,11 +43,12 @@ cd $HOME\FAVERVIEW; uv run faverview
 ```
 La primera vez descarga Python y las librerías (unos minutos). Después se abre el navegador con la app.
 
-### Paso 5 – Crear el acceso directo en el Escritorio (opcional)
+### Paso 5 – Acceso directo con el logo (automático)
+Al hacer el **primer arranque** (paso 4) FAVERVIEW crea solo el acceso directo **FAVERVIEW** en tu Escritorio, con el logo
+del calvito con gafas. Desde entonces basta con hacer **doble clic** en él. Si lo borras y quieres recrearlo:
 ```bash
 cd $HOME\FAVERVIEW; uv run faverview --acceso-directo
 ```
-Desde entonces basta con hacer **doble clic en "FAVERVIEW"** en el Escritorio.
 
 ---
 

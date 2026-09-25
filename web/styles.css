@@ -188,3 +188,5 @@ select { background: var(--panel2); color: var(--text); border: 1px solid var(--
 
 .banner.update { background: #0f2a44; border: 1px solid var(--accent); }
 .foot { color: var(--muted); font-size: 12px; text-align: center; padding: 14px; }
+
+.logo { width: 34px; height: 34px; border-radius: 8px; }

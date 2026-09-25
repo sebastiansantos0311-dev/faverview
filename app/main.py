@@ -71,6 +71,11 @@ def _find_upload(job_dir: Path, stem: str) -> Path:
                     "Vuelve a subirlos para recalcular.")
 
 
+@app.get("/favicon.ico")
+def favicon():
+    return FileResponse(WEB_DIR.parent / "assets" / "faverview.ico")
+
+
 @app.get("/")
 def index():
     return FileResponse(WEB_DIR / "index.html")

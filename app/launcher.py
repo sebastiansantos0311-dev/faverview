@@ -20,35 +20,60 @@ def free_port(start=8000):
     return start
 
 
-def create_shortcut() -> None:
-    """Crea 'FAVERVIEW' en el Escritorio apuntando a `uv run faverview` en esta carpeta."""
+ICON = BASE_DIR / "assets" / "faverview.ico"
+MARKER = BASE_DIR / "data" / ".acceso_directo_creado"
+
+
+def create_shortcut(quiet: bool = False) -> bool:
+    """Crea 'FAVERVIEW' en el Escritorio (con el logo) apuntando a `uv run faverview` en esta carpeta."""
     uv = shutil.which("uv")
     if not uv:
-        print("No se encontró 'uv'. Instálalo con: winget install astral-sh.uv")
-        sys.exit(1)
-    desktop = Path.home() / "Desktop"
-    onedrive_desktop = Path.home() / "OneDrive" / "Desktop"
-    if not desktop.exists() and onedrive_desktop.exists():
-        desktop = onedrive_desktop
-    lnk = desktop / "FAVERVIEW.lnk"
+        if not quiet:
+            print("No se encontró 'uv'. Instálalo con: winget install astral-sh.uv")
+        return False
     ps = (
-        "$s=(New-Object -ComObject WScript.Shell).CreateShortcut($env:FV_LNK);"
+        "$d=[Environment]::GetFolderPath('Desktop');"
+        "$l=Join-Path $d 'FAVERVIEW.lnk';"
+        "$s=(New-Object -ComObject WScript.Shell).CreateShortcut($l);"
         "$s.TargetPath=$env:FV_UV;"
         "$s.Arguments='run faverview';"
         "$s.WorkingDirectory=$env:FV_DIR;"
         "$s.Description='FAVERVIEW - comparador de diseños';"
-        "$s.Save()"
+        "if (Test-Path $env:FV_ICON) { $s.IconLocation=$env:FV_ICON };"
+        "$s.Save();"
+        "Write-Output $l"
     )
-    env = {"FV_LNK": str(lnk), "FV_UV": uv, "FV_DIR": str(BASE_DIR)}
-    subprocess.run(["powershell", "-NoProfile", "-Command", ps], check=True,
-                   env={**os.environ, **env})
-    print(f"Acceso directo creado: {lnk}")
+    env = {"FV_UV": uv, "FV_DIR": str(BASE_DIR), "FV_ICON": str(ICON)}
+    try:
+        r = subprocess.run(["powershell", "-NoProfile", "-Command", ps], check=True, capture_output=True, text=True,
+                           env={**os.environ, **env}, timeout=30)
+    except Exception:
+        if not quiet:
+            print("No se pudo crear el acceso directo en el Escritorio.")
+        return False
+    try:
+        MARKER.parent.mkdir(parents=True, exist_ok=True)
+        MARKER.write_text("ok", encoding="utf-8")
+    except OSError:
+        pass
+    if not quiet:
+        print(f"Acceso directo creado: {r.stdout.strip()}")
+    return True
+
+
+def ensure_shortcut() -> None:
+    """Primer arranque: crea el acceso directo del Escritorio una sola vez (si lo borras, no se vuelve a crear;
+    para recrearlo usa `uv run faverview --acceso-directo`)."""
+    if sys.platform != "win32" or MARKER.exists():
+        return
+    if create_shortcut(quiet=True):
+        print("Se creó el acceso directo «FAVERVIEW» en tu Escritorio.")
 
 
 def main() -> None:
     if "--acceso-directo" in sys.argv:
-        create_shortcut()
-        return
+        sys.exit(0 if create_shortcut() else 1)
+    ensure_shortcut()
 
     if not find_tesseract(load_config()):
         print("AVISO: no se encontró Tesseract; la comparación de texto no funcionará.")

@@ -42,3 +42,15 @@ def test_no_repo_or_no_network_never_raises(tmp_path, monkeypatch):
 
 def test_version_comes_from_pyproject():
     assert get_version().count(".") == 2
+
+
+def test_shortcut_is_created_once_on_first_run(tmp_path, monkeypatch):
+    from app import launcher
+    calls = []
+    monkeypatch.setattr(launcher, "MARKER", tmp_path / ".creado")
+    monkeypatch.setattr(launcher.sys, "platform", "win32")
+    monkeypatch.setattr(launcher, "create_shortcut", lambda quiet=False: calls.append(1) or (launcher.MARKER.write_text("ok") or True))
+    launcher.ensure_shortcut()
+    launcher.ensure_shortcut()  # segunda vez: ya existe el marcador, no lo recrea
+    assert len(calls) == 1
+    assert launcher.ICON.exists()
