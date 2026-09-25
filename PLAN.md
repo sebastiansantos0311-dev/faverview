@@ -1,4 +1,6 @@
-﻿# FAVERVIEW – Plan de implementación (para agente ejecutor)
+﻿> **Continuación:** las mejoras de la versión 2 están en [PLAN_V2.md](PLAN_V2.md).
+
+# FAVERVIEW – Plan de implementación (para agente ejecutor)
 
 > **Instrucciones para el agente:** este documento es la especificación completa.
 > Ejecútalo fase por fase, en orden. Marca cada casilla `[x]` al terminar.
