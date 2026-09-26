@@ -249,3 +249,7 @@ button.mini { padding: 1px 6px; font-size: 11px; }
 .bc-prev svg { max-width: 100%; height: auto; }
 .errtxt { color: #f87171; }
 textarea { background: #0f1420; color: var(--text); border: 1px solid var(--line); border-radius: 6px; padding: 6px; }
+.tl-drop { padding: 10px 16px; }
+.tl-two { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.tl-two img { max-width: 100%; background: #fff; }
+.tb { border-collapse: collapse; width: 100%; } .tb th, .tb td { border-bottom: 1px solid var(--line); padding: 6px 8px; text-align: left; }

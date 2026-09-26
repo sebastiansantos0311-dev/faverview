@@ -1,0 +1,104 @@
+<div class="sep-tabs" id="tl-tabs">
+  <button class="ghost active" data-t="trap">Trapping</button>
+  <button class="ghost" data-t="step">Step &amp; repeat</button>
+  <button class="ghost" data-t="flexo">Distorsión flexo</button>
+  <button class="ghost" data-t="braille">Braille</button>
+  <button class="ghost" data-t="gamut">Gama extendida</button>
+  <button class="ghost" data-t="proof">Prueba en pantalla</button>
+  <button class="ghost" data-t="cal">Calibración</button>
+</div>
+<div id="tl-filebar" class="sp-bar">
+  <div class="drop tl-drop" id="tl-drop"><span id="tl-dropmsg">Suelta aquí el PDF del trabajo (o haz clic)</span><input type="file" hidden accept=".pdf"></div>
+  <span id="tl-inks" class="hint"></span>
+</div>
+<div id="tl-err" class="error hidden"></div>
+
+<section class="tl-pane" data-t="trap">
+  <div class="sp-grid bc-grid"><aside class="sp-side">
+    <label>Proceso <select id="tr-proc"><option value="flexo">Flexo (0,15 mm)</option><option value="offset">Offset (0,08 mm)</option><option value="serigrafia">Serigrafía (0,25 mm)</option></select></label>
+    <label>Ancho del trap (mm, vacío = del proceso) <input id="tr-w" type="number" min="0.01" step="0.01" class="num"></label>
+    <label>Trap % <input id="tr-pct" type="number" min="10" max="100" value="100" class="num"></label>
+    <label>Tope de cobertura en el trap (%) <input id="tr-tac" type="number" value="300" class="num"></label>
+    <label>Resolución (dpi) <input id="tr-dpi" type="number" value="600" min="150" max="1200" class="num"></label>
+    <button id="tr-go" class="ghost">Calcular trapping</button>
+    <h3>Mal registro</h3>
+    <label>Placa a desplazar <select id="tr-ink"></select></label>
+    <label>Desplazamiento (µm) <input id="tr-dx" type="number" value="100" class="num"></label>
+    <button id="tr-mis" class="ghost">Comparar con y sin trap</button>
+    <button id="tr-exp" class="ghost">Exportar placas con trap (ZIP)</button>
+    <p class="hint">Estimación orientativa: la tinta más clara se expande bajo la más oscura; el negro, el barniz y las tintas técnicas nunca se expanden. Confirma los anchos con tu imprenta.</p>
+  </aside><div class="sp-center"><div id="tr-out"></div></div></div>
+</section>
+
+<section class="tl-pane hidden" data-t="step">
+  <div class="sp-grid bc-grid"><aside class="sp-side">
+    <label>Hoja: ancho × alto (mm) <span><input id="st-w" type="number" value="300" class="num"> × <input id="st-h" type="number" value="200" class="num"></span></label>
+    <label>Columnas × filas (vacío = rellenar) <span><input id="st-c" type="number" min="1" class="num"> × <input id="st-r" type="number" min="1" class="num"></span></label>
+    <label>Separación horizontal / vertical (mm) <span><input id="st-gx" type="number" value="3" class="num"> / <input id="st-gy" type="number" value="3" class="num"></span></label>
+    <label>Márgenes izq, arr, der, abajo (mm) <input id="st-m" value="10,10,10,10"></label>
+    <label>Rotación por fila (0/90/180/270, separadas por coma) <input id="st-rf" value="0"></label>
+    <label>Desfase de filas alternas (mm) <input id="st-sf" type="number" value="0" class="num"></label>
+    <label><input id="st-reg" type="checkbox" checked> Marcas de registro (tinta All)</label>
+    <label><input id="st-cut" type="checkbox" checked> Marcas de corte</label>
+    <label><input id="st-bar" type="checkbox" checked> Barra de control de color</label>
+    <label><input id="st-txt" type="checkbox" checked> Texto e identificación por placa</label>
+    <label><input id="st-mic" type="checkbox"> Microdots</label>
+    <button id="st-go" class="ghost">Generar imposición</button>
+    <a id="st-dl" class="btn hidden" href="#">Descargar PDF</a>
+  </aside><div class="sp-center"><div id="st-out"></div></div></div>
+</section>
+
+<section class="tl-pane hidden" data-t="flexo">
+  <div class="sp-grid bc-grid"><aside class="sp-side">
+    <p class="hint">D % = 2π · k / R · 100. k = espesor del cliché − espesor de la base (tabla de tu proveedor). También puedes escribir D % directamente.</p>
+    <label>k (mm) <input id="fx-k" type="number" step="0.01" value="1.14" class="num"></label>
+    <label>Repetición R (mm) <input id="fx-r" type="number" value="400" class="num"></label>
+    <button id="fx-calc" class="ghost">Calcular D %</button>
+    <label>Distorsión D % <input id="fx-d" type="number" step="0.01" class="num"></label>
+    <label>Dirección de impresión <select id="fx-dir"><option value="vertical">Vertical (la altura se comprime)</option><option value="horizontal">Horizontal (el ancho se comprime)</option></select></label>
+    <button id="fx-go" class="ghost">Aplicar al PDF</button>
+    <a id="fx-dl" class="btn hidden" href="#">Descargar PDF distorsionado</a>
+  </aside><div class="sp-center"><div id="fx-out" class="sp-probe"></div></div></div>
+</section>
+
+<section class="tl-pane hidden" data-t="braille">
+  <div class="sp-grid bc-grid"><aside class="sp-side">
+    <label>Texto <textarea id="br-txt" rows="3">Paracetamol 500 mg</textarea></label>
+    <label>Ancho disponible (mm) <input id="br-w" type="number" value="120" class="num"></label>
+    <button id="br-pdf" class="ghost">Descargar PDF (tinta Braille)</button><button id="br-svg" class="ghost">Descargar SVG</button>
+    <p class="hint">Braille español grado 1 con tabla propia y geometría Marburg Medium. Verifica las medidas con la norma o con tu proveedor y mantén el braille lejos de pliegues.</p>
+  </aside><div class="sp-center"><div id="br-prev" class="bc-prev"></div><div id="br-info" class="sp-probe"></div></div></div>
+</section>
+
+<section class="tl-pane hidden" data-t="gamut">
+  <div class="sp-grid bc-grid"><aside class="sp-side">
+    <h3>Juego de tintas fijo</h3><div id="gm-inks" class="hint">Cargando tintas…</div>
+    <label>Máx. de tintas por receta <select id="gm-max"><option>2</option><option selected>3</option></select></label>
+    <button id="gm-go" class="ghost">Calcular recetas</button>
+    <button id="gm-apply" class="ghost">Aplicar al PDF</button>
+    <a id="gm-dl" class="btn hidden" href="#">Descargar PDF</a>
+    <p class="hint">Estimación basada en un modelo; confirmar con prueba impresa.</p>
+  </aside><div class="sp-center"><div id="gm-out"></div></div></div>
+</section>
+
+<section class="tl-pane hidden" data-t="cal">
+  <div class="sp-grid bc-grid"><aside class="sp-side">
+    <p class="hint">1) Descarga el gráfico e imprímelo con tu juego de tintas real. 2) Mide los parches y rellena la plantilla CSV (Lab). 3) Súbela para ajustar el modelo (Lab del sólido, ganancia de punto y factor n) y guarda el perfil.</p>
+    <div id="cl-inks" class="hint">Cargando tintas…</div>
+    <button id="cl-chart" class="ghost">Descargar gráfico (PDF)</button>
+    <button id="cl-tpl" class="ghost">Descargar plantilla de medidas (CSV)</button>
+    <label>Nombre del perfil <input id="cl-name" value="Mi imprenta"></label>
+    <div class="drop tl-drop" id="cl-drop"><span>Suelta aquí el CSV con las medidas</span><input type="file" hidden accept=".csv,.txt"></div>
+  </aside><div class="sp-center"><div id="cl-out" class="sp-probe"></div></div></div>
+</section>
+
+<section class="tl-pane hidden" data-t="proof">
+  <div class="sp-grid bc-grid"><aside class="sp-side">
+    <label>Sustrato <select id="pr-sub"></select></label>
+    <label>Textura <select id="pr-tex"><option value="ninguna">Ninguna</option><option value="kraft">Kraft</option><option value="carton">Cartón</option><option value="prenda">Prenda</option></select></label>
+    <label>Ganancia de punto en el 50 % (%) <input id="pr-g" type="number" value="0" min="0" max="30" class="num"></label>
+    <label><input id="pr-nw" type="checkbox"> Ver sin blanco</label>
+    <button id="pr-go" class="ghost">Simular</button>
+    <p class="hint">Vista orientativa, no es una prueba contractual.</p>
+  </aside><div class="sp-center"><div class="bc-prev"><img id="pr-img" alt="" style="max-width:100%"></div></div></div>
+</section>

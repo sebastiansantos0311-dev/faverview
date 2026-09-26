@@ -90,3 +90,11 @@ Formato: fecha · contexto · decisión · alternativa descartada.
 - **Texto legible:** Helvetica estándar del PDF (no se incluye OCR-B, sin licencia clara); las posiciones de los dígitos EAN/UPC son aproximadas.
 - **Grado A–F:** perfil de reflectancia en la banda central (contraste de símbolo, modulación, defectos, reflectancia mínima); siempre se muestra como estimación, nunca certificada.
 - **Flexo/dirección:** «barras paralelas a la dirección de impresión» se calcula con la orientación decodificada y la dirección indicada por el usuario.
+
+## S7 – Herramientas
+- **Trapping:** pares con L* parecido (± 5) no se trapean (no hay dirección clara); el negro, barniz y técnicas nunca se expanden; el blanco solo se contrae. Solo se trapea entre zonas con ≥ 50 % de tinta para no tocar degradados. «Mantener texto pequeño» se ofrece como máscara opcional en la función (la API aún no la envía).
+- **Step & repeat:** el sangrado siempre se recorta con el BleedBox; con «sangrado compartido» se permite que se solape. La rotación se aplica por fila y por columna; el aprovechamiento se calcula con el TrimBox.
+- **Braille:** tabla propia de grado 1 (letras, ñ, acentos, dígitos con signo numérico, mayúscula con punto 6 y doble en palabras enteras, puntuación básica). Los signos de puntuación y la geometría Marburg Medium están sin verificar contra la norma: son configurables y la interfaz lo avisa.
+- **Gama extendida:** búsqueda por subconjuntos (≤ 3 tintas) con `least_squares`, penalizando levemente cada tinta extra; la conversión reescribe cada `scn` de la directa a las coberturas de la receta (lineal en el tinte).
+- **Calibración:** n y la ganancia de punto se ajustan juntos (se compensan entre sí); se valida la calidad del ajuste, no cada valor por separado.
+- **Prueba en pantalla:** la etiqueta «Vista orientativa, no es una prueba contractual» se estampa siempre en la imagen.

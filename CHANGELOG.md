@@ -33,6 +33,11 @@
   reporte PDF con miniaturas. Códigos de barras: generar 12 tipos en vectores (EAN/UPC, ITF-14, Code 128, GS1-128, Code 39, DataBar,
   DataMatrix, GS1 DataMatrix, QR) con dígito de control, AIs GS1, magnificación, BWR y zonas de silencio; verificar en PDF/imagen (decodificación,
   magnificación medida, contraste en luz roja, dirección flexo y grado A–F estimado) y lote CSV.
+- **S7 – Herramientas:** trapping por placas (la tinta más clara se expande bajo la más oscura, tabla de anchos, tope de TAC, choke del blanco,
+  simulación de mal registro con/sin trap), step & repeat con rotación, desfase y marcas (registro /All, corte, barra de color, microdots,
+  rótulo de cada tinta en su placa), distorsión flexo (D % = 2π·k/R·100), braille español grado 1 (tabla propia, Marburg Medium configurable,
+  tinta técnica en sobreimpresión), gama extendida (recetas ≤ 3 tintas con semáforo y conversión a DeviceN) y prueba en pantalla con
+  ganancia de punto y textura. Calibración opcional del modelo de mezcla (gráfico, plantilla CSV y ajuste de n y ganancia por tinta).
 
 ## 2.0.0 — 2026-09-25
 

@@ -18,6 +18,7 @@ from app.modules.separate import raster_api
 from app.modules.vectorize import api as vectorize_api
 from app.modules.preflight import api as preflight_api
 from app.modules.barcodes import api as barcodes_api
+from app.modules.tools import api as tools_api
 
 
 @asynccontextmanager
@@ -59,5 +60,6 @@ app.include_router(raster_api.router)
 app.include_router(vectorize_api.router)
 app.include_router(preflight_api.router)
 app.include_router(barcodes_api.router)
+app.include_router(tools_api.router)
 app.include_router(learning_api.router)
 app.mount("/static", StaticFiles(directory=WEB_DIR), name="static")

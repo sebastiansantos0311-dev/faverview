@@ -568,67 +568,67 @@ respalda. Mostrar la fecha y el enlace al reporte.
 
 ### 11.1 Trapping (reventado)
 Enfoque **por placas (raster)**, robusto y explicable; el trapping vectorial queda fuera de alcance (documentado).
-- [ ] Entrada: placas de S2 (a dpi de salida) + tintas con Lab.
-- [ ] Para cada par de tintas adyacentes (bordes donde una termina y otra empieza), decidir la dirección con
+- [x] Entrada: placas de S2 (a dpi de salida) + tintas con Lab.
+- [x] Para cada par de tintas adyacentes (bordes donde una termina y otra empieza), decidir la dirección con
       reglas estándar: **la tinta más clara se expande bajo la más oscura** (luminancia L*, o densidad);
       el negro/tintas oscuras no se expanden; blanco y barniz: reglas propias (el blanco se contrae = choke);
       tintas técnicas: nunca.
-- [ ] Ancho del trap por tinta y por proceso (por defecto flexo 0.15 mm, offset 0.08 mm, serigrafía 0.2–0.3 mm), con
+- [x] Ancho del trap por tinta y por proceso (por defecto flexo 0.15 mm, offset 0.08 mm, serigrafía 0.2–0.3 mm), con
       una tabla editable "tinta A → tinta B: ancho".
-- [ ] Implementación: dilatación morfológica de la placa clara **restringida** a la zona de la oscura (máscara de
+- [x] Implementación: dilatación morfológica de la placa clara **restringida** a la zona de la oscura (máscara de
       borde), con un elemento estructurante circular del radio en px. Opción de "trap al 100%" o "reducido" (p. ej. 50%) y
       tope de TAC en la zona del trap.
-- [ ] No trapear: texto < X pt (opción "mantener el texto pequeño"), degradados que se tocan (opción), imágenes
+- [x] No trapear: texto < X pt (opción "mantener el texto pequeño"), degradados que se tocan (opción), imágenes
       (opción).
-- [ ] Salida: placas con trapping (TIFF) + **mapa de traps** (capa de color en el visor para revisarlos) + PDF de placas.
-- [ ] Simulación de **mal registro**: desplazar una placa ±N µm y mostrar la vista con y sin trap (lo convence al cliente).
-- [ ] Tests: dos rectángulos adyacentes (claro/oscuro) → el claro se expande exactamente el ancho, solo bajo el oscuro.
+- [x] Salida: placas con trapping (TIFF) + **mapa de traps** (capa de color en el visor para revisarlos) + PDF de placas.
+- [x] Simulación de **mal registro**: desplazar una placa ±N µm y mostrar la vista con y sin trap (lo convence al cliente).
+- [x] Tests: dos rectángulos adyacentes (claro/oscuro) → el claro se expande exactamente el ancho, solo bajo el oscuro.
 
 ### 11.2 Step & repeat / imposición / marcas
-- [ ] Entrada: un PDF de etiqueta/diseño (usa TrimBox/BleedBox).
-- [ ] Parámetros: hoja o banda (ancho × repetición o largo en mm), filas × columnas (o "rellenar"), separación
+- [x] Entrada: un PDF de etiqueta/diseño (usa TrimBox/BleedBox).
+- [x] Parámetros: hoja o banda (ancho × repetición o largo en mm), filas × columnas (o "rellenar"), separación
       horizontal/vertical (gap), **sangrado compartido** o no, rotación por fila/columna (0/90/180/270),
       **desfase** (stagger) por fila/columna, márgenes.
-- [ ] Implementación: PyMuPDF `show_pdf_page` (reutiliza el contenido como Form XObject; el archivo no crece por copia).
-- [ ] **Marcas dinámicas**: registro (cruz, en la tinta de registro `All`), corte, **barra de control de color** con
+- [x] Implementación: PyMuPDF `show_pdf_page` (reutiliza el contenido como Form XObject; el archivo no crece por copia).
+- [x] **Marcas dinámicas**: registro (cruz, en la tinta de registro `All`), corte, **barra de control de color** con
       parches sólidos de cada tinta del trabajo y 50%, **microdots** (flexo), texto de identificación (trabajo, fecha,
       tinta: en cada placa sale su nombre con el color de esa tinta), guías de troquel.
-- [ ] Exportar PDF + reporte (nº de repeticiones, aprovechamiento %).
-- [ ] Tests: 3×4 con gap 3 mm → posiciones exactas (± 0.01 mm); las marcas aparecen en todas las placas (verificar con S2).
+- [x] Exportar PDF + reporte (nº de repeticiones, aprovechamiento %).
+- [x] Tests: 3×4 con gap 3 mm → posiciones exactas (± 0.01 mm); las marcas aparecen en todas las placas (verificar con S2).
 
 ### 11.3 Distorsión flexo
-- [ ] Compensación del alargamiento del cliché al montarlo en el cilindro:
+- [x] Compensación del alargamiento del cliché al montarlo en el cilindro:
       `D% = (2π · k / R) · 100`, con `k` = espesor del cliché − espesor de la base de poliéster (factor k de la tabla del
       fabricante, **introducido por el usuario**) y `R` = repetición (desarrollo del cilindro) en mm. Documentar la
       fórmula y permitir introducir **D% directamente** (lo que da el fabricante).
-- [ ] Escalar el PDF solo en la dirección de impresión (elegir horizontal/vertical) con PyMuPDF (matriz), por página.
-- [ ] Añadir una nota con la distorsión aplicada en el margen. Test: 100 mm con D = 2% → 98 mm.
+- [x] Escalar el PDF solo en la dirección de impresión (elegir horizontal/vertical) con PyMuPDF (matriz), por página.
+- [x] Añadir una nota con la distorsión aplicada en el margen. Test: 100 mm con D = 2% → 98 mm.
 
 ### 11.4 Braille
-- [ ] Traducción de texto a braille español (grado 1) con liblouis (`es-g1.ctb`). Si `louis` no está disponible en
+- [x] Traducción de texto a braille español (grado 1) con liblouis (`es-g1.ctb`). Si `louis` no está disponible en
       Windows, implementar una **tabla propia de grado 1 español** (alfabeto, acentos, números con signo numérico,
       mayúsculas) y documentarla.
-- [ ] Geometría **Marburg Medium** (usada en farmacéutica, EN 15823): diámetro de punto ≈ 1.6 mm, distancia entre
+- [x] Geometría **Marburg Medium** (usada en farmacéutica, EN 15823): diámetro de punto ≈ 1.6 mm, distancia entre
       puntos 2.5 mm, entre caracteres 6.0 mm y entre líneas 10.0 mm (**verificar** los valores con la norma o con la
       referencia disponible y hacerlos configurables).
-- [ ] Salida: capa vectorial en la tinta técnica "Braille" (sobreimpresión) + vista previa. Aviso de la zona libre de
+- [x] Salida: capa vectorial en la tinta técnica "Braille" (sobreimpresión) + vista previa. Aviso de la zona libre de
       pliegues/solapas.
-- [ ] Test: "Paracetamol 500 mg" → celdas esperadas (tabla de referencia en el test).
+- [x] Test: "Paracetamol 500 mg" → celdas esperadas (tabla de referencia en el test).
 
 ### 11.5 Gama extendida (tipo Equinox)
-- [ ] Juego de tintas fijo (p. ej. CMYK+OGV) con Lab de sus sólidos (biblioteca del usuario).
-- [ ] Para cada tinta directa del trabajo: buscar coberturas (≤ 3 tintas activas, preferir 2) que minimicen ΔE2000
+- [x] Juego de tintas fijo (p. ej. CMYK+OGV) con Lab de sus sólidos (biblioteca del usuario).
+- [x] Para cada tinta directa del trabajo: buscar coberturas (≤ 3 tintas activas, preferir 2) que minimicen ΔE2000
       usando el modelo 7.3 (o el perfil calibrado 7.6) con `least_squares` + búsqueda combinatoria de subconjuntos.
-- [ ] Tabla: tinta directa → receta (%), ΔE estimado y semáforo (≤ 2 verde, ≤ 4 amarillo, > 4 rojo = "no reproducible
+- [x] Tabla: tinta directa → receta (%), ΔE estimado y semáforo (≤ 2 verde, ≤ 4 amarillo, > 4 rojo = "no reproducible
       con este juego").
-- [ ] Aplicar al PDF: reemplazar cada `Separation` convertible por un `DeviceN` de las tintas fijas con la función de
+- [x] Aplicar al PDF: reemplazar cada `Separation` convertible por un `DeviceN` de las tintas fijas con la función de
       tinte correspondiente (lineal por tramo). Comparar el render antes/después (simulado).
-- [ ] Nota honesta en la UI: "estimación basada en un modelo; confirmar con prueba impresa".
+- [x] Nota honesta en la UI: "estimación basada en un modelo; confirmar con prueba impresa".
 
 ### 11.6 Prueba en pantalla (soft proof)
-- [ ] Simulación del trabajo con: tintas reales (Lab), sustrato (color + textura opcional kraft/cartón/prenda),
+- [x] Simulación del trabajo con: tintas reales (Lab), sustrato (color + textura opcional kraft/cartón/prenda),
       ganancia de punto (curva simple por tinta) y opción "ver sin blanco".
-- [ ] Siempre con la etiqueta "Vista orientativa, no es una prueba contractual".
+- [x] Siempre con la etiqueta "Vista orientativa, no es una prueba contractual".
 
 **Criterios S7:** cada herramienta con sus tests y una sección en el manual con capturas.
 

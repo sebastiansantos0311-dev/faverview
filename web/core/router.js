@@ -10,7 +10,7 @@ const FVRouter = {
     vectorizar: { titulo: "Vectorizar", html: "/static/modules/vectorize.html", js: ["/static/modules/vectorize.js"] },
     preflight: { titulo: "Preflight", html: "/static/modules/preflight.html", js: ["/static/modules/preflight.js"] },
     codigos: { titulo: "Códigos de barras", html: "/static/modules/barcodes.html", js: ["/static/modules/barcodes.js"] },
-    herramientas: { titulo: "Herramientas", soon: "Trapping, step & repeat, distorsión flexo, braille, gama extendida y prueba en pantalla." },
+    herramientas: { titulo: "Herramientas", html: "/static/modules/tools.html", js: ["/static/modules/tools.js"] },
     automatizar: { titulo: "Automatizar", soon: "Recetas y carpetas vigiladas para encadenar los módulos." },
   },
   status: null,        // respuesta de /api/status (se rellena en main.js)
