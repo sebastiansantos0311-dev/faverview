@@ -15,6 +15,10 @@
 - **Revisión previa a publicar:** las placas Cyan/Magenta/Yellow/Black de contenido DeviceCMYK se mostraban como tinta
   «spot» en la lista, el análisis y el informe exportado; ahora se identifican como tintas de proceso (con prueba). La marca
   local `data/.acceso_directo_creado` ya no se versiona (impedía crear el acceso directo en equipos nuevos).
+- **S3 – Separar colores (imagen):** modos tintas planas (k-means en Lab, fusión por ΔE2000, limpieza de islas, bordes suaves),
+  proceso simulado (búsqueda de coberturas con el modelo de mezcla, base blanca con choke, ΔE estimado), índice (difusión
+  Floyd–Steinberg) y CMYK con perfil ICC y límite de TAC; tramado AM y FM (ruido azul void-and-cluster); salidas: canales TIFF,
+  placas de 1 bit CCITT G4, PDF DeviceN con alternativo CMYK, simulación e informe. Banco `bench/separation` (25 casos).
 
 ## 2.0.0 — 2026-09-25
 

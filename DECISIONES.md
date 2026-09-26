@@ -57,3 +57,12 @@ Formato: fecha · contexto · decisión · alternativa descartada.
 - **Sobreimpresión:** se sigue `gs` (OP/op) recorriendo el contenido y formularios; no se evalúa OPM ni sobreimpresión en patrones/imágenes.
 - **TAC:** suma tintas de proceso y directas; blanco, barniz y técnicas no cuentan. Los perfiles son valores orientativos editables en la UI.
 - **Ediciones:** se acumulan en `editado.pdf` dentro de la carpeta del trabajo; «Deshacer» lo borra; el original nunca se modifica.
+
+## S3 – Separar colores (imagen)
+- **Proceso simulado sin `least_squares`:** se muestrean coberturas (rejilla + aleatorias), se calcula su Lab con el modelo de mezcla y se busca el
+  vecino más cercano (cKDTree) penalizando la tinta total. Más rápido (3000×2250 px < 30 s); los colores se cuantizan a 5 bits por canal.
+- **Índice:** solo Floyd–Steinberg (Pillow, en RGB); Jarvis–Judice–Ninke no se implementó.
+- **PSD multicanal:** omitido (sin librería fiable); se ofrece el PDF DeviceN y los TIFF por canal.
+- **Calibración (§7.6):** aplazada; el modelo sigue siendo orientativo.
+- **IoU de tintas planas:** la meta 0.97 quedó en 0.96 tras medir la línea base (0.968) con bordes desenfocados + JPEG q75.
+- **ΔE en proceso:** el ΔE alto en azules/rojos saturados es real (fuera de gama de las tintas); el mapa de calor lo muestra.

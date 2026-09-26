@@ -313,7 +313,7 @@ vista simulada y PDF con canales DeviceN.
 5. Bordes antialias: opción **"bordes duros"** (asignación directa) u **"bordes suaves"** (en los píxeles de borde,
    % proporcional a la mezcla estimada de las dos tintas vecinas).
 6. Salida: 1 canal por tinta (0/255 o suave).
-- [ ] Opción "enviar al vectorizador" con la misma paleta (enlace con S4).
+- [x] Opción "enviar al vectorizador" con la misma paleta (enlace con S4).
 
 ### 7.3 Modelo de mezcla de tintas (`core/colorscience.py`, compartido)
 Aproximación documentada (no espectral):
@@ -337,8 +337,8 @@ Aproximación documentada (no espectral):
    con **choke** (erosión de 1–3 px al dpi de salida) para que no asome por los bordes, y **blanco de luces** opcional
    (una segunda pasada de blanco solo en las luces).
 5. Postproceso por canal: curva (gamma), punto mínimo (eliminar < 3–5%, que no se imprime) y punto máximo.
-- [ ] Mostrar el **ΔE estimado** (mapa de calor de lo que el juego de tintas no alcanza a reproducir) y el ΔE medio/p95.
-- [ ] Rendimiento: imagen de 4000×5000 con 6 tintas → ≤ 30 s (la tabla lo hace viable; paralelizar las entradas por bloques).
+- [x] Mostrar el **ΔE estimado** (mapa de calor de lo que el juego de tintas no alcanza a reproducir) y el ΔE medio/p95.
+- [x] Rendimiento: imagen de 4000×5000 con 6 tintas → ≤ 30 s (la tabla lo hace viable; paralelizar las entradas por bloques).
 
 ### 7.5 Modo **Índice** y modo **CMYK**
 - **Índice:** paleta (automática o fija) + **difusión de error** (Floyd–Steinberg o Jarvis-Judice-Ninke, elegible)
@@ -352,26 +352,26 @@ Aproximación documentada (no espectral):
   descargarlos).
 
 ### 7.6 Calibración opcional (mejora del modelo)
-- [ ] Generar un **gráfico de prueba** PDF (rampas 0–100% por tinta + sobreimpresiones de pares) para imprimir con el
+- [x] Generar un **gráfico de prueba** PDF (rampas 0–100% por tinta + sobreimpresiones de pares) para imprimir con el
       juego de tintas real.
-- [ ] El usuario introduce los Lab medidos (CSV o manual) → ajustar por mínimos cuadrados: reflectancia sólida real,
+- [x] El usuario introduce los Lab medidos (CSV o manual) → ajustar por mínimos cuadrados: reflectancia sólida real,
       factor n y curva de ganancia por tinta. Guardar como "perfil de tintas" en `datos_locales/tintas/perfiles/`.
 
 ### 7.7 Tramado (`modules/separate/halftone.py`)
-- [ ] **AM**: punto redondo/elíptico/cuadrado, lineatura (lpi) y ángulo por tinta (por defecto: serigrafía 45–65 lpi
+- [x] **AM**: punto redondo/elíptico/cuadrado, lineatura (lpi) y ángulo por tinta (por defecto: serigrafía 45–65 lpi
       a 22.5°; offset 150 lpi con C15 M75 Y0 K45), generado con una **matriz umbral** rotada a la resolución de salida
       (600–2400 dpi). Procesar por mosaicos para no exceder la memoria.
-- [ ] **FM/estocástico**: difusión de error o *blue noise* (máscara precomputada, generada por el agente con el
+- [x] **FM/estocástico**: difusión de error o *blue noise* (máscara precomputada, generada por el agente con el
       algoritmo *void-and-cluster* y guardada en `tools/`).
-- [ ] Punto mínimo y máximo imprimible (p. ej. 3%/95%).
-- [ ] Salida: TIFF 1 bit por placa (compresión CCITT G4) y vista previa ampliada.
-- [ ] Test: una rampa 0–100% tramada tiene una cobertura medida ≈ la nominal (± 2%) en cada escalón.
+- [x] Punto mínimo y máximo imprimible (p. ej. 3%/95%).
+- [x] Salida: TIFF 1 bit por placa (compresión CCITT G4) y vista previa ampliada.
+- [x] Test: una rampa 0–100% tramada tiene una cobertura medida ≈ la nominal (± 2%) en cada escalón.
 
 ### 7.8 Salidas S3
-- [ ] Canales 8 bits (TIFF por tinta), placas 1 bit, **PSD multicanal** (opcional: si no hay librería fiable, omitir y
+- [x] Canales 8 bits (TIFF por tinta), placas 1 bit, **PSD multicanal** (opcional: si no hay librería fiable, omitir y
       documentar), **PDF DeviceN** (una imagen con n canales y los nombres de las tintas, con alternativos CMYK
       desde el Lab) y vista simulada sobre el sustrato (PNG).
-- [ ] Reporte: tintas, orden, cobertura, ΔE estimado y parámetros.
+- [x] Reporte: tintas, orden, cobertura, ΔE estimado y parámetros.
 
 ### 7.9 UI (pestaña "Separar colores" → sub-pestaña "Imagen")
 Asistente de 4 pasos: **1. Imagen y sustrato → 2. Modo y tintas → 3. Ajustes (con vista previa en vivo a baja
@@ -379,13 +379,13 @@ resolución) → 4. Salida**. En el visor: vista simulada, canal individual, "so
 (original | simulada).
 
 ### 7.10 Pruebas y banco S3 (`bench/separation/`)
-- [ ] 25 casos sintéticos generados por código: logos planos de 2–8 colores con antialias + JPEG, degradados,
+- [x] 25 casos sintéticos generados por código: logos planos de 2–8 colores con antialias + JPEG, degradados,
       "fotos" sintéticas (ruido de Perlin coloreado), sobre sustrato blanco y negro.
-- [ ] Métricas: tintas planas → precisión de la paleta (ΔE a los colores verdaderos), IoU por región y nº de islas
+- [x] Métricas: tintas planas → precisión de la paleta (ΔE a los colores verdaderos), IoU por región y nº de islas
       espurias; proceso simulado → ΔE medio/p95 de la simulación vs el original y la cobertura total media.
-- [ ] Metas: tintas planas IoU medio ≥ 0.97 y ΔE de paleta ≤ 3; proceso simulado ΔE medio ≤ 6 con 6 tintas sobre
+- [x] Metas: tintas planas IoU medio ≥ 0.97 y ΔE de paleta ≤ 3; proceso simulado ΔE medio ≤ 6 con 6 tintas sobre
       negro (orientativo, ajustar tras la línea base).
-- [ ] Guardar la línea base y comparar en cada cambio (mismo mecanismo que `bench.run`).
+- [x] Guardar la línea base y comparar en cada cambio (mismo mecanismo que `bench.run`).
 
 ---
 

@@ -236,3 +236,8 @@ button.mini { padding: 1px 6px; font-size: 11px; }
 .sp-box { position: absolute; border: calc(2px / var(--s, 1)) solid #eab308; box-sizing: border-box; }
 .sp-box.error { border-color: #ef4444; }
 @media (max-width: 1100px) { .sp-grid { grid-template-columns: 1fr; } }
+.si-grid .sp-side label { display: flex; flex-direction: column; gap: 2px; margin: 6px 0; color: var(--muted); font-size: 13px; }
+.si-ink { flex-direction: row !important; align-items: center; gap: 6px !important; color: var(--text) !important; }
+.si-imgs { display: flex; gap: 6px; overflow: auto; max-height: 74vh; }
+.si-imgs img { max-width: 100%; max-height: 72vh; object-fit: contain; background: #2a2f3a; }
+.si-imgs img.hidden { display: none; }
