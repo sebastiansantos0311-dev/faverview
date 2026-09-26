@@ -1,6 +1,6 @@
 # Cambios de FAVERVIEW
 
-## 3.0.0 (suite) — en desarrollo
+## 3.0.0 (suite) — 2026-09-26
 - **S0 – Preparación:** código de Comparar movido a `app/modules/compare/` y `app/core/`, rutas repartidas en routers
   (`app/main.py` ≤ 80 líneas), `GET /api/status`, detección de Ghostscript, nuevas dependencias y interfaz con pestañas.
 - **S1 – Núcleo compartido:** `core/units`, `core/colorscience` (Lab D50, ΔE2000 validada con los 34 pares de Sharma, densidad
@@ -38,6 +38,11 @@
   rótulo de cada tinta en su placa), distorsión flexo (D % = 2π·k/R·100), braille español grado 1 (tabla propia, Marburg Medium configurable,
   tinta técnica en sobreimpresión), gama extendida (recetas ≤ 3 tintas con semáforo y conversión a DeviceN) y prueba en pantalla con
   ganancia de punto y textura. Calibración opcional del modelo de mezcla (gráfico, plantilla CSV y ajuste de n y ganancia por tinta).
+- **S8 – Automatizar:** recetas JSON con 12 pasos (preflight, correcciones, unir duplicadas, exportar placas, step & repeat, distorsión flexo,
+  trapping, verificar códigos, vectorizar, separar imagen, resumen), condiciones que detienen el proceso, ejecución sobre archivo, carpeta y carpeta
+  vigilada (watchdog) con salida/, errores/ y reportes/, editor visual y 3 recetas de ejemplo.
+- **Transversal:** «Enviar a…» entre módulos, botón Cancelar en trabajos largos, manual PDF ampliado con un capítulo por módulo (capturas, glosario,
+  Ghostscript, bibliotecas de tintas), guía de instalación con Ghostscript, `tools/manual/` para regenerarlos.
 
 ## 2.0.0 — 2026-09-25
 

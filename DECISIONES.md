@@ -98,3 +98,10 @@ Formato: fecha · contexto · decisión · alternativa descartada.
 - **Gama extendida:** búsqueda por subconjuntos (≤ 3 tintas) con `least_squares`, penalizando levemente cada tinta extra; la conversión reescribe cada `scn` de la directa a las coberturas de la receta (lineal en el tinte).
 - **Calibración:** n y la ganancia de punto se ajustan juntos (se compensan entre sí); se valida la calidad del ajuste, no cada valor por separado.
 - **Prueba en pantalla:** la etiqueta «Vista orientativa, no es una prueba contractual» se estampa siempre en la imagen.
+
+## S8 y cierre
+- **Pasos como catálogo Python:** cada paso es una función con parámetros tipados; una receta acepta `{"accion": "modulo.accion"}` o `{"modulo", "accion"}`.
+- **Carpeta vigilada:** solo mientras la app está abierta y a petición del usuario; espera a que el archivo deje de crecer antes de procesarlo.
+- **Cancelar:** cooperativo, entre etapas (no interrumpe un cálculo a mitad); Ghostscript ya admite cancelación al llamarse directamente.
+- **Pendiente respecto al plan:** teselas del visor (>8000 px), fuentes sugeridas por similitud en vectorización de texto, JJN en modo índice, PSD multicanal,
+  comparación con Image Trace/PowerTRACE (necesita archivos del usuario), mantener texto pequeño en trapping desde la API.

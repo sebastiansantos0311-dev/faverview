@@ -1,0 +1,48 @@
+{
+ "nombre": "Preparar etiqueta flexo",
+ "descripcion": "Preflight de flexo (se detiene si hay errores), unir tintas duplicadas, distorsión del cliché, step & repeat con marcas y placas.",
+ "pasos": [
+  {
+   "accion": "preflight",
+   "parametros": {
+    "perfil": "flexo_empaque",
+    "detener_si_errores": true
+   }
+  },
+  {
+   "accion": "separar.unir_duplicadas"
+  },
+  {
+   "accion": "tools.distorsion_flexo",
+   "parametros": {
+    "k": 1.14,
+    "repeticion": 400,
+    "direccion": "vertical"
+   }
+  },
+  {
+   "accion": "tools.step_repeat",
+   "parametros": {
+    "hoja_ancho": 400,
+    "hoja_alto": 300,
+    "gap_x": 3,
+    "gap_y": 3,
+    "marcas": {
+     "registro": true,
+     "corte": true,
+     "barra_color": true,
+     "texto": true
+    }
+   }
+  },
+  {
+   "accion": "separar.exportar_placas",
+   "parametros": {
+    "dpi": 1200
+   }
+  },
+  {
+   "accion": "reporte"
+  }
+ ]
+}

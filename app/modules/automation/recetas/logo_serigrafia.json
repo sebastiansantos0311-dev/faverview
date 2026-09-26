@@ -1,0 +1,28 @@
+{
+ "nombre": "Separar logo para serigrafía",
+ "descripcion": "Separa una imagen en tintas planas, con placas tramadas de 1 bit (AM, 55 lpi), y también la vectoriza.",
+ "pasos": [
+  {
+   "accion": "separar.imagen",
+   "parametros": {
+    "modo": "planas",
+    "colores": 4,
+    "dpi_salida": 600,
+    "trama": "am"
+   }
+  },
+  {
+   "accion": "vectorizar",
+   "parametros": {
+    "preset": "logo",
+    "formatos": [
+     "svg",
+     "pdf"
+    ]
+   }
+  },
+  {
+   "accion": "reporte"
+  }
+ ]
+}

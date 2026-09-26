@@ -4,7 +4,12 @@ import time
 import traceback
 from dataclasses import dataclass, field
 
+from app.core.errors import UserError
 from app.loaders import FileError
+
+class Cancelled(Exception):
+    pass
+
 
 _LOCK = threading.Lock()
 _MAX = 60
@@ -20,6 +25,7 @@ class Job:
     result: dict | None = None
     error: str | None = None
     extra: dict = field(default_factory=dict)
+    cancel: threading.Event = field(default_factory=threading.Event)
     started: float = field(default_factory=time.time)
 
     def public(self) -> dict:
@@ -47,6 +53,8 @@ def start(job_id: str, fn, extra: dict | None = None) -> Job:
                 JOBS.pop(old.id, None)
 
     def progress(stage: str, pct: float, message: str = "") -> None:
+        if job.cancel.is_set():
+            raise Cancelled()
         job.stage, job.pct = stage, pct
         if message:
             job.message = message
@@ -57,9 +65,13 @@ def start(job_id: str, fn, extra: dict | None = None) -> Job:
             job.pct, job.status = 1.0, "done"
         except FileError as e:
             job.status, job.error = "error", str(e)
+        except Cancelled:
+            job.status, job.error = "error", "Operación cancelada."
+        except UserError as e:
+            job.status, job.error = "error", e.message
         except Exception as e:  # nunca dejar la interfaz esperando para siempre
             traceback.print_exc()
-            job.status, job.error = "error", f"Ocurrió un error inesperado al comparar ({type(e).__name__}: {e})."
+            job.status, job.error = "error", f"Ocurrió un error inesperado ({type(e).__name__}: {e})."
 
     threading.Thread(target=run, daemon=True).start()
     return job

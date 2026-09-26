@@ -32,5 +32,18 @@
     }
   } catch {}
 
+  /* «Enviar a…» */
+  const send = $("#send-to");
+  window.addEventListener("fv:file", e => {
+    const f = e.detail;
+    send.innerHTML = "";
+    send.append(h("option", { value: "" }, "Enviar a…"));
+    FVRouter.targets(f).filter(([m]) => m !== FVRouter.current_name()).forEach(([m, t]) => send.append(h("option", { value: m }, t)));
+    send.classList.remove("hidden");
+  });
+  send.addEventListener("change", () => { if (send.value && FVDrop.last) FVRouter.send(send.value, FVDrop.last.file); send.value = ""; });
+  /* cancelar el trabajo en curso */
+  $("#loading-cancel").addEventListener("click", async () => { if (FVApi.currentJob) { try { await fetch(`/api/jobs/${FVApi.currentJob}/cancel`, { method: "POST" }); } catch {} } });
+
   FVRouter.go();
 })();

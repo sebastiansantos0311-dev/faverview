@@ -2,13 +2,29 @@
 
 [![Pruebas](https://github.com/sebastiansantos0311-dev/faverview/actions/workflows/tests.yml/badge.svg)](https://github.com/sebastiansantos0311-dev/faverview/actions/workflows/tests.yml)
 
-Compara el **arte del cliente** (JPG, PNG, WEBP, BMP, TIFF o PDF) con **tu diseño** (PDF exportado) y marca las
-diferencias de texto, ortografía, color, elementos visuales y fuente. Todo corre en tu equipo y se usa desde el
+Suite local de preprensa. Compara el **arte del cliente** (JPG, PNG, WEBP, BMP, TIFF o PDF) con **tu diseño** (PDF exportado) y marca las
+diferencias de texto, ortografía, color, elementos visuales y fuente; además separa colores, vectoriza, revisa PDF, genera códigos de barras y automatiza. Todo corre en tu equipo y se usa desde el
 navegador. Solo necesita internet durante la instalación.
 
 > **¿Por qué no hay `.exe` ni `.bat`?** Windows y los antivirus marcan como sospechosos los ejecutables y scripts
 > sin firma digital. FAVERVIEW se distribuye como código fuente desde GitHub y todo lo que se instala viene de
 > **winget**, con paquetes oficiales y firmados. Así no aparecen avisos de virus.
+
+## Módulos de la suite (v3)
+
+| Pestaña | Qué hace |
+|---|---|
+| **Comparar** | Arte del cliente contra tu diseño: texto, ortografía, color, elementos visuales y fuente. |
+| **Separar colores** | PDF → placas por tinta, cobertura total (TAC), problemas de separación y edición de tintas; imagen → tintas planas, proceso simulado, índice o CMYK, con tramado y PDF DeviceN. |
+| **Vectorizar** | Imagen → vectores por colores sin huecos (SVG, PDF con tintas directas, EPS, DXF). |
+| **Preflight** | Revisión técnica con perfiles (inspirados en GWG 2015), correcciones seguras y reporte PDF. |
+| **Códigos de barras** | Generar (EAN/UPC, ITF-14, Code 128, GS1-128, Code 39, DataBar, DataMatrix, QR) y verificar códigos, y lotes CSV. |
+| **Herramientas** | Trapping, step & repeat, distorsión flexo, braille, gama extendida, prueba en pantalla y calibración. |
+| **Automatizar** | Recetas que encadenan pasos sobre un archivo, una carpeta o una carpeta vigilada. |
+
+Los resultados de color son **estimaciones orientativas**; confirma siempre con una prueba impresa. El botón **Tintas** abre tus bibliotecas
+(Pantone y otras se importan desde tus propios archivos ASE/CxF/CSV: FAVERVIEW no las incluye). Manual completo: [`docs/Manual_de_uso_FAVERVIEW.pdf`](docs/Manual_de_uso_FAVERVIEW.pdf).
+Cambios: [`CHANGELOG.md`](CHANGELOG.md) · decisiones de diseño: [`DECISIONES.md`](DECISIONES.md).
 
 ---
 

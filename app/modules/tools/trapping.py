@@ -56,8 +56,10 @@ def trap(plates: Plates, meta: dict | None = None, *, proceso: str = "flexo", an
     arrays = {n: a.copy() for n, a in plates.arrays.items()}
     names = [n for n in plates.names if not plates.empty(n)]
     info = {n: (_lab_of(n, meta)[0], _kind(n, meta)) for n in names}
-    out = TrapResult(Plates(plates.names, arrays, plates.dpi, plates.page, plates.width, plates.height, list(plates.warnings), plates.key),
-                     np.full((plates.height, plates.width, 3), 255, np.uint8))
+    # fondo del mapa: el trabajo en gris muy claro para ver dónde caen los traps; los traps se resaltan encima
+    ink = np.max([plates.arrays[n] for n in names], axis=0) if names else np.zeros((plates.height, plates.width), np.uint8)
+    base = np.repeat((255 - (ink.astype(np.float32) * 0.35)).astype(np.uint8)[..., None], 3, axis=2)
+    out = TrapResult(Plates(plates.names, arrays, plates.dpi, plates.page, plates.width, plates.height, list(plates.warnings), plates.key), base)
     factor = max(min(porcentaje, 100.0), 0.0) / 100.0
     solid = {n: plates.arrays[n] >= 255 * SOLID for n in names}
     keep = mantener_texto if mantener_texto is not None else None
@@ -93,7 +95,8 @@ def trap(plates: Plates, meta: dict | None = None, *, proceso: str = "flexo", an
                 arrays[a] = new
                 from app.core import colorscience as cs
                 rgb = np.clip(np.rint(np.asarray(cs.lab_to_srgb(_lab_of(a, meta))) * 255), 0, 255).astype(np.uint8)
-                out.trap_map[new != plates.arrays[a]] = rgb
+                grown = cv2.dilate((new != plates.arrays[a]).astype(np.uint8), _disk(2)) > 0      # engrosado solo para verlo
+                out.trap_map[grown] = rgb
                 out.traps.append({"de": a, "bajo": b, "ancho_mm": round(mm, 3), "pixeles": changed})
     # choke del blanco
     for w in names:

@@ -1,0 +1,17 @@
+{
+ "nombre": "Revisión rápida",
+ "descripcion": "Preflight con el perfil básico y un resumen. No detiene el proceso si hay errores: solo informa.",
+ "pasos": [
+  {
+   "accion": "preflight",
+   "parametros": {
+    "perfil": "basico",
+    "detener_si_errores": false,
+    "reporte_pdf": true
+   }
+  },
+  {
+   "accion": "reporte"
+  }
+ ]
+}

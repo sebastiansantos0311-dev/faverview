@@ -23,6 +23,7 @@
     <a href="#/automatizar" data-mod="automatizar">Automatizar</a>
   </nav>
   <div class="spacer"></div>
+  <select id="send-to" class="ghost hidden" title="Enviar el último archivo a otro módulo"></select>
   <button id="btn-tintas" class="ghost" title="Bibliotecas de tintas">Tintas</button>
 </header>
 
@@ -33,7 +34,8 @@
 
 <footer class="foot"><span id="version">FAVERVIEW</span> · Todo se procesa en este equipo, sin internet.</footer>
 <div id="loading" class="loading hidden"><div class="spinner"></div><div id="loading-msg">Procesando…</div>
-  <div class="bar"><div id="loading-bar"></div></div></div>
+  <div class="bar"><div id="loading-bar"></div></div>
+  <button id="loading-cancel" class="ghost hidden">Cancelar</button></div>
 <script src="/static/core/ui.js"></script>
 <script src="/static/core/api.js"></script>
 <script src="/static/core/viewer.js"></script>

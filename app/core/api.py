@@ -17,6 +17,17 @@ def job_status(job_id: str):
     return j.public()
 
 
+@router.post("/api/jobs/{job_id}/cancel")
+def job_cancel(job_id: str):
+    """Pide cancelar: el trabajo se detiene en su próxima etapa (no interrumpe a mitad de un cálculo)."""
+    check_job(job_id)
+    j = jobs.get(job_id)
+    if j is None:
+        raise HTTPException(404, "Trabajo no encontrado.")
+    j.cancel.set()
+    return {"ok": True}
+
+
 @router.get("/api/version")
 def version():
     return {"version": get_version()}

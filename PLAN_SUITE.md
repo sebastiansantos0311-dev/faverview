@@ -636,15 +636,15 @@ Enfoque **por placas (raster)**, robusto y explicable; el trapping vectorial que
 
 ## 12. S8 – Automatización ("recetas")
 
-- [ ] **Receta** = JSON con una lista de pasos, cada uno `{modulo, accion, parametros}`, p. ej.:
+- [x] **Receta** = JSON con una lista de pasos, cada uno `{modulo, accion, parametros}`, p. ej.:
       `preflight(perfil=Flexo) → separar.unir_duplicadas → separar.exportar_placas(dpi=1200) → tools.step_repeat(…) → reporte`.
-- [ ] Editor visual simple en la UI (lista de pasos con parámetros; arrastrar para reordenar) + importar/exportar JSON.
-- [ ] Ejecutar una receta sobre: un archivo, una **carpeta** o una **carpeta vigilada** (watchdog: `entrada/` →
+- [x] Editor visual simple en la UI (lista de pasos con parámetros; arrastrar para reordenar) + importar/exportar JSON.
+- [x] Ejecutar una receta sobre: un archivo, una **carpeta** o una **carpeta vigilada** (watchdog: `entrada/` →
       `salida/` + `errores/` + `reportes/`).
-- [ ] Condiciones: "si el preflight tiene errores → detener y mover a `errores/`".
-- [ ] Registro por archivo (log legible en español) y resumen del lote (reutiliza los lotes de v2).
-- [ ] Recetas de ejemplo incluidas: "Revisión rápida", "Preparar etiqueta flexo", "Separar logo para serigrafía".
-- [ ] Tests: receta de 3 pasos sobre 5 archivos sintéticos → 5 salidas + 1 archivo con error en `errores/`.
+- [x] Condiciones: "si el preflight tiene errores → detener y mover a `errores/`".
+- [x] Registro por archivo (log legible en español) y resumen del lote (reutiliza los lotes de v2).
+- [x] Recetas de ejemplo incluidas: "Revisión rápida", "Preparar etiqueta flexo", "Separar logo para serigrafía".
+- [x] Tests: receta de 3 pasos sobre 5 archivos sintéticos → 5 salidas + 1 archivo con error en `errores/`.
 
 ---
 
