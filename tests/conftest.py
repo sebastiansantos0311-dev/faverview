@@ -17,7 +17,8 @@ def _datos_locales_aislado(tmp_path_factory, monkeypatch):
     tmp = tmp_path_factory.mktemp("datos_locales")
     import app.config as config
     monkeypatch.setattr(config, "DATOS_DIR", tmp)
-    for modname in ("app.learning.store", "app.learning.tuning", "app.ignore_zones", "app.main", "app.updates"):
+    for modname in ("app.learning.store", "app.learning.tuning", "app.ignore_zones", "app.main", "app.updates",
+                    "app.modules.compare.api"):
         try:
             mod = __import__(modname, fromlist=["x"])
         except Exception:

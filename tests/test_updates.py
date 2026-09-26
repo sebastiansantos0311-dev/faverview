@@ -41,7 +41,8 @@ def test_no_repo_or_no_network_never_raises(tmp_path, monkeypatch):
 
 
 def test_version_comes_from_pyproject():
-    assert get_version().count(".") == 2
+    import re
+    assert re.match(r"^\d+\.\d+\.\d+", get_version())  # (S0) admite 3.0.0.devN
 
 
 def test_shortcut_is_created_once_on_first_run(tmp_path, monkeypatch):

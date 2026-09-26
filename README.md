@@ -30,6 +30,25 @@ winget install -e --id astral-sh.uv; winget install -e --id Git.Git; winget inst
 
 **Cierra PowerShell y ábrelo de nuevo** para que Windows reconozca los programas nuevos.
 
+### Paso 2b – Instalar Ghostscript (para Separar colores y Códigos de barras)
+Ghostscript **no está en winget**. Este comando descarga el instalador **oficial de Artifex** desde GitHub, **verifica su
+firma digital** y lo instala en silencio (Windows te pedirá permiso de administrador):
+```bash
+$r = Invoke-RestMethod https://api.github.com/repos/ArtifexSoftware/ghostpdl-downloads/releases/latest; $a = $r.assets | ? name -like '*w64.exe'; $f = "$env:TEMP\$($a.name)"; Invoke-WebRequest $a.browser_download_url -OutFile $f; $s = Get-AuthenticodeSignature $f; if ($s.Status -eq 'Valid' -and $s.SignerCertificate.Subject -match 'Artifex') { Start-Process $f -ArgumentList '/S' -Verb RunAs -Wait; Write-Host 'Ghostscript instalado' } else { Write-Host "Firma NO valida: $($s.Status). No se instalo." }
+```
+Para comprobar que quedó instalado:
+```bash
+& (Get-ChildItem "C:\Program Files\gs\*\bin\gswin64c.exe" | Select -Last 1).FullName --version
+```
+| Si algo falla | Qué hacer |
+|---|---|
+| No aparece la ventana de permisos / «operación cancelada» | Ejecuta PowerShell como administrador (clic derecho → *Ejecutar como administrador*) y repite el comando. |
+| «Firma NO valida» | **No lo instales.** Borra el archivo descargado de `%TEMP%` y avísame: puede ser una descarga corrupta o alterada. |
+| El antivirus bloquea la descarga | Añade una excepción temporal para la carpeta `%TEMP%` o descarga `gs*w64.exe` a mano desde la página oficial de Artifex y ejecútalo. |
+| El README ya no coincide con la última versión | Da igual: el comando siempre toma la versión más reciente publicada. |
+
+Sin Ghostscript la app funciona igual, salvo esos dos módulos, que muestran un aviso.
+
 ### Paso 3 – Descargar FAVERVIEW
 Esto crea la carpeta `FAVERVIEW` en tu carpeta de usuario:
 ```bash

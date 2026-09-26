@@ -1,5 +1,9 @@
 # Cambios de FAVERVIEW
 
+## 3.0.0 (suite) — en desarrollo
+- **S0 – Preparación:** código de Comparar movido a `app/modules/compare/` y `app/core/`, rutas repartidas en routers
+  (`app/main.py` ≤ 80 líneas), `GET /api/status`, detección de Ghostscript, nuevas dependencias y interfaz con pestañas.
+
 ## 2.0.0 — 2026-09-25
 
 ### Medición

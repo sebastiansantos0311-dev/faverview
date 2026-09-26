@@ -21,6 +21,13 @@ _TESS_CANDIDATES = [
 
 DEFAULTS = {
     "tesseract_cmd": "",
+    "ghostscript_cmd": "",
+    "max_render_mpx": 120,
+    "ink_keywords": {
+        "white": ["white", "blanco", "weiss", "weiß"],
+        "varnish": ["varnish", "barniz", "lack"],
+        "technical": ["die", "cut", "troquel", "stanz", "dieline", "braille", "dimension", "cota", "crease", "perf"],
+    },
     "tessdata_dir": "tools/tessdata",
     "ocr_lang": "spa+eng",
     "render_dpi": 200,

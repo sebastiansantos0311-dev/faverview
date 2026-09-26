@@ -1,0 +1,112 @@
+<div class="hbar">
+  <button id="btn-learning" class="ghost">Aprendizaje</button>
+  <label class="hist">Historial
+    <select id="history"><option value="">—</option></select>
+  </label>
+</div>
+<section id="setup" class="setup">
+  <div class="modebar">
+    <label>Qué quieres comparar
+      <select id="mode-select">
+        <option value="cliente">Arte del cliente vs. mi diseño</option>
+        <option value="versiones">Versiones de mi diseño (v1 vs. v2)</option>
+      </select></label>
+    <span class="hint">Tip: también puedes pegar una imagen con Ctrl+V.</span>
+  </div>
+  <div class="drops">
+    <div class="drop" id="drop-client" data-kind="client">
+      <div class="drop-title">A · Arte del cliente</div>
+      <div class="drop-hint">Arrastra aquí o haz clic<br><small>JPG, PNG, WEBP, BMP, TIFF o PDF</small></div>
+      <div class="drop-file" id="file-client"></div>
+      <label class="pagesel hidden" id="pages-client">Página <select></select></label>
+      <input type="file" hidden accept=".jpg,.jpeg,.png,.webp,.bmp,.tif,.tiff,.pdf">
+    </div>
+    <div class="drop" id="drop-design" data-kind="design">
+      <div class="drop-title">B · Mi diseño</div>
+      <div class="drop-hint">Arrastra aquí o haz clic<br><small>PDF exportado</small></div>
+      <div class="drop-file" id="file-design"></div>
+      <label class="pagesel hidden" id="pages-design">Página <select></select></label>
+      <input type="file" hidden accept=".pdf,.jpg,.jpeg,.png,.webp,.bmp,.tif,.tiff">
+    </div>
+  </div>
+  <div class="actions">
+    <label class="tplsel">Plantilla de zonas
+      <select id="tpl-select"><option value="">(ninguna)</option></select></label>
+    <span id="tpl-hint" class="hint"></span>
+    <button id="btn-compare" class="primary" disabled>Comparar</button>
+    <button id="btn-batch" class="hidden" disabled>Comparar todas las páginas</button>
+    <span id="status" class="status"></span>
+  </div>
+</section>
+
+<section id="results" class="results hidden">
+  <div class="summary" id="summary"></div>
+  <div id="warnings"></div>
+  <div id="fixpanel"></div>
+
+  <div class="workspace">
+    <div class="viewer-col">
+      <div class="toolbar">
+        <div class="tabs" id="tabs">
+          <button data-mode="side" class="active">Lado a lado</button>
+          <button data-mode="slider">Deslizador</button>
+          <button data-mode="diff">Diferencia</button>
+          <button data-mode="overlay">Superpuesto</button>
+        </div>
+        <div class="spacer"></div>
+        <button id="btn-fit" class="ghost">Ajustar</button>
+        <button id="btn-sens" class="ghost">Sensibilidad</button>
+        <button id="btn-review" class="ghost">Modo revisión</button>
+        <button id="btn-align" class="ghost">Alinear manualmente</button>
+        <button id="btn-fix" class="ghost" title="Sube el diseño corregido y ve qué errores quedaron resueltos">Verificar correcciones…</button>
+        <input type="file" id="fix-file" accept=".pdf" hidden>
+        <span class="zonetool"><button id="btn-zone" class="ghost">Ignorar zona</button>
+          <select id="zone-mode" title="Qué se ignora dentro de la zona"><option value="todo">todo</option>
+            <option value="color">solo color</option><option value="texto">solo texto</option></select></span>
+        <a id="btn-report" class="button" href="#" target="_blank">Descargar reporte PDF</a>
+      </div>
+      <div id="sens" class="sens hidden">
+        <label>Umbral SSIM <b id="v-ssim"></b><input type="range" id="r-ssim" min="0.5" max="0.99" step="0.01"></label>
+        <label>Tolerancia de color (ΔE) <b id="v-de"></b><input type="range" id="r-de" min="1" max="30" step="1"></label>
+        <label>Área mínima de región (px) <b id="v-area"></b><input type="range" id="r-area" min="20" max="2000" step="10"></label>
+        <button id="btn-recalc" class="primary">Recalcular</button>
+      </div>
+      <div class="viewer" id="viewer"></div>
+      <div class="legend">
+        <span><i class="c-text"></i>Texto</span><span><i class="c-spelling"></i>Ortografía</span>
+        <span><i class="c-color"></i>Color</span><span><i class="c-visual"></i>Elemento visual</span>
+        <span><i class="c-font"></i>Fuente</span>
+        <span class="hint">Rueda: zoom · Arrastrar: mover</span>
+      </div>
+    </div>
+    <aside class="side">
+      <div id="review-panel" class="review hidden">
+        <h2>Revisión</h2>
+        <p class="hint">Marca cada error como <b>✔ Real</b> o <b>✘ Falso positivo</b>. Si la app no detectó algo, usa
+          «Marcar error no detectado» y dibuja un rectángulo sobre el visor.</p>
+        <label>Tipo de arte del cliente
+          <select id="rv-tipo"><option>exportado</option><option>whatsapp</option><option>foto</option>
+            <option>escaneo</option><option>captura</option><option>cmyk</option><option>curvas</option></select></label>
+        <button id="btn-missed" class="ghost">Marcar error no detectado</button>
+        <div id="missed-list"></div>
+        <label>Texto del cliente (opcional, para medir el OCR)
+          <textarea id="rv-text" rows="3" placeholder="Transcribe exactamente lo que dice el arte"></textarea></label>
+        <button id="btn-savecase" class="primary">Guardar como caso de prueba</button>
+        <div id="rv-msg" class="hint"></div>
+      </div>
+      <div id="zones-panel" class="review hidden">
+        <h2>Zonas ignoradas</h2>
+        <div id="zones-list"></div>
+        <div class="learn-actions">
+          <button id="btn-zones-apply" class="primary">Aplicar y recalcular</button>
+          <button id="btn-zones-save">Guardar como plantilla…</button></div>
+      </div>
+      <h2>Lista de errores</h2>
+      <div id="filters" class="filters"></div>
+      <div id="errors" class="errors"></div>
+      <div id="restore" class="restore hidden"></div>
+      <details class="fonts"><summary>Fuentes del diseño</summary><div id="fonts"></div></details>
+    </aside>
+  </div>
+</section>
+

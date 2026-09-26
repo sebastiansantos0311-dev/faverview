@@ -1,5 +1,6 @@
 "use strict";
-/* FAVERVIEW – interfaz. JavaScript puro, sin dependencias. */
+(function () {
+/* Módulo Comparar. Usa los servicios compartidos de web/core (ui.js, api.js, viewer.js, dropzone.js). */
 
 const CATS = [
   ["text", "Texto"], ["spelling", "Ortografía"], ["color", "Color"], ["visual", "Elemento visual"], ["font", "Fuente"],
@@ -9,12 +10,11 @@ const CAT_COLOR = { text: "#ef4444", spelling: "#eab308", color: "#f97316", visu
 const STATUS_TXT = { aprobado: "Aprobado", revisar: "Revisar", con_errores: "Con errores" };
 const SCORE_LABELS = [["visual", "Visual"], ["text", "Texto"], ["color", "Color"], ["spelling", "Ortografía"], ["font", "Fuente"]];
 
-const $ = (s, r = document) => r.querySelector(s);
 const files = { client: null, design: null };
 let data = null;            // resultado actual
 let mode = "side";
-let view = { s: 1, tx: 0, ty: 0 };
-let panes = [];
+let viewer = new FVViewer();
+let panes = viewer.panes;
 let sliderFrac = 0.5;
 let ignored = new Set();
 let activeCats = new Set(CATS.map(c => c[0]));
@@ -29,52 +29,10 @@ let lastBatch = null;
 let zones = [];         // zonas a ignorar (coordenadas relativas 0–1 al diseño)
 let drawKind = "missed"; // "missed" | "zone"
 
-function h(tag, attrs = {}, ...kids) {
-  const el = document.createElement(tag);
-  for (const [k, v] of Object.entries(attrs || {})) {
-    if (v == null || v === false) continue;
-    if (k === "class") el.className = v;
-    else if (k === "style" && typeof v === "object") {
-      for (const [sk, sv] of Object.entries(v)) sk.startsWith("--") ? el.style.setProperty(sk, sv) : (el.style[sk] = sv);
-    }
-    else if (k.startsWith("on")) el.addEventListener(k.slice(2), v);
-    else el.setAttribute(k, v === true ? "" : v);
-  }
-  for (const kid of kids.flat()) {
-    if (kid == null || kid === false) continue;
-    el.append(kid.nodeType ? kid : document.createTextNode(String(kid)));
-  }
-  return el;
-}
-
-function showError(msg) {
-  const b = $("#error");
-  if (!msg) { b.classList.add("hidden"); return; }
-  b.textContent = msg;
-  b.classList.remove("hidden");
-}
-function setLoading(on) { $("#loading").classList.toggle("hidden", !on); if (on) setProgress("Procesando…", 0); }
-
-async function api(url, opts) {
-  let r;
-  try { r = await fetch(url, opts); }
-  catch { throw new Error("No se pudo conectar con FAVERVIEW. ¿Está abierta la ventana de consola?"); }
-  if (!r.ok) {
-    let d = "Ocurrió un error inesperado.";
-    try { const j = await r.json(); if (j.detail) d = typeof j.detail === "string" ? j.detail : d; } catch {}
-    throw new Error(d);
-  }
-  return r;
-}
-
 /* ---------- carga de archivos ---------- */
 function setupDrop(kind) {
   const box = $("#drop-" + kind), input = $("input", box);
-  box.addEventListener("click", e => { if (!e.target.closest(".pagesel")) input.click(); });
-  input.addEventListener("change", () => input.files[0] && setFile(kind, input.files[0]));
-  ["dragenter", "dragover"].forEach(ev => box.addEventListener(ev, e => { e.preventDefault(); box.classList.add("over"); }));
-  ["dragleave", "drop"].forEach(ev => box.addEventListener(ev, e => { e.preventDefault(); box.classList.remove("over"); }));
-  box.addEventListener("drop", async e => { const f = await fileFromDrop(e.dataTransfer); if (f) setFile(kind, f); });
+  FVDrop.bind(box, input, f => setFile(kind, f), showError);
 }
 
 async function setFile(kind, file) {
@@ -124,21 +82,6 @@ async function compare() {
     loadHistory();
   } catch (e) { showError(e.message); }
   finally { setLoading(false); }
-}
-
-/* consulta el progreso por etapas hasta que termina */
-async function pollJob(id) {
-  for (;;) {
-    const st = await (await api("/api/jobs/" + id)).json();
-    setProgress(st.message, st.pct);
-    if (st.status === "done") return st.result;
-    if (st.status === "error") throw new Error(st.error || "Ocurrió un error inesperado.");
-    await new Promise(r => setTimeout(r, 350));
-  }
-}
-function setProgress(msg, pct) {
-  $("#loading-msg").textContent = msg || "Procesando…";
-  $("#loading-bar").style.width = Math.round((pct || 0) * 100) + "%";
 }
 
 async function recalc(manualPoints) {
@@ -401,13 +344,21 @@ function makeStage(imgs) {
 function renderViewer() {
   const v = $("#viewer");
   v.replaceChildren();
-  panes = [];
+  viewer.reset(data.width, data.height);
+  panes = viewer.panes;
+  viewer.onPointerDown = (p, e) => { if (drawMode) { startDraw(p.el, e); return true; } return false; };
+  viewer.onApply = () => {
+    for (const p of viewer.panes) {
+      const top = p.stage.querySelector("img.top");
+      if (top) top.style.clipPath = `inset(0 0 0 ${sliderFrac * 100}%)`;
+      if (p.el._handle) p.el._handle.style.left = (viewer.view.tx + sliderFrac * data.width * viewer.view.s) + "px";
+    }
+  };
   const add = (caption, imgs, extra) => {
     const stage = makeStage(imgs);
     const pane = h("div", { class: "pane" }, h("div", { class: "cap" }, caption), stage);
     v.append(pane);
-    panes.push({ el: pane, stage });
-    bindPane(pane);
+    viewer.attach(pane, stage);
     if (extra) extra(pane, stage);
   };
   if (mode === "side") {
@@ -422,8 +373,8 @@ function renderViewer() {
         e.stopPropagation(); hd.setPointerCapture(e.pointerId);
         const mv = ev => {
           const r = pane.getBoundingClientRect();
-          sliderFrac = Math.min(1, Math.max(0, ((ev.clientX - r.left) - view.tx) / (data.width * view.s)));
-          applyView();
+          sliderFrac = Math.min(1, Math.max(0, ((ev.clientX - r.left) - viewer.view.tx) / (data.width * viewer.view.s)));
+          viewer.apply();
         };
         hd.addEventListener("pointermove", mv);
         hd.addEventListener("pointerup", () => hd.removeEventListener("pointermove", mv), { once: true });
@@ -465,51 +416,7 @@ function renderBoxes() {
   });
 }
 
-function paneSize() { const r = panes[0].el.getBoundingClientRect(); return [r.width, r.height]; }
-
-function fit() {
-  if (!panes.length) return;
-  const [pw, ph] = paneSize();
-  const s = Math.min(pw / data.width, ph / data.height) * 0.98;
-  view = { s, tx: (pw - data.width * s) / 2, ty: (ph - data.height * s) / 2 };
-  applyView();
-}
-
-function applyView() {
-  panes.forEach(p => {
-    p.stage.style.transform = `translate(${view.tx}px, ${view.ty}px) scale(${view.s})`;
-    p.el.style.setProperty("--s", view.s);
-    const top = p.stage.querySelector("img.top");
-    if (top) top.style.clipPath = `inset(0 0 0 ${sliderFrac * 100}%)`;
-    if (p.el._handle) p.el._handle.style.left = (view.tx + sliderFrac * data.width * view.s) + "px";
-  });
-}
-
-function bindPane(pane) {
-  pane.addEventListener("wheel", e => {
-    e.preventDefault();
-    const r = pane.getBoundingClientRect();
-    const mx = e.clientX - r.left, my = e.clientY - r.top;
-    const f = e.deltaY < 0 ? 1.15 : 1 / 1.15;
-    const s2 = Math.min(40, Math.max(0.02, view.s * f));
-    view.tx = mx - (mx - view.tx) * (s2 / view.s);
-    view.ty = my - (my - view.ty) * (s2 / view.s);
-    view.s = s2;
-    applyView();
-  }, { passive: false });
-  pane.addEventListener("pointerdown", e => {
-    if (e.button !== 0) return;
-    if (drawMode) return startDraw(pane, e);
-    pane.setPointerCapture(e.pointerId);
-    pane.classList.add("dragging");
-    let lx = e.clientX, ly = e.clientY;
-    const mv = ev => { view.tx += ev.clientX - lx; view.ty += ev.clientY - ly; lx = ev.clientX; ly = ev.clientY; applyView(); };
-    const up = () => { pane.classList.remove("dragging"); pane.removeEventListener("pointermove", mv); };
-    pane.addEventListener("pointermove", mv);
-    pane.addEventListener("pointerup", up, { once: true });
-    pane.addEventListener("pointercancel", up, { once: true });
-  });
-}
+const fit = () => viewer.fit();
 
 function selectError(id, zoom) {
   selectedId = id;
@@ -519,11 +426,8 @@ function selectError(id, zoom) {
   if (!activeCats.has(d.category)) { activeCats.add(d.category); renderFilters(); renderErrors(); }
   renderBoxes();
   if (zoom) {
-    const [x, y, w, h_] = d.bbox, [pw, ph] = paneSize();
-    const fitS = Math.min(pw / data.width, ph / data.height);
-    const s = Math.min(8, Math.max(fitS, Math.min(pw / (w * 1.8), ph / (h_ * 1.8))));
-    view = { s, tx: pw / 2 - (x + w / 2) * s, ty: ph / 2 - (y + h_ / 2) * s };
-    applyView();
+    const [x, y, w, h_] = d.bbox;
+    viewer.zoomToRect(x, y, w, h_);
   } else {
     const el = document.querySelector(`.err[data-id="${id}"]`);
     el && el.scrollIntoView({ block: "nearest", behavior: "smooth" });
@@ -535,10 +439,7 @@ function selectError(id, zoom) {
 }
 
 /* ---------- revisión: marcar errores no detectados y guardar caso ---------- */
-function toImg(pane, e) {
-  const r = pane.getBoundingClientRect();
-  return [(e.clientX - r.left - view.tx) / view.s, (e.clientY - r.top - view.ty) / view.s];
-}
+const toImg = (pane, e) => viewer.toImg(pane, e);
 
 function startDraw(pane, e) {
   const stage = pane.querySelector(".stage");
@@ -817,33 +718,7 @@ function askTarget(file) {
   document.body.append(bg);
 }
 
-document.addEventListener("paste", e => {
-  const it = [...(e.clipboardData?.items || [])].find(i => i.type.startsWith("image/"));
-  if (!it) return;
-  const blob = it.getAsFile(); if (!blob) return;
-  e.preventDefault();
-  const ext = (it.type.split("/")[1] || "png").replace("jpeg", "jpg");
-  askTarget(new File([blob], `pegado_${Date.now()}.${ext}`, { type: it.type }));
-});
-
-async function fileFromDrop(dt) {
-  if (dt.files && dt.files.length) return dt.files[0];
-  let url = (dt.getData("text/uri-list") || "").split("\n")[0].trim();
-  if (!url) {
-    const m = /<img[^>]+src=["']([^"']+)["']/i.exec(dt.getData("text/html") || "");
-    url = m ? m[1] : "";
-  }
-  if (!url) return null;
-  try {
-    const r = await fetch(url);
-    const b = await r.blob();
-    if (!b.type.startsWith("image/")) return null;
-    return new File([b], `arrastrada_${Date.now()}.${(b.type.split("/")[1] || "png").replace("jpeg", "jpg")}`, { type: b.type });
-  } catch {
-    showError("No se pudo leer esa imagen desde el navegador (el sitio no lo permite). Guárdala o cópiala y pégala con Ctrl+V.");
-    return null;
-  }
-}
+FVDrop.bindPaste(f => askTarget(f), () => !!$("#drop-client") && $("#drop-client").offsetParent !== null);
 
 /* ---------- inicio ---------- */
 setupDrop("client");
@@ -878,22 +753,8 @@ $("#tabs").addEventListener("click", e => {
   document.querySelectorAll("#tabs button").forEach(x => x.classList.toggle("active", x === b));
   data && renderViewer();
 });
-window.addEventListener("resize", () => panes.length && fit());
+window.addEventListener("resize", () => panes.length && $("#viewer") && $("#viewer").offsetParent && fit());
+FVViewer.bindShortcuts(() => ($("#viewer") && $("#viewer").offsetParent ? viewer : null));
 loadHistory();
 loadTemplates();
-
-/* versión en el pie y aviso de actualización */
-(async function () {
-  try {
-    const u = await (await fetch("/api/update")).json();
-    $("#version").textContent = "FAVERVIEW v" + u.version;
-    if (u.disponible) {
-      const b = $("#update");
-      b.classList.remove("hidden");
-      b.replaceChildren(u.mensaje + " ", h("button", { class: "primary", onclick: async () => {
-        const r = await (await fetch("/api/update/apply", { method: "POST" })).json();
-        b.textContent = r.mensaje;
-      } }, "Actualizar"));
-    }
-  } catch {}
 })();

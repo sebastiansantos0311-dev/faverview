@@ -52,7 +52,8 @@ def test_synthetic_cases_are_reproducible(tmp_path, monkeypatch):
 
 def test_save_review_as_case(tmp_path, monkeypatch):
     import app.main as m
-    monkeypatch.setattr(m, "DATOS_DIR", tmp_path / "datos")
+    import app.modules.compare.api as capi  # (S0) las rutas de Comparar viven ahora en su propio módulo
+    monkeypatch.setattr(capi, "DATOS_DIR", tmp_path / "datos")
     client = TestClient(m.app)
     with open("samples/cliente_errores.png", "rb") as c, open("samples/diseno.pdf", "rb") as d:
         r = client.post("/api/compare", files={"client_file": ("c.png", c), "design_file": ("d.pdf", d)}, params={"wait": 1})

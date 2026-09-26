@@ -154,12 +154,12 @@ Obligatorio para todos los módulos:
 | `lxml` | leer CxF (XML) | BSD | pip |
 
 Tareas de instalación:
-- [ ] Añadir los paquetes a `pyproject.toml` y regenerar `uv.lock`.
-- [ ] `README.md` paso 2: agregar el comando de instalación de Ghostscript (descarga del release oficial más reciente vía la API de GitHub → verificar que la firma Authenticode sea válida y de Artifex → `/S`).
-- [ ] `launcher.py`: avisar si falta Ghostscript (igual que con Tesseract), con el enlace a la sección del README.
+- [x] Añadir los paquetes a `pyproject.toml` y regenerar `uv.lock`.
+- [x] `README.md` paso 2: agregar el comando de instalación de Ghostscript (descarga del release oficial más reciente vía la API de GitHub → verificar que la firma Authenticode sea válida y de Artifex → `/S`).
+- [x] `launcher.py`: avisar si falta Ghostscript (igual que con Tesseract), con el enlace a la sección del README.
       Los módulos que lo necesitan muestran un aviso en la UI y se desactivan; el resto funciona.
-- [ ] CI (`.github/workflows/tests.yml`): instalar Ghostscript (`choco install ghostscript -y` y añadir `bin` al PATH).
-- [ ] `core/ghostscript.py`: buscar `gswin64c.exe` en el PATH, en `C:\Program Files\gs\gs*\bin\` (la versión más alta) y en
+- [x] CI (`.github/workflows/tests.yml`): instalar Ghostscript (`choco install ghostscript -y` y añadir `bin` al PATH).
+- [x] `core/ghostscript.py`: buscar `gswin64c.exe` en el PATH, en `C:\Program Files\gs\gs*\bin\` (la versión más alta) y en
       `config.json → "ghostscript_cmd"`.
 
 ---
@@ -168,22 +168,22 @@ Tareas de instalación:
 
 **Objetivo:** dejar la base lista para varios módulos **sin cambiar el comportamiento** de Comparar.
 
-- [ ] Crear `DECISIONES.md` y la sección "v3 (en desarrollo)" en `CHANGELOG.md`.
-- [ ] Crear `app/core/` y mover las utilidades compartidas (`jobs`, carga/validación de archivos, `color_mgmt`,
+- [x] Crear `DECISIONES.md` y la sección "v3 (en desarrollo)" en `CHANGELOG.md`.
+- [x] Crear `app/core/` y mover las utilidades compartidas (`jobs`, carga/validación de archivos, `color_mgmt`,
       utilidades de reporte). Dejar **módulos puente** (`app/jobs.py` que re-exporta `app.core.jobs`) para que los imports
       antiguos y los tests sigan funcionando.
-- [ ] Mover la lógica de Comparar a `app/modules/compare/` y sus rutas a un `APIRouter`. `app/main.py` queda ≤ 80 líneas.
-- [ ] Frontend: crear el shell con pestañas + `router.js`; el `app.js` actual pasa a `web/modules/compare.js`.
+- [x] Mover la lógica de Comparar a `app/modules/compare/` y sus rutas a un `APIRouter`. `app/main.py` queda ≤ 80 líneas.
+- [x] Frontend: crear el shell con pestañas + `router.js`; el `app.js` actual pasa a `web/modules/compare.js`.
       Pestañas no implementadas → pantalla "Próximamente".
-- [ ] Extraer `viewer.js` y `dropzone.js` del código actual de Comparar y usarlos en Comparar (primer consumidor).
-- [ ] `GET /api/status`.
-- [ ] Añadir las dependencias de la sección 3 y detectar Ghostscript.
+- [x] Extraer `viewer.js` y `dropzone.js` del código actual de Comparar y usarlos en Comparar (primer consumidor).
+- [x] `GET /api/status`.
+- [x] Añadir las dependencias de la sección 3 y detectar Ghostscript.
 
 **Criterios de aceptación S0**
-- [ ] `uv run pytest` pasa **sin modificar** los tests existentes (salvo los imports, si es inevitable; documentar).
-- [ ] `bench.run --sinteticos --ci` pasa con las mismas métricas (± 0.5).
-- [ ] Todas las URLs v2 responden igual (test que recorre la lista de rutas de v2).
-- [ ] Prueba manual: comparar `samples/` en el navegador se ve y funciona igual que antes.
+- [x] `uv run pytest` pasa **sin modificar** los tests existentes (salvo los imports, si es inevitable; documentar).
+- [x] `bench.run --sinteticos --ci` pasa con las mismas métricas (± 0.5).
+- [x] Todas las URLs v2 responden igual (test que recorre la lista de rutas de v2).
+- [x] Prueba manual: comparar `samples/` en el navegador se ve y funciona igual que antes.
 
 ---
 

@@ -84,6 +84,11 @@ def main() -> None:
         print("AVISO: no se encontró Tesseract; la comparación de texto no funcionará.")
         print("       Instálalo con: winget install UB-Mannheim.TesseractOCR")
 
+    from app.core import ghostscript
+    if not ghostscript.available():
+        print("AVISO: no se encontró Ghostscript; los módulos Separar colores y Códigos de barras estarán desactivados.")
+        print("       Instálalo con el comando de la sección «Instalar Ghostscript» del README.")
+
     import uvicorn
 
     port = free_port()

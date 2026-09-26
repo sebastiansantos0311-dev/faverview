@@ -190,3 +190,20 @@ select { background: var(--panel2); color: var(--text); border: 1px solid var(--
 .foot { color: var(--muted); font-size: 12px; text-align: center; padding: 14px; }
 
 .logo { width: 34px; height: 34px; border-radius: 8px; }
+
+/* ---- shell con pestañas (suite) ---- */
+.maintabs { display: flex; gap: 2px; margin-left: 18px; flex-wrap: wrap; }
+.maintabs a { color: var(--muted); text-decoration: none; padding: 6px 12px; border-radius: 6px 6px 0 0; border-bottom: 2px solid transparent; }
+.maintabs a:hover { color: var(--text); background: var(--panel2); }
+.maintabs a.active { color: var(--text); border-bottom-color: var(--accent); background: var(--panel2); }
+.maintabs a.warn::after { content: " ⚠"; color: var(--warn); }
+.vista { min-height: 40vh; }
+.soon { text-align: center; padding: 60px 20px; color: var(--muted); }
+.soon h2 { color: var(--text); }
+.hbar { display: flex; gap: 12px; justify-content: flex-end; align-items: center; padding: 8px 18px 0; }
+.toasts { position: fixed; right: 16px; bottom: 16px; display: flex; flex-direction: column; gap: 8px; z-index: 80; }
+.toast { background: var(--panel2); border: 1px solid var(--line); border-left: 4px solid var(--accent); padding: 8px 12px; border-radius: 6px; }
+.toast.error { border-left-color: var(--bad); } .toast.ok { border-left-color: var(--ok); }
+.vw-cursor { position: absolute; right: 8px; bottom: 6px; z-index: 5; background: rgba(0,0,0,.6); padding: 1px 8px; border-radius: 4px; font-size: 11px; pointer-events: none; }
+.vw-layer { display: flex; align-items: center; gap: 8px; margin: 3px 0; font-size: 13px; }
+.vw-layer input[type=range] { flex: 1; }

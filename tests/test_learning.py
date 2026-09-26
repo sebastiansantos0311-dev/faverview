@@ -113,7 +113,8 @@ def test_reviewed_case_feeds_learning_and_line_export(datos, monkeypatch):
     """Guardar un caso revisado alimenta vocabulario, confusiones y recortes para entrenar."""
     from fastapi.testclient import TestClient
     import app.main as m
-    monkeypatch.setattr(m, "DATOS_DIR", datos)
+    import app.modules.compare.api as capi
+    monkeypatch.setattr(capi, "DATOS_DIR", datos)
     client = TestClient(m.app)
     with open("samples/cliente_errores.png", "rb") as c, open("samples/diseno.pdf", "rb") as d:
         r = client.post("/api/compare", files={"client_file": ("c.png", c), "design_file": ("d.pdf", d)},
