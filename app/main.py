@@ -15,6 +15,7 @@ from app.loaders import FileError
 from app.modules.compare import api as compare_api
 from app.modules.separate import api as separate_api
 from app.modules.separate import raster_api
+from app.modules.vectorize import api as vectorize_api
 
 
 @asynccontextmanager
@@ -53,5 +54,6 @@ app.include_router(inks_api.router)
 app.include_router(compare_api.router)
 app.include_router(separate_api.router)
 app.include_router(raster_api.router)
+app.include_router(vectorize_api.router)
 app.include_router(learning_api.router)
 app.mount("/static", StaticFiles(directory=WEB_DIR), name="static")

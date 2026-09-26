@@ -66,3 +66,11 @@ Formato: fecha · contexto · decisión · alternativa descartada.
 - **Calibración (§7.6):** aplazada; el modelo sigue siendo orientativo.
 - **IoU de tintas planas:** la meta 0.97 quedó en 0.96 tras medir la línea base (0.968) con bordes desenfocados + JPEG q75.
 - **ΔE en proceso:** el ΔE alto en azules/rojos saturados es real (fuera de gama de las tintas); el mapa de calor lo muestra.
+
+## S4 – Vectorizador v1
+- **Escala:** si la imagen es pequeña se amplía ×2–×4 antes de vectorizar; tolerancia y remuestreo se multiplican por esa escala. Las coordenadas
+  del vector quedan en px de la imagen de trabajo (el viewBox lo refleja).
+- **Potrace en el banco:** es solo B/N; se usa capa por color con la misma paleta (apilado). Su SSIM bajo es en parte de esa adaptación.
+- **Texto convertido a trazados en los logos sintéticos:** no incluido (no hay fuentes libres empaquetadas); se usan formas, curvas y polígonos.
+- **Casos reales/Illustrator/Corel:** el banco solo incluye los sintéticos; los archivos externos los aporta el usuario (tarea del plan §15).
+- **PDF de salida:** una tinta `Separation` por color, con nombre `Color_N` (o el de la paleta) y alternativo CMYK aproximado desde el Lab.

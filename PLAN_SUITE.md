@@ -428,11 +428,11 @@ preprocess.py → quantize.py → regions.py → boundaries.py → fit.py → ex
    - Unidades: el usuario indica el tamaño final en mm → escalar las coordenadas.
 
 ### 8.2 Controles de preprensa (v1)
-- [ ] `min_detail_mm` (por defecto 0.15 mm): detalles más finos que eso → eliminar o engrosar (opción) según
+- [x] `min_detail_mm` (por defecto 0.15 mm): detalles más finos que eso → eliminar o engrosar (opción) según
       el tamaño final.
-- [ ] Número máximo de colores; bloquear colores de la biblioteca.
-- [ ] Simplificación global (tolerancia), respetando las esquinas.
-- [ ] Estadísticas: nº de trazados, nodos, colores y tiempo.
+- [x] Número máximo de colores; bloquear colores de la biblioteca.
+- [x] Simplificación global (tolerancia), respetando las esquinas.
+- [x] Estadísticas: nº de trazados, nodos, colores y tiempo.
 
 ### 8.3 UI (pestaña "Vectorizar")
 - Soltar la imagen → preajustes: **Logo**, **Línea (B/N)**, **Ilustración**, **Escaneo**, **Foto posterizada**.
@@ -444,10 +444,10 @@ preprocess.py → quantize.py → regions.py → boundaries.py → fit.py → ex
 
 ### 8.4 Banco de pruebas del vectorizador (`bench/vector/`), obligatorio en S4
 **Casos con verdad exacta (sintéticos):**
-- [ ] 40 logos vectoriales generados por código (formas geométricas, curvas Bézier aleatorias, texto convertido a
+- [x] 40 logos vectoriales generados por código (formas geométricas, curvas Bézier aleatorias, texto convertido a
       trazados con fuentes libres incluidas en el repositorio, trazos finos, colores de 2 a 8 tintas).
-- [ ] Rasterizados con degradaciones: 72–300 ppi, JPEG q 50–95, desenfoque, antialias, rotación ±2° y ruido.
-- [ ] Como el vector original se conoce, se mide contra él.
+- [x] Rasterizados con degradaciones: 72–300 ppi, JPEG q 50–95, desenfoque, antialias, rotación ±2° y ruido.
+- [x] Como el vector original se conoce, se mide contra él.
 
 **Casos reales:** `datos_locales/vector_bench/reales/` (el usuario aporta 10–20 imágenes: logos de WhatsApp, escaneos, etc.).
 
@@ -465,9 +465,9 @@ preprocess.py → quantize.py → regions.py → boundaries.py → fit.py → ex
 PowerTRACE**, cuyos SVG el usuario genera **a mano** con preajustes documentados y guarda en
 `datos_locales/vector_bench/externos/<herramienta>/<caso>.svg`. El banco los incluye si existen.
 
-- [ ] `uv run python -m bench.vector.run [--etiqueta …]` → reporte `.md`/`.html` con una tabla por herramienta y por tipo de caso,
+- [x] `uv run python -m bench.vector.run [--etiqueta …]` → reporte `.md`/`.html` con una tabla por herramienta y por tipo de caso,
       imágenes lado a lado y el ganador por métrica.
-- [ ] Guía en el manual: "Cómo generar los archivos de Illustrator/Corel para el banco" (preajuste, colores, exportar SVG).
+- [x] Guía en el manual: "Cómo generar los archivos de Illustrator/Corel para el banco" (preajuste, colores, exportar SVG).
 
 **Metas S4 (sintéticos):** huecos = 0% (por construcción); SSIM ≥ VTracer en ≥ 80% de los casos; nodos ≤ VTracer
 en ≥ 70% de los casos a SSIM igual o mayor (± 0.005).

@@ -7,7 +7,7 @@ const FVRouter = {
   modules: {
     comparar: { titulo: "Comparar", html: "/static/modules/compare.html", js: ["/static/modules/compare.js"] },
     separar: { titulo: "Separar colores", html: "/static/modules/separate.html", js: ["/static/modules/separate.js", "/static/modules/separate_img.js"] },
-    vectorizar: { titulo: "Vectorizar", soon: "Convierte imágenes en vectores por tintas, sin huecos entre colores." },
+    vectorizar: { titulo: "Vectorizar", html: "/static/modules/vectorize.html", js: ["/static/modules/vectorize.js"] },
     preflight: { titulo: "Preflight", soon: "Revisión técnica de PDF con perfiles: fuentes, imágenes, tintas, sangrado y más." },
     codigos: { titulo: "Códigos de barras", soon: "Generar y verificar EAN, GS1, DataMatrix y QR." },
     herramientas: { titulo: "Herramientas", soon: "Trapping, step & repeat, distorsión flexo, braille, gama extendida y prueba en pantalla." },

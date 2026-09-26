@@ -19,6 +19,10 @@
   proceso simulado (búsqueda de coberturas con el modelo de mezcla, base blanca con choke, ΔE estimado), índice (difusión
   Floyd–Steinberg) y CMYK con perfil ICC y límite de TAC; tramado AM y FM (ruido azul void-and-cluster); salidas: canales TIFF,
   placas de 1 bit CCITT G4, PDF DeviceN con alternativo CMYK, simulación e informe. Banco `bench/separation` (25 casos).
+- **S4 – Vectorizar (v1):** pipeline preprocesado → cuantización en tintas → fronteras de grieta compartidas (cero huecos por
+  construcción) → ajuste de Bézier (Schneider) con esquinas → SVG, PDF con tintas directas (Separation), EPS (Ghostscript) y DXF
+  en mm. Preajustes Logo/Línea/Ilustración/Escaneo/Foto, modos sin solapes/apilado y visor con contornos/diferencias.
+  Banco `bench/vector` (40 logos con vector verdadero vs VTracer y Potrace): SSIM ≥ VTracer en 87 % de los casos y ≈ 3,6× menos nodos.
 
 ## 2.0.0 — 2026-09-25
 
