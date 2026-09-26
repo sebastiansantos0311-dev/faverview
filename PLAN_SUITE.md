@@ -506,13 +506,13 @@ respalda. Mostrar la fecha y el enlace al reporte.
 ## 10. S6 – Preflight y códigos de barras
 
 ### 10.1 Preflight (`modules/preflight/`)
-- [ ] **Motor de reglas**: cada regla = función `check(doc, ctx) -> list[Finding]` con `id`, `severidad`
+- [x] **Motor de reglas**: cada regla = función `check(doc, ctx) -> list[Finding]` con `id`, `severidad`
       (`error` / `advertencia` / `info`), mensaje en español, página y bbox (para el visor).
-- [ ] **Perfiles** en JSON (`app/modules/preflight/perfiles/*.json`), editables y duplicables:
+- [x] **Perfiles** en JSON (`app/modules/preflight/perfiles/*.json`), editables y duplicables:
       "Offset hoja (tipo GWG2015 Sheetfed CMYK)", "Flexo empaque", "Etiquetas digital", "Serigrafía",
       "Solo revisión básica". Cada perfil activa reglas con umbrales. **No llamar a los perfiles "GWG"** (no estamos
       certificados): usar "inspirado en GWG 2015".
-- [ ] Reglas (mínimo):
+- [x] Reglas (mínimo):
   | Regla | Fuente del dato |
   |---|---|
   | Fuentes no incrustadas / Type 3 / subconjunto | PyMuPDF `get_fonts` |
@@ -531,35 +531,35 @@ respalda. Mostrar la fecha y el enlace al reporte.
   | Anotaciones/campos de formulario en el área de impresión | Annots |
   | Versión PDF/X y OutputIntent presentes/correctos | pdfinfo |
   | Imágenes con compresión JPEG muy fuerte (estimación de la calidad por las tablas de cuantización) | flujo de la imagen |
-- [ ] **Correcciones seguras** (sobre una copia, cada una opcional). **No** se intenta incrustar fuentes que faltan
+- [x] **Correcciones seguras** (sobre una copia, cada una opcional). **No** se intenta incrustar fuentes que faltan
       (no están disponibles; solo se reporta). Correcciones permitidas: eliminar anotaciones, unir tintas duplicadas (S2), añadir TrimBox/BleedBox con valores
       indicados, poner la sobreimpresión en tintas técnicas y en texto negro 100% K pequeño.
       Cada corrección → re-preflight + comparación visual antes/después (motor de Comparar).
-- [ ] Reporte PDF: resumen (errores/advertencias), lista con miniatura de la zona, perfil usado y fecha.
-- [ ] UI: soltar el PDF → elegir el perfil → resultados agrupados por severidad → clic → zoom en el visor.
+- [x] Reporte PDF: resumen (errores/advertencias), lista con miniatura de la zona, perfil usado y fecha.
+- [x] UI: soltar el PDF → elegir el perfil → resultados agrupados por severidad → clic → zoom en el visor.
 
 ### 10.2 Códigos de barras (`modules/barcodes/`)
 **Generar**
-- [ ] Tipos: EAN-13, EAN-8, UPC-A, UPC-E, ITF-14, GS1-128, Code 128, Code 39, GS1 DataMatrix, QR (segno),
+- [x] Tipos: EAN-13, EAN-8, UPC-A, UPC-E, ITF-14, GS1-128, Code 128, Code 39, GS1 DataMatrix, QR (segno),
       GS1 DataBar (vía BWIPP/treepoem).
-- [ ] Validación de datos: dígito de control (calcular o verificar), longitudes y AIs de GS1 (tabla básica de AIs
+- [x] Validación de datos: dígito de control (calcular o verificar), longitudes y AIs de GS1 (tabla básica de AIs
       comunes: 01, 10, 17, 21, 310x, 11, 15). Mensajes claros en español.
-- [ ] Parámetros: **magnificación** 80–200% (EAN-13 al 100% = 37.29 × 25.93 mm, con el módulo X = 0.33 mm), altura,
+- [x] Parámetros: **magnificación** 80–200% (EAN-13 al 100% = 37.29 × 25.93 mm, con el módulo X = 0.33 mm), altura,
       **reducción de barras (BWR)** en mm o µm (compensación de la ganancia: el usuario la indica según su proceso),
       zonas de silencio (con el indicador `>` opcional en EAN), texto legible (fuente OCR-B libre si está disponible;
       si no, documentar), color = una tinta de la biblioteca.
-- [ ] Salida **vectorial**: PDF (tinta directa o K), SVG y EPS. Nunca raster.
-- [ ] Lote: CSV → un PDF por código o una hoja.
+- [x] Salida **vectorial**: PDF (tinta directa o K), SVG y EPS. Nunca raster.
+- [x] Lote: CSV → un PDF por código o una hoja.
 
 **Verificar** (en un PDF o una imagen)
-- [ ] Detectar y **decodificar** todos los códigos con zxing-cpp sobre el render a 600 dpi (PDF) o la imagen.
-- [ ] Informar: tipo, contenido, dígito de control correcto, **magnificación medida** (desde el ancho del módulo en mm),
+- [x] Detectar y **decodificar** todos los códigos con zxing-cpp sobre el render a 600 dpi (PDF) o la imagen.
+- [x] Informar: tipo, contenido, dígito de control correcto, **magnificación medida** (desde el ancho del módulo en mm),
       zonas de silencio suficientes, contraste entre barras y fondo (desde el render en color y el Lab de las
       tintas: p. ej. rojo sobre blanco = ilegible para escáneres de luz roja → **error**), orientación respecto a la
       dirección de impresión flexo (advertencia si las barras son paralelas a la dirección de impresión).
-- [ ] **Grado estimado** inspirado en ISO/IEC 15416 (reflectancia mínima, contraste del símbolo, modulación,
+- [x] **Grado estimado** inspirado en ISO/IEC 15416 (reflectancia mínima, contraste del símbolo, modulación,
       defectos) a partir del render: mostrar como **"estimación A–F, no es una verificación certificada"**.
-- [ ] Test: generar cada tipo → verificar → decodifica el mismo contenido; casos inválidos (dígito de control malo,
+- [x] Test: generar cada tipo → verificar → decodifica el mismo contenido; casos inválidos (dígito de control malo,
       zona de silencio corta, rojo sobre blanco) disparan los avisos.
 
 ---

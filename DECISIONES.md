@@ -81,3 +81,12 @@ Formato: fecha · contexto · decisión · alternativa descartada.
 - **Trazos:** solo regiones de una pieza, grosor casi constante y esqueleto sin ramas; el borde del fondo mantiene el agujero (cubierto por el trazo).
 - **Texto:** se detecta con Tesseract (si está); «reemplazar» quita los trazados contenidos en la zona y añade texto real con la fuente indicada. No se sugiere fuente por similitud (queda para más adelante).
 - **Comparación con Image Trace:** sin archivos externos; el banco solo compara con VTracer y Potrace (la UI no afirma «mejor que Image Trace»).
+
+## S6 – Preflight y códigos de barras
+- **Reglas de placas** (TAC, líneas, texto, sobreimpresión) reutilizan el análisis de S2 y solo se ejecutan si Ghostscript está instalado (si no, se avisa en las notas).
+- **«Texto negro que no sobreimprime»** no se implementó como regla: el inventario no sigue el negro CMYK; la corrección «sobreimpresión» sí pone en sobreimpresión el negro 100 % K y las tintas técnicas.
+- **Correcciones:** no se incrustan fuentes (no hay fuentes que incrustar); «cajas» crea TrimBox = CropBox reducida por el sangrado y BleedBox = CropBox.
+- **Códigos:** los símbolos los crea zxing-cpp (módulos exactos) y la geometría/vectores son propios; BWR se aplica recortando cada barra. No se usa BWIPP/treepoem (necesitan Ghostscript y solo entregan raster); DataBar y GS1 vienen de zxing-cpp.
+- **Texto legible:** Helvetica estándar del PDF (no se incluye OCR-B, sin licencia clara); las posiciones de los dígitos EAN/UPC son aproximadas.
+- **Grado A–F:** perfil de reflectancia en la banda central (contraste de símbolo, modulación, defectos, reflectancia mínima); siempre se muestra como estimación, nunca certificada.
+- **Flexo/dirección:** «barras paralelas a la dirección de impresión» se calcula con la orientación decodificada y la dirección indicada por el usuario.

@@ -27,6 +27,12 @@
   nodos compartidos), simetría, líneas como trazos con grosor, texto (marcar zonas o reemplazar por texto real), engrosado de detalles finos,
   edición básica (unir, borrar, recolorear, volver a trazar una zona) y limpieza de anillos de antialias. Banco: SSIM ≥ VTracer en 92 % de los
   casos con ≈ 4,5× menos nodos y 0 huecos.
+- **S6 – Preflight y códigos de barras:** motor de reglas con 5 perfiles JSON editables (inspirados en GWG 2015, sin llamarlos GWG): fuentes,
+  resolución efectiva, espacios de color, tintas directas y duplicadas, TAC, líneas y texto pequeño, sobreimpresión, sangrado y zona segura,
+  transparencias, capas, anotaciones, PDF/X, OutputIntent y compresión JPEG; correcciones seguras sobre copia con comprobación antes/después;
+  reporte PDF con miniaturas. Códigos de barras: generar 12 tipos en vectores (EAN/UPC, ITF-14, Code 128, GS1-128, Code 39, DataBar,
+  DataMatrix, GS1 DataMatrix, QR) con dígito de control, AIs GS1, magnificación, BWR y zonas de silencio; verificar en PDF/imagen (decodificación,
+  magnificación medida, contraste en luz roja, dirección flexo y grado A–F estimado) y lote CSV.
 
 ## 2.0.0 — 2026-09-25
 

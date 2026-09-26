@@ -1,0 +1,39 @@
+<div class="sep-tabs">
+  <button class="ghost active" data-sub="gen">Generar</button>
+  <button class="ghost" data-sub="ver">Verificar</button>
+  <button class="ghost" data-sub="lote">Lote (CSV)</button>
+</div>
+<div id="bc-gen" class="bc-pane">
+  <div class="sp-grid bc-grid">
+    <aside class="sp-side">
+      <label>Tipo <select id="bc-tipo"></select></label>
+      <label>Datos <textarea id="bc-datos" rows="2" placeholder="Ej.: 590123412345 (se calcula el dígito de control)"></textarea></label>
+      <label>Magnificación % <input id="bc-mag" type="number" min="80" max="200" value="100" class="num"></label>
+      <label>Módulo X (mm, vacío = norma) <input id="bc-x" type="number" min="0.05" step="0.01" class="num"></label>
+      <label>Altura de barras (mm, vacío = norma) <input id="bc-alt" type="number" min="1" step="0.5" class="num"></label>
+      <label>Reducción de barras BWR (µm) <input id="bc-bwr" type="number" min="0" step="5" value="0" class="num"></label>
+      <label><input id="bc-txt" type="checkbox" checked> Texto legible</label>
+      <label>Tinta <select id="bc-ink"><option value="">Negro (K 100 %)</option></select></label>
+      <div class="sp-actions">
+        <button id="bc-pdf" class="ghost">Descargar PDF</button><button id="bc-svg" class="ghost">Descargar SVG</button><button id="bc-eps" class="ghost">Descargar EPS</button>
+      </div>
+      <p class="hint">Salida siempre vectorial. La reducción de barras compensa la ganancia de punto: pon el valor de tu proceso y confírmalo con una prueba impresa.</p>
+    </aside>
+    <div class="sp-center"><div id="bc-prev" class="bc-prev"></div><div id="bc-warn" class="sp-probe"></div></div>
+  </div>
+</div>
+<div id="bc-ver" class="bc-pane hidden">
+  <div class="drop" id="bc-drop"><div class="drop-title">PDF o imagen con códigos</div>
+    <div class="drop-hint">Arrastra aquí o haz clic<br><small>Se detectan y evalúan todos los códigos</small></div>
+    <input type="file" hidden accept=".pdf,.png,.jpg,.jpeg,.tif,.tiff,.bmp,.webp"></div>
+  <div class="sp-bar"><label>Resolución <select id="bc-vdpi"><option>300</option><option selected>600</option><option>1200</option></select> dpi</label>
+    <label>Dirección de impresión (flexo) <select id="bc-dir"><option value="">No indicada</option><option value="horizontal">Horizontal</option><option value="vertical">Vertical</option></select></label></div>
+  <div id="bc-res"></div>
+</div>
+<div id="bc-lote" class="bc-pane hidden">
+  <div class="drop" id="bc-ldrop"><div class="drop-title">CSV con los códigos</div>
+    <div class="drop-hint">Columnas: <code>tipo;datos;nombre</code><br><small>Ejemplo: <code>ean13;590123412345;producto1</code></small></div>
+    <input type="file" hidden accept=".csv,.txt"></div>
+  <label><input id="bc-hoja" type="checkbox" checked> Incluir una hoja con todos los códigos</label>
+  <div id="bc-lmsg" class="hint"></div>
+</div>
