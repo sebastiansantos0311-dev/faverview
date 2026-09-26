@@ -12,3 +12,5 @@ data/diccionario_personal.txt
 datos_locales/
 *.lnk
 data/.acceso_directo_creado
+.coverage
+htmlcov/
