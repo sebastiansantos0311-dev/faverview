@@ -141,7 +141,7 @@ Obligatorio para todos los módulos:
 
 | Paquete / herramienta | Uso | Licencia | Instalación |
 |---|---|---|---|
-| **Ghostscript** ≥ 10 | separaciones `tiffsep`, overprint, `bbox`, EPS, códigos de barras (BWIPP) | AGPL-3.0 | winget (verificar el id con `winget search ghostscript`; esperado `ArtifexSoftware.GhostScript`) |
+| **Ghostscript** ≥ 10 | separaciones `tiffsep`, overprint, `bbox`, EPS, códigos de barras (BWIPP) | AGPL-3.0 | **No está en winget.** Instalador oficial firmado de Artifex desde GitHub (`ArtifexSoftware/ghostpdl-downloads`, p. ej. `gs10080w64.exe`), instalación silenciosa `/S` tras verificar la firma Authenticode |
 | `pikepdf` | leer/editar PDF a bajo nivel (espacios de color, recursos) | MPL-2.0 | pip |
 | `vtracer` | vectorización a color (referencia y posible base) | MIT | pip |
 | `potracer` (Python puro) o `pypotrace` | vectorización B/N (referencia) | GPL-2.0+ | pip |
@@ -155,8 +155,8 @@ Obligatorio para todos los módulos:
 
 Tareas de instalación:
 - [ ] Añadir los paquetes a `pyproject.toml` y regenerar `uv.lock`.
-- [ ] `README.md` paso 2: agregar Ghostscript al comando winget.
-- [ ] `launcher.py`: avisar si falta Ghostscript (igual que con Tesseract), con el comando winget.
+- [ ] `README.md` paso 2: agregar el comando de instalación de Ghostscript (descarga del release oficial más reciente vía la API de GitHub → verificar que la firma Authenticode sea válida y de Artifex → `/S`).
+- [ ] `launcher.py`: avisar si falta Ghostscript (igual que con Tesseract), con el enlace a la sección del README.
       Los módulos que lo necesitan muestran un aviso en la UI y se desactivan; el resto funciona.
 - [ ] CI (`.github/workflows/tests.yml`): instalar Ghostscript (`choco install ghostscript -y` y añadir `bin` al PATH).
 - [ ] `core/ghostscript.py`: buscar `gswin64c.exe` en el PATH, en `C:\Program Files\gs\gs*\bin\` (la versión más alta) y en
@@ -672,6 +672,26 @@ Enfoque **por placas (raster)**, robusto y explicable; el trapping vectorial que
 - Manual de usuario (el PDF existente) ampliado con un capítulo por módulo, capturas y ejemplos.
 - `README.md`: instalación (con Ghostscript), módulos y enlaces.
 - Glosario de preprensa en español (TAC, trapping, sobreimpresión, tinta directa, BWR, lpi…) dentro del manual.
+- **Obligatorio en el manual y en el `README.md`** (en S1, cuando Ghostscript pase a ser necesario):
+  - **Instalar Ghostscript:** no está en winget. Incluir este comando de PowerShell (descarga el release oficial más
+    reciente de Artifex, verifica la firma Authenticode y lo instala en silencio):
+    ```
+    $r = Invoke-RestMethod https://api.github.com/repos/ArtifexSoftware/ghostpdl-downloads/releases/latest; $a = $r.assets | ? name -like '*w64.exe'; $f = "$env:TEMP\$($a.name)"; Invoke-WebRequest $a.browser_download_url -OutFile $f; $s = Get-AuthenticodeSignature $f; if ($s.Status -eq 'Valid' -and $s.SignerCertificate.Subject -match 'Artifex') { Start-Process $f -ArgumentList '/S' -Verb RunAs -Wait; Write-Host 'Ghostscript instalado' } else { Write-Host "Firma NO valida: $($s.Status). No se instalo." }
+    ```
+    más la verificación: `& (Get-ChildItem "C:\Program Files\gs\*\bin\gswin64c.exe" | Select -Last 1).FullName --version`
+    y la tabla "Si algo falla" (sin permisos de administrador, antivirus, firma no válida → no instalar).
+  - **Bibliotecas de tintas (Pantone y otras):** capítulo "Cómo obtener tus bibliotecas de tintas de forma legal":
+    - explicar que Pantone, HKS, RAL, TOYO y DIC son bibliotecas comerciales con licencia, que FAVERVIEW **no** las incluye y
+      que no se deben usar copias no autorizadas;
+    - paso a paso para **exportar desde Illustrator** (con Pantone Connect): Panel Muestras → seleccionar → menú ☰ →
+      "Guardar biblioteca de muestras como ASE";
+    - **Pantone Connect Premium**: crear paletas y exportarlas como ASE/CxF;
+    - **tintas medidas** con espectrofotómetro → CxF/CSV (formato CSV `nombre,L,a,b[,tipo][,opacidad]` con un ejemplo);
+    - pedir las **CxF al proveedor de tintas** (Siegwerk, Sun Chemical, Flint, etc.);
+    - cómo **importarlas** en FAVERVIEW (pantalla "Tintas") y dónde se guardan (`datos_locales/tintas/`, privado,
+      nunca se sube a GitHub);
+    - qué trae la app gratis: CMYK de referencia ISO/Fogra, blanco, barniz, tintas técnicas y tintas creadas por el
+      usuario con su Lab.
 
 ### 13.5 Versionado
 - Cada etapa terminada → versión `3.0.0-sN` en `pyproject.toml` y una etiqueta git `v3.0.0-sN`.
@@ -705,7 +725,7 @@ Enfoque **por placas (raster)**, robusto y explicable; el trapping vectorial que
 
 ## 15. Tareas para el usuario (el agente no puede hacerlas)
 
-- [ ] Instalar Ghostscript (`winget install ArtifexSoftware.GhostScript`, verificar el id) en los equipos.
+- [ ] Instalar Ghostscript en los equipos con el comando del README (instalador oficial firmado de Artifex; no está en winget).
 - [ ] Aportar sus **bibliotecas de tintas** (exportadas de su software con licencia, en CxF/ASE/CSV) y los Lab de sus
       prendas o sustratos.
 - [ ] Aportar **10–20 imágenes reales** para el banco del vectorizador (`datos_locales/vector_bench/reales/`) y generar las
