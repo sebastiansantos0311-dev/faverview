@@ -74,3 +74,10 @@ Formato: fecha · contexto · decisión · alternativa descartada.
 - **Texto convertido a trazados en los logos sintéticos:** no incluido (no hay fuentes libres empaquetadas); se usan formas, curvas y polígonos.
 - **Casos reales/Illustrator/Corel:** el banco solo incluye los sintéticos; los archivos externos los aporta el usuario (tarea del plan §15).
 - **PDF de salida:** una tinta `Separation` por color, con nombre `Color_N` (o el de la paleta) y alternativo CMYK aproximado desde el Lab.
+
+## S5 – Vectorizador v2
+- **Primitivas:** un arco o círculo exacto se acepta solo si el error ≤ tolerancia y no usa más nodos que Schneider (en cadenas cerradas se admiten hasta 2 nodos más por la geometría exacta).
+- **Simetría:** se impone sobre el mapa de etiquetas (copiando la mitad reflejada) antes de trazar; no se ajusta una sola mitad.
+- **Trazos:** solo regiones de una pieza, grosor casi constante y esqueleto sin ramas; el borde del fondo mantiene el agujero (cubierto por el trazo).
+- **Texto:** se detecta con Tesseract (si está); «reemplazar» quita los trazados contenidos en la zona y añade texto real con la fuente indicada. No se sugiere fuente por similitud (queda para más adelante).
+- **Comparación con Image Trace:** sin archivos externos; el banco solo compara con VTracer y Potrace (la UI no afirma «mejor que Image Trace»).

@@ -4,7 +4,7 @@
 const { h, toast } = FV;
 const root = document.getElementById("vista-vectorizar");
 const q = s => root.querySelector(s);
-let job = null, last = null, pane = null, timer = null;
+let job = null, last = null, pane = null, timer = null, sel = 0, drawZone = false;
 const viewer = new FVViewer();
 const stage = h("div", { class: "stage" });
 const imgO = h("img", { draggable: "false" }), imgV = h("img", { draggable: "false" });
@@ -34,7 +34,9 @@ const num = id => +q(id).value;
 function params() {
   return { preset: q("#vz-preset").value, k_max: num("#vz-k"), fusionar_de: num("#vz-fus"), detalle_min_mm: num("#vz-det"),
     tolerancia: num("#vz-tol"), esquinas: num("#vz-esq"), suavidad: num("#vz-suav"), modo: q("#vz-modo").value,
-    bn: q("#vz-preset").value === "linea" };
+    bn: q("#vz-preset").value === "linea", primitivas: q("#vz-prim").checked, geometria_limpia: q("#vz-limpia").checked,
+    simetria: q("#vz-sim").checked, trazos: q("#vz-trazos").checked, engrosar_mm: num("#vz-eng"), texto: q("#vz-texto").value,
+    fuente: q("#vz-fuente").value || "Arial" };
 }
 async function run() {
   if (!job) return;
@@ -50,11 +52,14 @@ async function run() {
 }
 q("#vz-go").onclick = run;
 
-function show() {
+function show(keep) {
   const s = last.stats;
   q("#vz-stats").textContent = `${s.trazados} trazados · ${s.nodos} nodos · ${s.colores} colores · ${s.segundos} s`;
   const cols = q("#vz-cols"); cols.innerHTML = "";
-  last.colores.forEach(c => cols.append(h("div", { class: "sp-ink" }, h("span", { class: "sp-sw", style: { background: c.hex } }), h("span", { class: "sp-nm" }, c.nombre), h("small", {}, c.hex))));
+  if (sel >= last.colores.length) sel = 0;
+  last.colores.forEach(c => cols.append(h("div", { class: "sp-ink" + (c.i === sel ? " sel" : ""), onclick: () => { sel = c.i; q("#vz-recol").value = c.hex; show(true); } },
+    h("span", { class: "sp-sw", style: { background: c.hex } }), h("span", { class: "sp-nm" }, c.nombre), h("small", {}, c.hex))));
+  if (keep) return;
   const mm = num("#vz-mm") || "";
   const t = "?t=" + Date.now();
   imgO.src = `${base()}/original.png${t}`;
@@ -87,4 +92,31 @@ function view() {
 q("#vz-ver").onchange = view; q("#vz-op").oninput = view;
 q("#vz-new").onclick = () => { q("#vz-main").classList.add("hidden"); q("#vz-setup").classList.remove("hidden"); job = null; last = null; };
 FVViewer.bindShortcuts(() => (q("#vz-viewer") && q("#vz-viewer").offsetParent ? viewer : null));
+
+async function editar(body, msg) {
+  try {
+    FV.setLoading(true);
+    last = Object.assign(last, await FVApi.postJSON(`${base()}/editar`, body));
+    toast(msg, "ok");
+    show();
+  } catch (e) { toast(e.message, "error", 7000); } finally { FV.setLoading(false); }
+}
+q("#vz-unir").onclick = () => { if (last.colores.length < 2) return; editar({ op: "unir", a: sel, b: (sel + 1) % last.colores.length }, "Colores unidos."); };
+q("#vz-borrar").onclick = () => editar({ op: "borrar", a: sel }, "Región borrada.");
+q("#vz-recol").onchange = e => editar({ op: "recolorear", a: sel, color: e.target.value }, "Color cambiado.");
+q("#vz-zona").onclick = () => { drawZone = true; toast("Arrastra un rectángulo sobre la imagen.", "info"); };
+viewer.onPointerDown = (p, ev) => {
+  if (!drawZone) return false;
+  const [x0, y0] = viewer.toImg(p, ev);
+  const rect = h("div", { style: { position: "absolute", border: "2px dashed #eab308", pointerEvents: "none" } });
+  stage.append(rect);
+  const mv = e2 => { const [x, y] = viewer.toImg(p, e2); Object.assign(rect.style, { left: Math.min(x, x0) + "px", top: Math.min(y, y0) + "px", width: Math.abs(x - x0) + "px", height: Math.abs(y - y0) + "px" }); };
+  const up = e2 => {
+    p.el.removeEventListener("pointermove", mv);
+    const [x, y] = viewer.toImg(p, e2); rect.remove(); drawZone = false;
+    editar({ op: "zona", zona: [Math.round(Math.min(x, x0)), Math.round(Math.min(y, y0)), Math.round(Math.abs(x - x0)), Math.round(Math.abs(y - y0))], k_max: num("#vz-k") + 2 }, "Zona vuelta a trazar.");
+  };
+  p.el.addEventListener("pointermove", mv); p.el.addEventListener("pointerup", up, { once: true });
+  return true;
+};
 })();

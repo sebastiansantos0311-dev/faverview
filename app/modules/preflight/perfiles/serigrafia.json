@@ -1,0 +1,91 @@
+{
+ "nombre": "Serigrafía",
+ "descripcion": "Serigrafía: tintas directas, líneas gruesas, texto mayor y sobreimpresión de tintas técnicas.",
+ "reglas": {
+  "fuentes_no_incrustadas": {
+   "activa": true,
+   "severidad": "error"
+  },
+  "fuentes_type3": {
+   "activa": true,
+   "severidad": "info"
+  },
+  "resolucion": {
+   "activa": true,
+   "severidad": "advertencia",
+   "color_min": 150,
+   "gris_min": 150,
+   "bn_min": 600
+  },
+  "espacios_color": {
+   "activa": true,
+   "severidad": "info",
+   "prohibidos": [
+    "Lab"
+   ]
+  },
+  "tintas_directas_max": {
+   "activa": true,
+   "severidad": "advertencia",
+   "max": 8
+  },
+  "tintas_duplicadas": {
+   "activa": true,
+   "severidad": "error"
+  },
+  "tac": {
+   "activa": false
+  },
+  "linea_fina": {
+   "activa": true,
+   "severidad": "error",
+   "min_mm": 0.2
+  },
+  "texto_pequeno": {
+   "activa": true,
+   "severidad": "advertencia",
+   "min_pt": 8
+  },
+  "negro_enriquecido_texto": {
+   "activa": false
+  },
+  "sobreimpresion": {
+   "activa": true,
+   "severidad": "error"
+  },
+  "sangrado": {
+   "activa": true,
+   "severidad": "info",
+   "min_mm": 3
+  },
+  "trimbox_ausente": {
+   "activa": true,
+   "severidad": "info"
+  },
+  "zona_segura": {
+   "activa": false
+  },
+  "transparencias": {
+   "activa": false
+  },
+  "capas_ocultas": {
+   "activa": true,
+   "severidad": "advertencia"
+  },
+  "anotaciones": {
+   "activa": true,
+   "severidad": "advertencia"
+  },
+  "pdfx": {
+   "activa": false
+  },
+  "output_intent": {
+   "activa": false
+  },
+  "jpeg_calidad": {
+   "activa": true,
+   "severidad": "advertencia",
+   "min": 50
+  }
+ }
+}

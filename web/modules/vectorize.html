@@ -26,6 +26,15 @@
       <label>Suavidad <input id="vz-suav" type="number" min="0" max="5" step="0.2" value="1.6" class="num"></label>
       <label>Modo <select id="vz-modo"><option value="sin_solapes">Sin solapes (fronteras compartidas)</option><option value="apilado">Apilado (sin agujeros)</option></select></label>
       <label>Tamaño final (mm de ancho) <input id="vz-mm" type="number" min="0" step="1" value="0" class="num"></label>
+      <details><summary>Geometría y preprensa (v2)</summary>
+        <label><input id="vz-prim" type="checkbox"> Primitivas (arcos, círculos, elipses)</label>
+        <label><input id="vz-limpia" type="checkbox"> Geometría limpia (enderezar)</label>
+        <label><input id="vz-sim" type="checkbox"> Simetría (si el diseño la tiene)</label>
+        <label><input id="vz-trazos" type="checkbox"> Líneas como trazos con grosor</label>
+        <label>Engrosar detalles menores de (mm) <input id="vz-eng" type="number" min="0" step="0.05" value="0" class="num"></label>
+        <label>Texto <select id="vz-texto"><option value="normal">Vectorizar normal</option><option value="marcar">Marcar la zona</option><option value="reemplazar">Reemplazar por texto real</option></select></label>
+        <label>Fuente del texto <input id="vz-fuente" value="Arial"></label>
+      </details>
       <button id="vz-go" class="ghost">Vectorizar</button>
       <h3>Descargar</h3>
       <div class="sp-actions">
@@ -34,6 +43,12 @@
       </div>
     </aside>
     <div class="sp-center"><div class="viewer" id="vz-viewer"></div><div id="vz-stats" class="sp-probe"></div></div>
-    <aside class="sp-side"><h3>Colores</h3><div id="vz-cols"></div></aside>
+    <aside class="sp-side"><h3>Colores</h3><div id="vz-cols"></div>
+      <div class="sp-actions">
+        <button id="vz-unir" class="ghost">Unir con el siguiente</button>
+        <button id="vz-borrar" class="ghost">Borrar el seleccionado</button>
+        <label>Recolorear <input id="vz-recol" type="color" value="#000000"></label>
+        <button id="vz-zona" class="ghost">Volver a trazar una zona…</button>
+      </div></aside>
   </div>
 </section>

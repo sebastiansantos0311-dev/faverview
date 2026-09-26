@@ -2,6 +2,7 @@
 import io
 import tempfile
 from pathlib import Path
+from xml.sax.saxutils import escape
 
 import numpy as np
 import pikepdf
@@ -25,16 +26,17 @@ def _loops(res, region):
     return [l for l in region.loops if l.outer] if res.mode == "apilado" else region.loops
 
 
-def _d(loop, f=1.0, flip_h=None, prec=2) -> str:
+def _d_segs(segs, closed=True, f=1.0, prec=2) -> str:
     def P(p):
-        y = (flip_h - p[1]) if flip_h is not None else p[1]
-        return f"{p[0] * f:.{prec}f} {y * f:.{prec}f}"
-    first = loop.segs[0]
-    out = [f"M{P(first[1])}"]
-    for s in loop.segs:
+        return f"{p[0] * f:.{prec}f} {p[1] * f:.{prec}f}"
+    out = [f"M{P(segs[0][1])}"]
+    for s in segs:
         out.append(f"L{P(s[2])}" if s[0] == "L" else f"C{P(s[2])} {P(s[3])} {P(s[4])}")
-    out.append("Z")
-    return "".join(out)
+    return "".join(out) + ("Z" if closed else "")
+
+
+def _d(loop, f=1.0) -> str:
+    return _d_segs(loop.segs, True, f)
 
 
 def to_svg(res, size_mm: float | None = None) -> str:
@@ -44,8 +46,35 @@ def to_svg(res, size_mm: float | None = None) -> str:
     for r in res.regions:
         d = "".join(_d(l) for l in _loops(res, r))
         parts.append(f'<path fill="{r.color}" fill-rule="evenodd" d="{d}"/>')
+    for s in res.strokes:
+        parts.append(f'<path fill="none" stroke="{s["color"]}" stroke-width="{s["width"]:.2f}" d="{_d_segs(s["segs"], False)}"/>')
+    for t in res.texts:
+        parts.append(f'<text x="{t["x"]:.1f}" y="{t["y"]:.1f}" font-family="{escape(t["font"])}" font-size="{t["size"]:.1f}" '
+                     f'fill="{t["color"]}">{escape(t["text"])}</text>')
     parts.append("</svg>")
     return "\n".join(parts)
+
+
+class _CS:
+    """Espacios de color del PDF: un Separation por color (o CMYK puro)."""
+
+    def __init__(self, pdf, mode, names):
+        self.pdf, self.mode, self.names = pdf, mode, names
+        self.res = pikepdf.Dictionary()
+        self.cache: dict[int, str] = {}
+
+    def fill_op(self, label, lab, stroke=False) -> str:
+        cmyk = _alt_cmyk(type("I", (), {"lab": lab})())
+        if self.mode != "separation":
+            return "{:.4f} {:.4f} {:.4f} {:.4f} {}".format(*cmyk, "K" if stroke else "k")
+        if label not in self.cache:
+            name = (self.names[label] if self.names and label < len(self.names) else None) or f"Color {label + 1}"
+            fn = pikepdf.Dictionary(FunctionType=2, Domain=[0, 1], C0=[0, 0, 0, 0], C1=cmyk, N=1)
+            key = f"CS{label}"
+            self.res[f"/{key}"] = pikepdf.Array([pikepdf.Name.Separation, pikepdf.Name("/" + name.replace(" ", "_")),
+                                                 pikepdf.Name.DeviceCMYK, fn])
+            self.cache[label] = key
+        return f"/{self.cache[label]} {'CS' if stroke else 'cs'} 1 {'SCN' if stroke else 'scn'}"
 
 
 def to_pdf(res, size_mm: float | None = None, mode: str = "separation", names: list[str] | None = None,
@@ -56,40 +85,43 @@ def to_pdf(res, size_mm: float | None = None, mode: str = "separation", names: l
     wp, hp = res.width * f, res.height * f
     pdf = pikepdf.new()
     page = pdf.add_blank_page(page_size=(wp, hp))
-    cs_res, gs_res = pikepdf.Dictionary(), pikepdf.Dictionary()
+    cso = _CS(pdf, mode, names)
+    gs_res = pikepdf.Dictionary()
     ops = []
-    by_label = {r.label: r for r in res.regions}
-    for i, r in enumerate(res.regions):
+    for r in res.regions:
         name = (names[r.label] if names and r.label < len(names) else None) or f"Color {r.label + 1}"
-        cmyk = _alt_cmyk(type("I", (), {"lab": r.lab})())
-        if mode == "separation":
-            fn = pdf.make_stream(b"", FunctionType=2, Domain=[0, 1], C0=[0, 0, 0, 0], C1=cmyk, N=1)
-            fn = pikepdf.Dictionary(FunctionType=2, Domain=[0, 1], C0=[0, 0, 0, 0], C1=cmyk, N=1)
-            key = f"CS{i}"
-            cs_res[f"/{key}"] = pikepdf.Array([pikepdf.Name.Separation, pikepdf.Name("/" + name.replace(" ", "_")), pikepdf.Name.DeviceCMYK, fn])
-            ops.append(f"/{key} cs 1 scn")
-        else:
-            ops.append("{:.4f} {:.4f} {:.4f} {:.4f} k".format(*cmyk))
         if overprint and name in overprint:
             gs_res["/GSop"] = pikepdf.Dictionary(Type=pikepdf.Name.ExtGState, OP=True, op=True, OPM=1)
-            ops.insert(len(ops) - 1, "/GSop gs")
-        path = "".join(_pdf_path(l, f, res.height) for l in _loops(res, r))
-        ops.append(path + "f*")
-    page.Resources = pikepdf.Dictionary(ColorSpace=cs_res, ExtGState=gs_res)
-    page.Contents = pdf.make_stream("\n".join(ops).encode())
+            ops.append("/GSop gs")
+        ops.append(cso.fill_op(r.label, r.lab))
+        ops.append("".join(_pdf_path(l.segs, f, res.height, True) for l in _loops(res, r)) + "f*")
+    for s in res.strokes:
+        ops.append(cso.fill_op(s["label"], s.get("lab", (50, 0, 0)), True))
+        ops.append(f"{s['width'] * f:.3f} w 0 J 1 j " + _pdf_path(s["segs"], f, res.height, False) + "S")
+    fonts = pikepdf.Dictionary()
+    if res.texts:
+        fonts["/F1"] = pikepdf.Dictionary(Type=pikepdf.Name.Font, Subtype=pikepdf.Name.Type1, BaseFont=pikepdf.Name.Helvetica,
+                                          Encoding=pikepdf.Name.WinAnsiEncoding)
+    for t in res.texts:
+        rgb = [int(t["color"][i:i + 2], 16) / 255 for i in (1, 3, 5)]
+        txt = t["text"].encode("cp1252", "replace").decode("latin-1").replace("\\", "\\\\").replace("(", "\\(").replace(")", "\\)")
+        ops.append("BT {:.3f} {:.3f} {:.3f} rg /F1 {:.2f} Tf {:.3f} {:.3f} Td ({}) Tj ET".format(
+            *rgb, t["size"] * f, t["x"] * f, (res.height - t["y"]) * f, txt))
+    page.Resources = pikepdf.Dictionary(ColorSpace=cso.res, ExtGState=gs_res, Font=fonts)
+    page.Contents = pdf.make_stream("\n".join(ops).encode("latin-1", "replace"))
     out = io.BytesIO()
     pdf.save(out)
     return out.getvalue()
 
 
-def _pdf_path(loop, f, H) -> str:
+def _pdf_path(segs, f, H, close) -> str:
     def P(p):
         return f"{p[0] * f:.3f} {(H - p[1]) * f:.3f}"
-    s = loop.segs
-    out = [f"{P(s[0][1])} m "]
-    for g in s:
+    out = [f"{P(segs[0][1])} m "]
+    for g in segs:
         out.append(f"{P(g[2])} l " if g[0] == "L" else f"{P(g[2])} {P(g[3])} {P(g[4])} c ")
-    out.append("h ")
+    if close:
+        out.append("h ")
     return "".join(out)
 
 
@@ -120,16 +152,26 @@ def to_dxf(res, size_mm: float | None = None) -> bytes:
     doc = ezdxf.new("R2010", setup=True)
     doc.units = ezdxf.units.MM
     msp = doc.modelspace()
+
+    def poly(segs, layer, close):
+        pts = []
+        for s in segs:
+            pts += _flatten(s, 0.02 / k)[:-1]
+        pts.append(segs[-1][2] if segs[-1][0] == "L" else segs[-1][4])
+        if len(pts) >= 2:
+            msp.add_lwpolyline([(p[0] * k, (res.height - p[1]) * k) for p in pts], close=close, dxfattribs={"layer": layer})
+
     for r in res.regions:
         layer = f"COLOR_{r.label + 1}_{r.color.lstrip('#')}"
         doc.layers.add(layer)
         for l in _loops(res, r):
-            pts = []
-            for s in l.segs:
-                pts += _flatten(s, 0.02 / k)[:-1]
-            if len(pts) < 3:
-                continue
-            msp.add_lwpolyline([(p[0] * k, (res.height - p[1]) * k) for p in pts], close=True, dxfattribs={"layer": layer})
+            poly(l.segs, layer, True)
+    for s in res.strokes:
+        layer = f"TRAZO_{s['label'] + 1}"
+        doc.layers.add(layer)
+        poly(s["segs"], layer, False)
+    for t in res.texts:
+        msp.add_text(t["text"], dxfattribs={"height": t["size"] * k, "insert": (t["x"] * k, (res.height - t["y"]) * k)})
     buf = io.StringIO()
     doc.write(buf)
     return buf.getvalue().encode("utf-8")
@@ -154,5 +196,7 @@ def to_outline_svg(res) -> str:
         for l in reg.loops:
             for s in l.segs:
                 parts.append(f'<circle cx="{s[1][0]:.1f}" cy="{s[1][1]:.1f}" r="{r:.1f}" fill="#06f"/>')
+    for z in res.text_zones:
+        parts.append(f'<rect x="{z["x"]}" y="{z["y"]}" width="{z["w"]}" height="{z["h"]}" fill="none" stroke="#0a0" stroke-width="{r / 3:.2f}"/>')
     parts.append("</svg>")
     return "".join(parts)

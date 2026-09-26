@@ -476,25 +476,25 @@ en ≥ 70% de los casos a SSIM igual o mayor (± 0.005).
 
 ## 9. S5 – Vectorizador v2 (superar a Image Trace)
 
-- [ ] **Primitivas**: para cada cadena (o secuencia de cadenas entre esquinas) intentar ajustar:
+- [x] **Primitivas**: para cada cadena (o secuencia de cadenas entre esquinas) intentar ajustar:
   - **segmento recto** (mínimos cuadrados + error máximo < `prim_tol_px`),
   - **arco / círculo** (ajuste algebraico de Kåsa o Taubin + refinamiento geométrico),
   - **elipse** (Fitzgibbon directo),
   - si una región completa es un círculo, elipse o rectángulo (con esquinas redondeadas o no) → emitirla como tal.
   Aceptar la primitiva solo si el error ≤ tolerancia **y** no empeora el SSIM local. Las primitivas se convierten a
   Bézier exactas en la salida (círculo = 4 cúbicas, κ = 0.5523).
-- [ ] **Enderezado**: segmentos casi horizontales/verticales (< 2°) → exactos; ángulos casi rectos → 90°
+- [x] **Enderezado**: segmentos casi horizontales/verticales (< 2°) → exactos; ángulos casi rectos → 90°
       (opción "geometría limpia").
-- [ ] **Simetría**: detectar un eje de simetría global o por región (comparar la región reflejada, IoU > 0.97) →
+- [x] **Simetría**: detectar un eje de simetría global o por región (comparar la región reflejada, IoU > 0.97) →
       ajustar una mitad y reflejarla (opción).
-- [ ] **Paralelismo y grosor constante** en trazos (líneas de ancho uniforme): detectar trazos por la transformada de
+- [x] **Paralelismo y grosor constante** en trazos (líneas de ancho uniforme): detectar trazos por la transformada de
       distancia + esqueleto; opción de exportarlos como **trazo con grosor** en lugar de relleno (modo "línea").
-- [ ] **Zonas de texto**: detectar texto con el OCR existente; opciones: vectorizar normal / marcar la zona /
+- [x] **Zonas de texto**: detectar texto con el OCR existente; opciones: vectorizar normal / marcar la zona /
       reemplazar por texto real con una fuente elegida por el usuario (sugerir fuentes instaladas por la similitud de
       las métricas: altura x, contraste de trazo, serifas; **orientativo**).
-- [ ] **Controles de preprensa v2**: engrosar automáticamente los detalles < mínimo (dilatación vectorial por
+- [x] **Controles de preprensa v2**: engrosar automáticamente los detalles < mínimo (dilatación vectorial por
       offset), cerrar contornos para corte y opción "sin nodos duplicados".
-- [ ] **Edición básica** en la UI: fusionar dos colores, recolorear, borrar una región y volver a vectorizar una zona
+- [x] **Edición básica** en la UI: fusionar dos colores, recolorear, borrar una región y volver a vectorizar una zona
       seleccionada con otros parámetros.
 
 **Metas S5 (banco):** frente a Image Trace (cuando haya archivos) en logos: SSIM igual o mayor en ≥ 70% de los casos,

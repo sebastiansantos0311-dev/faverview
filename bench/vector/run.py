@@ -89,7 +89,7 @@ def main():
     ap.add_argument("--etiqueta", default="")
     ap.add_argument("--ci", action="store_true")
     a = ap.parse_args()
-    tools = {"FAVERVIEW": ours, "VTracer": vt, "Potrace": po}
+    tools = {"FAVERVIEW": ours, "FAVERVIEW v2": lambda i: ours(i, primitives=True, geometria_limpia=True), "VTracer": vt, "Potrace": po}
     rows = {t: [] for t in tools}
     for s in range(a.casos):
         img, truth, _, n = synth.degrade(s)

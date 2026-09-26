@@ -241,3 +241,4 @@ button.mini { padding: 1px 6px; font-size: 11px; }
 .si-imgs { display: flex; gap: 6px; overflow: auto; max-height: 74vh; }
 .si-imgs img { max-width: 100%; max-height: 72vh; object-fit: contain; background: #2a2f3a; }
 .si-imgs img.hidden { display: none; }
+.sp-ink.sel { background:#ffffff12; outline:1px solid var(--accent); } .sp-side details { margin: 8px 0; } .sp-side details label { display:flex; flex-direction:column; gap:2px; margin:4px 0; }

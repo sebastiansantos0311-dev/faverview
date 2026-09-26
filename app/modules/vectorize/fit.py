@@ -3,6 +3,8 @@
 Un segmento es ("L", p0, p1) o ("C", p0, c1, c2, p1) con puntos (x, y) numpy."""
 import numpy as np
 
+from app.modules.vectorize import primitives
+
 
 # ---------------------------------------------------------------- Schneider
 def _bez(ctrl, t):
@@ -172,11 +174,12 @@ def _dev_max(part):
     return float((np.abs(chord[0] * (part[:, 1] - part[0, 1]) - chord[1] * (part[:, 0] - part[0, 0])) / cl).max())
 
 
-def _fit_part(part, tol, sigma, t_start=None, t_end=None, fixed_ends=True):
+def _fit_part(part, tol, sigma, t_start=None, t_end=None, fixed_ends=True, prims=False):
     if len(part) < 2:
         return []
     if _dev_max(part) < tol * 0.9:
         return [("L", part[0].copy(), part[-1].copy())]
+    arc = primitives.fit_arc(part, tol) if prims else None
     sm = _smooth_open(part, sigma) if fixed_ends else part
     if len(sm) < 3:
         return [("L", sm[0].copy(), sm[-1].copy())]
@@ -186,10 +189,12 @@ def _fit_part(part, tol, sigma, t_start=None, t_end=None, fixed_ends=True):
     out = []
     for c in fit_cubic(sm, t1, t2, tol):
         out.append(("C", c[0], c[1], c[2], c[3]))
+    if arc and len(arc) <= len(out):        # el arco exacto solo se acepta si no usa más nodos
+        return arc
     return out
 
 
-def fit_polyline(pts, tol=0.8, angle_deg=60.0, sigma=1.6, step=1.0):
+def fit_polyline(pts, tol=0.8, angle_deg=60.0, sigma=1.6, step=1.0, prims=False):
     """Cadena abierta (extremos fijos): esquinas + Schneider."""
     pts = np.asarray(pts, float)
     raw = _resample(pts, step) if len(pts) > 3 else pts
@@ -197,17 +202,30 @@ def fit_polyline(pts, tol=0.8, angle_deg=60.0, sigma=1.6, step=1.0):
     cuts = [0] + corners + [len(raw) - 1]
     segs = []
     for a, b in zip(cuts[:-1], cuts[1:]):
-        segs += _fit_part(raw[a:b + 1], tol, sigma)
+        segs += _fit_part(raw[a:b + 1], tol, sigma, prims=prims)
     return segs
 
 
-def fit_closed(pts, tol=0.8, angle_deg=60.0, sigma=1.6, step=1.0):
+def fit_closed(pts, tol=0.8, angle_deg=60.0, sigma=1.6, step=1.0, prims=False):
     """Cadena cerrada sin nodos: se corta en las esquinas o, si no hay, en dos mitades con tangentes continuas."""
     pts = np.asarray(pts, float)
     raw = _resample(pts, step)[:-1] if len(pts) > 8 else pts[:-1]
     n = len(raw)
     if n < 8:
-        return fit_polyline(pts, tol, angle_deg, sigma, step)
+        return fit_polyline(pts, tol, angle_deg, sigma, step, prims)
+    prim = None
+    if prims:
+        for fn in (primitives.fit_closed_circle, primitives.fit_closed_ellipse):
+            prim = fn(raw, tol)
+            if prim:
+                break
+    base = _closed_core(raw, n, tol, angle_deg, sigma, prims)
+    if prim and len(prim) <= len(base) + 2:      # geometría exacta a cambio de, como mucho, 2 nodos más
+        return prim
+    return base
+
+
+def _closed_core(raw, n, tol, angle_deg, sigma, prims):
     corners = find_corners(raw, True, angle_deg, w=max(3, min(6, n // 8)))
     sm = _smooth_closed(raw, sigma)
     for c in corners:
@@ -220,7 +238,7 @@ def fit_closed(pts, tol=0.8, angle_deg=60.0, sigma=1.6, step=1.0):
         part = sm[idx]
         ta = _unit(sm[(a + 2) % n] - sm[(a - 2) % n]) if a not in corners else None
         tb = _unit(sm[(b - 2) % n] - sm[(b + 2) % n]) if b not in corners else None
-        segs += _fit_part(part, tol, 0.0, ta, tb, fixed_ends=False)
+        segs += _fit_part(part, tol, 0.0, ta, tb, fixed_ends=False, prims=prims)
     return segs
 
 

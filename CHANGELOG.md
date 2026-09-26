@@ -23,6 +23,10 @@
   construcción) → ajuste de Bézier (Schneider) con esquinas → SVG, PDF con tintas directas (Separation), EPS (Ghostscript) y DXF
   en mm. Preajustes Logo/Línea/Ilustración/Escaneo/Foto, modos sin solapes/apilado y visor con contornos/diferencias.
   Banco `bench/vector` (40 logos con vector verdadero vs VTracer y Potrace): SSIM ≥ VTracer en 87 % de los casos y ≈ 3,6× menos nodos.
+- **S5 – Vectorizar (v2):** primitivas (arcos, círculos y elipses exactos como Bézier), geometría limpia (rectas casi H/V exactas moviendo
+  nodos compartidos), simetría, líneas como trazos con grosor, texto (marcar zonas o reemplazar por texto real), engrosado de detalles finos,
+  edición básica (unir, borrar, recolorear, volver a trazar una zona) y limpieza de anillos de antialias. Banco: SSIM ≥ VTracer en 92 % de los
+  casos con ≈ 4,5× menos nodos y 0 huecos.
 
 ## 2.0.0 — 2026-09-25
 

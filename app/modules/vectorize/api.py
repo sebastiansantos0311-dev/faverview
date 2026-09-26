@@ -12,11 +12,12 @@ from fastapi.responses import Response
 from pydantic import BaseModel
 
 from app.config import UPLOADS_DIR, load_config
+from app.core import colorscience as cs
 from app.core import jobs
 from app.core.errors import UserError
 from app.core.files import check_job, find_upload, save_upload
 from app.modules.separate import raster
-from app.modules.vectorize import export, pipeline
+from app.modules.vectorize import edit, export, pipeline
 
 router = APIRouter(prefix="/api/vectorizar")
 _RES: "OrderedDict[str, pipeline.VectorResult]" = OrderedDict()
@@ -43,6 +44,17 @@ class Params(BaseModel):
     tintas: list[InkIn] = []
     dpi: float | None = None
     previa: bool = False
+    primitivas: bool = False
+    geometria_limpia: bool = False
+    simetria: bool = False
+    trazos: bool = False
+    engrosar_mm: float = 0.0
+    texto: str = "normal"
+    fuente: str = "Arial"
+
+
+def _colors(res):
+    return [{"i": k, "nombre": ink.name, "hex": cs.lab_to_hex(ink.lab)} for k, ink in enumerate(res.palette)]
 
 
 def _load(job_id):
@@ -92,14 +104,16 @@ def process(job_id: str, p: Params):
         pal = [raster.Ink(i.name, tuple(i.lab)) for i in p.tintas] or None
         res = pipeline.vectorize(rgb, dpi, preset=p.preset, palette=pal, k_max=p.k_max, merge_de=p.fusionar_de,
                                  min_detail_mm=p.detalle_min_mm, fit_tol=p.tolerancia, corner_angle=p.esquinas, smooth=p.suavidad,
-                                 mode=p.modo, bn=p.bn, bn_threshold=p.umbral_bn)
+                                 mode=p.modo, bn=p.bn, bn_threshold=p.umbral_bn, primitives=p.primitivas,
+                                 geometria_limpia=p.geometria_limpia, simetria=p.simetria, trazos=p.trazos,
+                                 engrosar_mm=p.engrosar_mm, texto=p.texto, fuente=p.fuente)
         with _LOCK:
             _RES[job_id] = res
             _RES.move_to_end(job_id)
             while len(_RES) > 4:
                 _RES.popitem(last=False)
-        return {"stats": res.stats, "colores": [{"nombre": i.name, "hex": r.color} for i, r in zip(res.palette, res.regions)],
-                "ancho": res.width, "alto": res.height}
+        return {"stats": res.stats, "colores": _colors(res),
+                "ancho": res.width, "alto": res.height, "simetria": res.symmetry, "zonas_texto": res.text_zones}
 
     aid = uuid.uuid4().hex[:12]
     jobs.start(aid, work)
@@ -159,3 +173,35 @@ def download(job_id: str, formato: str = "svg", tam_mm: float | None = None, pdf
     if formato == "dxf":
         return Response(export.to_dxf(res, tam_mm), media_type="application/dxf", headers=_attach("vector.dxf"))
     raise UserError("Formato desconocido.")
+
+
+class Edit(BaseModel):
+    op: str                       # unir | borrar | recolorear | zona
+    a: int | None = None
+    b: int | None = None
+    color: str | None = None
+    zona: list[int] | None = None  # x, y, ancho, alto en px del vector
+    k_max: int | None = None
+    fusionar_de: float = 6.0
+    limpieza: float = 1.0
+
+
+@router.post("/{job_id}/editar")
+def edit_vector(job_id: str, e: Edit):
+    res = _get(job_id)
+    if e.op == "unir":
+        new = edit.merge(res, e.a if e.a is not None else -1, e.b if e.b is not None else -1)
+    elif e.op == "borrar":
+        new = edit.delete_region(res, e.a if e.a is not None else -1)
+    elif e.op == "recolorear":
+        new = edit.recolor(res, e.a if e.a is not None else -1, e.color or "")
+    elif e.op == "zona":
+        if not e.zona or len(e.zona) != 4:
+            raise UserError("Indica la zona (x, y, ancho, alto).")
+        new = edit.retrace_zone(res, res.work, tuple(e.zona), k_max=e.k_max, merge_de=e.fusionar_de, denoise=e.limpieza)
+    else:
+        raise UserError("Operación desconocida.")
+    with _LOCK:
+        _RES[job_id] = new
+    return {"stats": new.stats, "colores": _colors(new),
+            "ancho": new.width, "alto": new.height}

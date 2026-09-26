@@ -1,0 +1,102 @@
+{
+ "nombre": "Flexo empaque",
+ "descripcion": "Flexografía para empaque: pocas tintas, líneas y texto más gruesos, TAC 280 %.",
+ "reglas": {
+  "fuentes_no_incrustadas": {
+   "activa": true,
+   "severidad": "error"
+  },
+  "fuentes_type3": {
+   "activa": true,
+   "severidad": "advertencia"
+  },
+  "resolucion": {
+   "activa": true,
+   "severidad": "advertencia",
+   "color_min": 200,
+   "gris_min": 200,
+   "bn_min": 600
+  },
+  "espacios_color": {
+   "activa": true,
+   "severidad": "advertencia",
+   "prohibidos": [
+    "RGB",
+    "Lab"
+   ]
+  },
+  "tintas_directas_max": {
+   "activa": true,
+   "severidad": "advertencia",
+   "max": 8
+  },
+  "tintas_duplicadas": {
+   "activa": true,
+   "severidad": "error"
+  },
+  "tac": {
+   "activa": true,
+   "severidad": "advertencia",
+   "limite": 280
+  },
+  "linea_fina": {
+   "activa": true,
+   "severidad": "error",
+   "min_mm": 0.15
+  },
+  "texto_pequeno": {
+   "activa": true,
+   "severidad": "advertencia",
+   "min_pt": 6
+  },
+  "negro_enriquecido_texto": {
+   "activa": true,
+   "severidad": "advertencia",
+   "max_pt": 12
+  },
+  "sobreimpresion": {
+   "activa": true,
+   "severidad": "error"
+  },
+  "sangrado": {
+   "activa": true,
+   "severidad": "advertencia",
+   "min_mm": 3
+  },
+  "trimbox_ausente": {
+   "activa": true,
+   "severidad": "advertencia"
+  },
+  "zona_segura": {
+   "activa": true,
+   "severidad": "advertencia",
+   "mm": 3
+  },
+  "transparencias": {
+   "activa": true,
+   "severidad": "info"
+  },
+  "capas_ocultas": {
+   "activa": true,
+   "severidad": "advertencia"
+  },
+  "anotaciones": {
+   "activa": true,
+   "severidad": "advertencia"
+  },
+  "pdfx": {
+   "activa": true,
+   "severidad": "info",
+   "requerido": null
+  },
+  "output_intent": {
+   "activa": true,
+   "severidad": "info"
+  },
+  "jpeg_calidad": {
+   "activa": true,
+   "severidad": "advertencia",
+   "min": 60
+  }
+ }
+}

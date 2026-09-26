@@ -126,6 +126,23 @@ def auto_palette(lab: np.ndarray, k_max: int = 12, merge_de: float = 6.0, min_fr
     return np.array([keep[i] for i in order])
 
 
+def prune_edge_colors(pal_lab: np.ndarray, area: np.ndarray, min_area: float = 0.004) -> np.ndarray:
+    """Máscara de colores que se conservan: fuera los diminutos y las mezclas de borde (sobre el segmento entre dos colores mayores)."""
+    keep = area >= min_area
+    for c in range(len(pal_lab)):
+        if not keep[c] or area[c] > 0.03:
+            continue
+        for a in range(len(pal_lab)):
+            for b in range(a + 1, len(pal_lab)):
+                if c in (a, b) or area[a] < 0.03 or area[b] < 0.03:
+                    continue
+                v = pal_lab[b] - pal_lab[a]
+                t = np.clip(np.dot(pal_lab[c] - pal_lab[a], v) / max(float(np.dot(v, v)), 1e-6), 0, 1)
+                if np.linalg.norm(pal_lab[a] + t * v - pal_lab[c]) < 10:
+                    keep[c] = False
+    return keep
+
+
 def _remove_islands(idx: np.ndarray, min_px: int) -> np.ndarray:
     if min_px <= 1:
         return idx
@@ -157,18 +174,7 @@ def separate_flat(rgb: np.ndarray, dpi: float | None, palette: list[Ink] | None 
     idx = _nearest(lab, pal_lab)
     if not palette and len(pal_lab) > 2:      # descarta colores de borde/ruido que ocupan casi nada y reasigna
         area = np.bincount(idx.ravel(), minlength=len(pal_lab)) / idx.size
-        keep = area >= 0.004
-        for c in range(len(pal_lab)):        # mezclas de borde: caen sobre el segmento entre dos colores mayores
-            if not keep[c] or area[c] > 0.03:
-                continue
-            for a in range(len(pal_lab)):
-                for b in range(a + 1, len(pal_lab)):
-                    if c in (a, b) or area[a] < 0.03 or area[b] < 0.03:
-                        continue
-                    v = pal_lab[b] - pal_lab[a]
-                    t = np.clip(np.dot(pal_lab[c] - pal_lab[a], v) / max(float(np.dot(v, v)), 1e-6), 0, 1)
-                    if np.linalg.norm(pal_lab[a] + t * v - pal_lab[c]) < 10:
-                        keep[c] = False
+        keep = prune_edge_colors(pal_lab, area)
         if not keep.all() and keep.any():
             pal_lab = pal_lab[keep]
             inks = [Ink(f"Tinta {i + 1}", tuple(float(x) for x in c)) for i, c in enumerate(pal_lab)]

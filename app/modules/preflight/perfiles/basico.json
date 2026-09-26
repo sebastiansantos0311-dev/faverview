@@ -1,0 +1,78 @@
+{
+ "nombre": "Solo revisión básica",
+ "descripcion": "Comprobaciones mínimas: fuentes, imágenes, sangrado y anotaciones (no separa en placas).",
+ "reglas": {
+  "fuentes_no_incrustadas": {
+   "activa": true,
+   "severidad": "error"
+  },
+  "fuentes_type3": {
+   "activa": true,
+   "severidad": "info"
+  },
+  "resolucion": {
+   "activa": true,
+   "severidad": "advertencia",
+   "color_min": 150,
+   "gris_min": 150,
+   "bn_min": 600
+  },
+  "espacios_color": {
+   "activa": false
+  },
+  "tintas_directas_max": {
+   "activa": false
+  },
+  "tintas_duplicadas": {
+   "activa": true,
+   "severidad": "advertencia"
+  },
+  "tac": {
+   "activa": false
+  },
+  "linea_fina": {
+   "activa": false
+  },
+  "texto_pequeno": {
+   "activa": false
+  },
+  "negro_enriquecido_texto": {
+   "activa": false
+  },
+  "sobreimpresion": {
+   "activa": false
+  },
+  "sangrado": {
+   "activa": true,
+   "severidad": "advertencia",
+   "min_mm": 3
+  },
+  "trimbox_ausente": {
+   "activa": true,
+   "severidad": "info"
+  },
+  "zona_segura": {
+   "activa": false
+  },
+  "transparencias": {
+   "activa": false
+  },
+  "capas_ocultas": {
+   "activa": true,
+   "severidad": "advertencia"
+  },
+  "anotaciones": {
+   "activa": true,
+   "severidad": "advertencia"
+  },
+  "pdfx": {
+   "activa": false
+  },
+  "output_intent": {
+   "activa": false
+  },
+  "jpeg_calidad": {
+   "activa": false
+  }
+ }
+}

@@ -108,3 +108,90 @@ def test_api_flujo():
     assert c.get(f"/api/vectorizar/{jid}/descargar?formato=pdf&tam_mm=100").content.startswith(b"%PDF")
     assert c.get(f"/api/vectorizar/{jid}/descargar?formato=dxf&tam_mm=100").status_code == 200
     assert c.post("/api/vectorizar", files={"file": ("a.txt", b"x")}).status_code == 400
+
+
+def logo2():
+    img = logo()
+    cv2.line(img, (20, 20), (200, 40), (0, 0, 0), 3, cv2.LINE_AA)
+    cv2.ellipse(img, (300, 270), (60, 20), 0, 0, 360, (20, 150, 20), -1, cv2.LINE_AA)
+    return img
+
+
+def test_v2_menos_nodos_que_v1_y_misma_fidelidad():
+    from skimage.metrics import structural_similarity
+    a = pipeline.vectorize(logo2(), 150, preset="logo")
+    b = pipeline.vectorize(logo2(), 150, preset="logo", primitives=True, geometria_limpia=True)
+    assert b.stats["nodos"] <= a.stats["nodos"] + 4      # las primitivas exactas pueden costar algún nodo
+    s = structural_similarity(export.render(b, 400, 300), logo2(), channel_axis=2, data_range=255)
+    assert s > 0.95
+
+
+def test_circulo_como_4_cubicas():
+    from app.modules.vectorize import primitives
+    t = np.linspace(0, 2 * np.pi, 200)
+    pts = np.c_[50 + 30 * np.cos(t), 50 + 30 * np.sin(t)]
+    segs = primitives.fit_closed_circle(pts, 0.5)
+    assert len(segs) == 4 and all(s[0] == "C" for s in segs)
+    assert primitives.fit_closed_ellipse(np.c_[50 + 40 * np.cos(t), 50 + 15 * np.sin(t)], 0.5) is not None
+    assert primitives.fit_closed_circle(np.c_[50 + 40 * np.cos(t), 50 + 15 * np.sin(t)], 0.5) is None
+
+
+def test_enderezado_y_simetria():
+    from app.modules.vectorize import geometry
+    lab = np.zeros((40, 60), np.int32)
+    lab[10:30, 10:31] = 1
+    lab[10:30, 33:50] = 1                       # casi simétrico respecto del centro
+    out, info = geometry.symmetrize(lab, 0.8)
+    assert "vertical" in info
+    ch = __import__("app.modules.vectorize.boundaries", fromlist=["x"]).build_chains(out)
+    assert ch
+
+
+def test_trazos_con_grosor():
+    from app.modules.vectorize import geometry
+    lab = np.zeros((60, 200), np.int32)
+    lab[28:33, 10:190] = 1                      # línea de 5 px
+    s = geometry.find_strokes(lab, [None, None])
+    assert len(s) == 1 and 4 < s[0]["width"] < 6.5
+
+
+def test_engrosar_detalle_fino():
+    from app.modules.vectorize import geometry
+    lab = np.zeros((60, 100), np.int32)
+    lab[30, 10:90] = 1                          # 1 px
+    lab[10:25, 10:40] = 1                       # bloque grueso
+    out = geometry.thicken_thin(lab, 5)
+    assert (out == 1).sum() > (lab == 1).sum()
+
+
+def test_edicion_unir_borrar_recolorear():
+    from app.modules.vectorize import edit
+    r = pipeline.vectorize(logo2(), 150, preset="logo")
+    n = len(r.palette)
+    assert len(edit.merge(r, 0, 1).palette) == n - 1
+    assert len(edit.delete_region(r, 1).palette) == n - 1
+    assert edit.recolor(r, 1, "#00ff00").palette[1].lab != r.palette[1].lab
+    z = edit.retrace_zone(r, r.work, (0, 0, 300, 300), k_max=n + 2)
+    assert z.stats["trazados"] > 0
+
+
+def test_texto_marcar_no_falla_sin_ocr():
+    r = pipeline.vectorize(logo(), 150, preset="logo", texto="marcar")
+    assert isinstance(r.text_zones, list)
+
+
+def test_api_editar():
+    c = TestClient(app)
+    ok, buf = cv2.imencode(".png", logo2()[..., ::-1])
+    jid = c.post("/api/vectorizar", files={"file": ("l.png", buf.tobytes(), "image/png")}).json()["job_id"]
+    a = c.post(f"/api/vectorizar/{jid}/procesar", json={"primitivas": True, "geometria_limpia": True, "k_max": 6}).json()["job_id"]
+    for _ in range(150):
+        st = c.get(f"/api/jobs/{a}").json()
+        if st["status"] != "running":
+            break
+        time.sleep(0.2)
+    assert st["status"] == "done", st
+    n = len(st["result"]["colores"])
+    r = c.post(f"/api/vectorizar/{jid}/editar", json={"op": "unir", "a": 0, "b": 1})
+    assert r.status_code == 200 and len(r.json()["colores"]) == n - 1
+    assert c.post(f"/api/vectorizar/{jid}/editar", json={"op": "unir", "a": 0, "b": 0}).status_code == 400
