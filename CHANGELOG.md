@@ -12,6 +12,9 @@
   cobertura total (TAC) con perfiles, 7 chequeos de separación (negro enriquecido, texto pequeño multitinta, barniz/blanco/
   técnicas y sobreimpresión, registro, RGB/Lab sin convertir, líneas finas, TAC), edición sobre copia (unir, renombrar,
   convertir a proceso, eliminar sin uso) y exportación de placas (TIFF 8/1 bit, PDF, informe). Pestaña «Separar colores → PDF».
+- **Revisión previa a publicar:** las placas Cyan/Magenta/Yellow/Black de contenido DeviceCMYK se mostraban como tinta
+  «spot» en la lista, el análisis y el informe exportado; ahora se identifican como tintas de proceso (con prueba). La marca
+  local `data/.acceso_directo_creado` ya no se versiona (impedía crear el acceso directo en equipos nuevos).
 
 ## 2.0.0 — 2026-09-25
 

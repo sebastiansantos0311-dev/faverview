@@ -54,9 +54,11 @@ def _plate_meta(plates: Plates, job_id: str) -> dict:
     """Por nombre de placa: tipo y Lab según el inventario del PDF (por nombre normalizado)."""
     pdf, _ = _job_pdf(job_id)
     by_norm = {i.norm: i for i in read_inventory(pdf).inks}
+    # Las placas CMYK de contenido DeviceCMYK no figuran en el inventario: usar las de proceso de referencia.
+    builtin = {i.name.upper(): i for i in inkmod.builtin_library().inks if i.kind == "process"}
     out = {}
     for n in plates.names:
-        i = by_norm.get(inkmod.normalize_name(n))
+        i = by_norm.get(inkmod.normalize_name(n)) or builtin.get(n.upper())
         if i is not None:
             out[n] = {"tipo": i.kind, "lab": i.lab}
     return out

@@ -113,6 +113,8 @@ def test_api_flujo(client):
     assert st["status"] == "done", st
     res = st["result"]
     assert any(h["id"] == "tac" for h in res["hallazgos"])
+    tipos = {p["nombre"]: p["tipo"] for p in res["placas"]}
+    assert {tipos[n] for n in ("Cyan", "Magenta", "Yellow", "Black")} == {"process"}
     assert client.get(f"/api/separar/pdf/{jid}/composicion.png?dpi=100").headers["content-type"] == "image/png"
     assert client.get(f"/api/separar/pdf/{jid}/placa.png?nombre=Cyan&dpi=100").status_code == 200
     assert client.get(f"/api/separar/pdf/{jid}/sonda?x=10&y=10&dpi=100").json()["fuera"] is False
