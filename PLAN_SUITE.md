@@ -189,20 +189,20 @@ Tareas de instalación:
 
 ## 5. S1 – Núcleo compartido
 
-- [ ] `core/units.py`: `mm_to_pt`, `pt_to_mm`, `px_to_mm(px, dpi)`, etc. Tests con valores exactos (1 in = 25.4 mm = 72 pt).
-- [ ] `core/colorscience.py`:
+- [x] `core/units.py`: `mm_to_pt`, `pt_to_mm`, `px_to_mm(px, dpi)`, etc. Tests con valores exactos (1 in = 25.4 mm = 72 pt).
+- [x] `core/colorscience.py`:
   - sRGB ↔ XYZ ↔ Lab (D50 para impresión, con adaptación cromática Bradford desde D65),
   - ΔE76 y **ΔE2000** vectorizados (NumPy). Test con los **34 pares de referencia de Sharma et al. (2005)**:
     error < 1e-4,
   - densidad estado T aproximada desde Lab/RGB (orientativa),
   - **modelo de mezcla de tintas** (usado en S3/S7), ver 7.3.
-- [ ] `core/inks.py`: modelos, normalización de nombres, bibliotecas, importadores CxF/ASE/CSV y exportador JSON/CSV.
+- [x] `core/inks.py`: modelos, normalización de nombres, bibliotecas, importadores CxF/ASE/CSV y exportador JSON/CSV.
       Tests con archivos de ejemplo **creados por el agente** (no Pantone reales: usar nombres como "Demo Rojo 1").
-- [ ] `core/ghostscript.py`: `run_gs(args, timeout=120)` → siempre antepone `-dSAFER -dBATCH -dNOPAUSE -dQUIET`,
+- [x] `core/ghostscript.py`: `run_gs(args, timeout=120)` → siempre antepone `-dSAFER -dBATCH -dNOPAUSE -dQUIET`,
       captura stderr y traduce los errores comunes a español.
-- [ ] `core/pdfinfo.py`: páginas, cajas (MediaBox/CropBox/TrimBox/BleedBox) en mm, OutputIntent, versión PDF/X
+- [x] `core/pdfinfo.py`: páginas, cajas (MediaBox/CropBox/TrimBox/BleedBox) en mm, OutputIntent, versión PDF/X
       (clave `GTS_PDFXVersion`), presencia de transparencias y capas (OCG).
-- [ ] UI **"Tintas"** (dentro de Herramientas o como panel global): ver, importar, editar y exportar bibliotecas.
+- [x] UI **"Tintas"** (dentro de Herramientas o como panel global): ver, importar, editar y exportar bibliotecas.
       Muestra de color sRGB aproximada con el aviso "vista aproximada".
 
 **Criterios S1:** cobertura de tests ≥ 85% en `app/core/`; ΔE2000 validado con la tabla de Sharma.

@@ -1,6 +1,6 @@
 [project]
 name = "faverview"
-version = "3.0.0.dev0"
+version = "3.0.0.dev1"
 description = "Compara el arte del cliente con tu diseño en PDF y marca las diferencias."
 readme = "README.md"
 license = "AGPL-3.0-or-later"

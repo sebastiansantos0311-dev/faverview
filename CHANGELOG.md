@@ -3,6 +3,10 @@
 ## 3.0.0 (suite) — en desarrollo
 - **S0 – Preparación:** código de Comparar movido a `app/modules/compare/` y `app/core/`, rutas repartidas en routers
   (`app/main.py` ≤ 80 líneas), `GET /api/status`, detección de Ghostscript, nuevas dependencias y interfaz con pestañas.
+- **S1 – Núcleo compartido:** `core/units`, `core/colorscience` (Lab D50, ΔE2000 validada con los 34 pares de Sharma, densidad
+  orientativa, modelo de mezcla de tintas), `core/inks` (modelo, normalización de nombres, importadores CxF3/ASE/CSV,
+  bibliotecas del usuario), `core/ghostscript` (SAFER, tiempo límite, cancelación, errores en español), `core/pdfinfo`
+  (cajas en mm, OutputIntent, PDF/X, transparencias, capas) y la pantalla **Tintas**. Cobertura de `app/core`: 88 %.
 
 ## 2.0.0 — 2026-09-25
 

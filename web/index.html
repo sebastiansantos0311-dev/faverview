@@ -22,6 +22,8 @@
     <a href="#/herramientas" data-mod="herramientas">Herramientas</a>
     <a href="#/automatizar" data-mod="automatizar">Automatizar</a>
   </nav>
+  <div class="spacer"></div>
+  <button id="btn-tintas" class="ghost" title="Bibliotecas de tintas">Tintas</button>
 </header>
 
 <div id="update" class="banner update hidden"></div>
@@ -41,6 +43,7 @@
   const { $, $$, h, showError, setLoading, setProgress, toast, dialog, fmt } = FV;
   const { api, getJSON, postJSON, postForm, pollJob } = FVApi;
 </script>
+<script src="/static/core/tintas.js"></script>
 <script src="/static/core/router.js"></script>
 <script src="/static/core/main.js"></script>
 </body>

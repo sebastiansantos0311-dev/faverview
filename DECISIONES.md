@@ -34,3 +34,19 @@ Formato: fecha · contexto · decisión · alternativa descartada.
 ## 2026-09-25 · Ghostscript devuelve 0 aunque falle
 - `run_gs` también trata como error los mensajes «Couldn't initialise file» y «Unrecoverable error» (aunque el código de
   salida sea 0). Los «Error: … Output may be incorrect» recuperables no se consideran fallo.
+
+## 2026-09-25 · Espacio de trabajo del modelo de mezcla de tintas (S1)
+- **Contexto:** el cian FOGRA (Lab 55, −37, −50) está fuera de sRGB; mezclar en sRGB lineal da negativos y el modelo
+  no devuelve el sólido con t = 1.
+- **Decisión:** el modelo (`colorscience.mix_inks`) trabaja en **ProPhoto RGB lineal (D50)**, que contiene las tintas de
+  impresión. Se mantiene el factor n de Yule–Nielsen. Es orientativo (no espectral).
+- **Descartado:** sRGB lineal (pierde gama), XYZ directo (la mezcla multiplicativa por canal pierde sentido físico).
+
+## 2026-09-25 · Valores Lab de la biblioteca incorporada
+- Cian 55/−37/−50, magenta 48/74/−3, amarillo 89/−5/93, negro 16/0/0 y papel 95/0/−2: valores de referencia públicos de
+  ISO 12647-2 PC1 (FOGRA51). Se documentan como referencia de la caracterización, no de una tinta concreta.
+
+## 2026-09-25 · Importadores de bibliotecas
+- CSV: el delimitador se decide por la primera línea (`;` si aparece, así los decimales pueden llevar coma).
+  CxF: solo se lee el bloque `ColorCIELab` de cada `Object` (sin resolver entidades XML). ASE: Lab/RGB/CMYK/Gray; el CMYK
+  se convierte a Lab con el modelo de mezcla y las tintas de proceso de referencia.

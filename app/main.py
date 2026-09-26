@@ -8,6 +8,7 @@ from fastapi.staticfiles import StaticFiles
 from app import history, updates
 from app.config import DATOS_DIR, RESULTS_DIR, UPLOADS_DIR, WEB_DIR, setup_tesseract  # noqa: F401 (re-export)
 from app.core import api as core_api
+from app.core import inks_api
 from app.learning import api as learning_api
 from app.core.errors import UserError
 from app.loaders import FileError
@@ -46,6 +47,7 @@ def index():
 
 
 app.include_router(core_api.router)
+app.include_router(inks_api.router)
 app.include_router(compare_api.router)
 app.include_router(learning_api.router)
 app.mount("/static", StaticFiles(directory=WEB_DIR), name="static")
