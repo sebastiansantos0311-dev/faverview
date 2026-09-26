@@ -7,6 +7,11 @@
   orientativa, modelo de mezcla de tintas), `core/inks` (modelo, normalización de nombres, importadores CxF3/ASE/CSV,
   bibliotecas del usuario), `core/ghostscript` (SAFER, tiempo límite, cancelación, errores en español), `core/pdfinfo`
   (cajas en mm, OutputIntent, PDF/X, transparencias, capas) y la pantalla **Tintas**. Cobertura de `app/core`: 88 %.
+- **S2 – Separar colores (PDF):** inventario de tintas (Separation/DeviceN con funciones PDF tipos 0/2/3/4, duplicadas, sin uso),
+  placas por tinta con Ghostscript `tiffsep` (caché, límite de megapíxeles), vista compuesta simulada, densitómetro y mapa de
+  cobertura total (TAC) con perfiles, 7 chequeos de separación (negro enriquecido, texto pequeño multitinta, barniz/blanco/
+  técnicas y sobreimpresión, registro, RGB/Lab sin convertir, líneas finas, TAC), edición sobre copia (unir, renombrar,
+  convertir a proceso, eliminar sin uso) y exportación de placas (TIFF 8/1 bit, PDF, informe). Pestaña «Separar colores → PDF».
 
 ## 2.0.0 — 2026-09-25
 

@@ -13,6 +13,7 @@ from app.learning import api as learning_api
 from app.core.errors import UserError
 from app.loaders import FileError
 from app.modules.compare import api as compare_api
+from app.modules.separate import api as separate_api
 
 
 @asynccontextmanager
@@ -49,5 +50,6 @@ def index():
 app.include_router(core_api.router)
 app.include_router(inks_api.router)
 app.include_router(compare_api.router)
+app.include_router(separate_api.router)
 app.include_router(learning_api.router)
 app.mount("/static", StaticFiles(directory=WEB_DIR), name="static")

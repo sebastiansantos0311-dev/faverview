@@ -1,0 +1,42 @@
+<div class="sep-tabs"><button class="ghost active" data-sub="pdf">PDF (placas de tintas)</button>
+  <button class="ghost" data-sub="img" disabled title="Próximamente: separación de imágenes">Imagen → tintas (próximamente)</button></div>
+<section id="sp-setup" class="setup">
+  <div class="drop" id="sp-drop"><div class="drop-title">PDF a separar</div>
+    <div class="drop-hint">Arrastra aquí o haz clic<br><small>Ve las tintas, la cobertura y los problemas de separación</small></div>
+    <input type="file" hidden accept=".pdf"></div>
+  <div id="sp-err" class="error hidden"></div>
+</section>
+<section id="sp-main" class="hidden">
+  <div class="sp-bar">
+    <strong id="sp-name"></strong>
+    <label>Página <select id="sp-page"></select></label>
+    <label>Resolución <select id="sp-dpi"><option>72</option><option>100</option><option selected>150</option><option>300</option></select> dpi</label>
+    <label>Límite de cobertura total <select id="sp-prof">
+      <option value="300">Offset 300 %</option><option value="280">Flexo 280 %</option>
+      <option value="320">Digital 320 %</option><option value="240">Papel prensa 240 %</option></select></label>
+    <span class="sp-gap"></span>
+    <button id="sp-tac" class="ghost">Mapa de cobertura</button>
+    <button id="sp-exp" class="ghost">Exportar placas…</button>
+    <button id="sp-new" class="ghost">Otro PDF</button>
+  </div>
+  <div class="sp-grid">
+    <aside class="sp-side">
+      <h3>Tintas</h3><div id="sp-inks"></div>
+      <div class="sp-actions">
+        <button id="sp-merge" class="ghost">Unir duplicadas</button>
+        <button id="sp-conv" class="ghost">Convertir a proceso…</button>
+        <button id="sp-del" class="ghost">Eliminar no usadas</button>
+        <button id="sp-undo" class="ghost hidden">Deshacer ediciones</button>
+        <a id="sp-dl" class="btn hidden" href="#">Descargar PDF editado</a>
+      </div>
+    </aside>
+    <div class="sp-center">
+      <div class="viewer" id="sp-viewer"></div>
+      <div class="sp-probe" id="sp-probe">Pasa el cursor por la página: densitómetro (promedio de un área pequeña). Valores orientativos.</div>
+    </div>
+    <aside class="sp-side">
+      <h3>Problemas <span id="sp-count"></span></h3><div id="sp-issues"></div>
+      <h3>Cobertura total</h3><div id="sp-tacinfo" class="hint"></div>
+    </aside>
+  </div>
+</section>

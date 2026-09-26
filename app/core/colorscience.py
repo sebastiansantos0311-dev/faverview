@@ -166,7 +166,7 @@ def _lin_to_lab(lin):
     return xyz_to_lab(_arr(lin) @ _M_PP2XYZ.T)
 
 
-def mix_inks(substrate_lab, inks: list[dict], coverages, n: float = 1.7, paper_lab=(95.0, 0.0, -2.0)):
+def mix_inks(substrate_lab, inks: list[dict], coverages, n: float = 1.7, paper_lab=(95.0, 0.0, -2.0), output: str = "lab"):
     """Color resultante (Lab D50) de imprimir tintas sobre un sustrato.
 
     `inks`: lista en orden de impresión de {"lab": (L,a,b) del sólido sobre papel blanco, "opacity": 0–1};
@@ -191,4 +191,6 @@ def mix_inks(substrate_lab, inks: list[dict], coverages, n: float = 1.7, paper_l
             cur = np.where(op >= 0.999, opaque, (1 - op) * transparent + op * opaque)
         else:
             cur = transparent
+    if output == "srgb":  # directo a sRGB 0–1 (vista simulada), sin pasar por Lab
+        return xyz_to_srgb((cur ** n) @ _M_PP2XYZ.T)
     return _lin_to_lab(cur ** n)

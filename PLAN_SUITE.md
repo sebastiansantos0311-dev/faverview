@@ -212,64 +212,64 @@ Tareas de instalación:
 ## 6. S2 – Separador de colores: PDF → placas
 
 ### 6.1 Inventario de tintas (`modules/separate/pdf_inks.py`)
-- [ ] Recorrer con **pikepdf** todas las páginas y recursos, incluidos los **anidados** (Form XObjects, patrones,
+- [x] Recorrer con **pikepdf** todas las páginas y recursos, incluidos los **anidados** (Form XObjects, patrones,
       shadings, grupos de transparencia, anotaciones con apariencia) y recoger los espacios de color:
       `DeviceCMYK`, `DeviceRGB`, `DeviceGray`, `ICCBased` (con N componentes), `Separation`, `DeviceN`
       (incluido NChannel con `Colorants`), `Indexed` (con su base) y `Lab`.
-- [ ] Para cada `Separation`/`DeviceN`: nombre de la tinta, espacio alternativo y *tint transform* (función tipo 0, 2 o 4;
+- [x] Para cada `Separation`/`DeviceN`: nombre de la tinta, espacio alternativo y *tint transform* (función tipo 0, 2 o 4;
       evaluar la función para obtener el CMYK/Lab alternativo al 100%).
-- [ ] Clasificar el tipo con reglas y palabras clave configurables (`config.json → "ink_keywords"`):
+- [x] Clasificar el tipo con reglas y palabras clave configurables (`config.json → "ink_keywords"`):
       blanco (`white`, `blanco`, `weiss`), barniz (`varnish`, `barniz`, `lack`), técnica (`die`, `cut`, `troquel`,
       `stanz`, `dieline`, `braille`, `dimension`, `cota`, `crease`, `perf`). `All` = color de registro.
-- [ ] Detectar **duplicados** por nombre normalizado y **tintas no usadas** (definidas pero sin objetos que las pinten).
+- [x] Detectar **duplicados** por nombre normalizado y **tintas no usadas** (definidas pero sin objetos que las pinten).
       Para "no usadas", verificar con el render: la placa sale vacía.
-- [ ] Resultado: lista de `Ink` + por cada tinta: páginas donde aparece, nº de objetos (aprox.) y si es alternativa RGB.
+- [x] Resultado: lista de `Ink` + por cada tinta: páginas donde aparece, nº de objetos (aprox.) y si es alternativa RGB.
 
 ### 6.2 Render de separaciones (`modules/separate/pdf_render.py`)
-- [ ] Ghostscript `tiffsep`:
+- [x] Ghostscript `tiffsep`:
       `-sDEVICE=tiffsep -r<dpi> -dMaxSpots=<n> -dOverprint=/simulate -dFirstPage=p -dLastPage=p
        -sOutputFile=<dir>/p%03d.tif <archivo.pdf>`
       → un TIFF de 8 bits por tinta (`p001(Cyan).tif`, `p001(PANTONE 485 C).tif`…) + el compuesto.
       Mapear cada archivo con su tinta usando el nombre entre paréntesis (cuidado con caracteres especiales; probar
       nombres con acentos, `/` y espacios).
-- [ ] dpi: 150 para la vista previa (rápido) y 300–600 para exportar. Límite configurable de megapíxeles
+- [x] dpi: 150 para la vista previa (rápido) y 300–600 para exportar. Límite configurable de megapíxeles
       (`max_render_mpx`, por defecto 120) → si se supera, bajar el dpi y avisar.
-- [ ] Convención de valores: 0 = sin tinta … 255 = 100% (invertir si `tiffsep` entrega al revés; **test obligatorio**
+- [x] Convención de valores: 0 = sin tinta … 255 = 100% (invertir si `tiffsep` entrega al revés; **test obligatorio**
       con un PDF sintético de parches al 0/25/50/75/100%).
-- [ ] **Vista compuesta simulada**: combinar las placas con el modelo de mezcla (7.3) y los Lab de las tintas
+- [x] **Vista compuesta simulada**: combinar las placas con el modelo de mezcla (7.3) y los Lab de las tintas
       (biblioteca del usuario o la alternativa del PDF) → PNG sRGB. Permite activar/desactivar tintas y verlas juntas.
-- [ ] Caché del render por (hash del archivo, página, dpi).
+- [x] Caché del render por (hash del archivo, página, dpi).
 
 ### 6.3 Análisis
-- [ ] **Densitómetro**: `GET /api/separate/pdf/{job}/probe?x=&y=` → % de cada tinta en un radio de 3 px (media) + TAC.
-- [ ] **TAC** (cobertura total = suma de %): mapa de calor, máximo y percentil 99.5. Límite configurable por perfil
+- [x] **Densitómetro**: `GET /api/separate/pdf/{job}/probe?x=&y=` → % de cada tinta en un radio de 3 px (media) + TAC.
+- [x] **TAC** (cobertura total = suma de %): mapa de calor, máximo y percentil 99.5. Límite configurable por perfil
       (offset 300%, flexo 280%, digital 320%, papel prensa 240%). Zonas que superan el límite → recuadros como en Comparar.
-- [ ] **Cobertura por tinta** (% del área de la página) → útil para el cálculo de consumo de tinta.
-- [ ] **Chequeos de separación** (cada uno con recuadro + mensaje en español):
-  - [ ] negro enriquecido en texto < 12 pt (texto con K + otras tintas; detectar con las posiciones de texto de PyMuPDF),
-  - [ ] texto pequeño (< 6 pt) en más de una tinta (problemas de registro),
-  - [ ] blanco o barniz en **knockout** cuando debería sobreimprimir (y al revés: blanco sobreimpreso que desaparece),
-  - [ ] objetos en color de **registro** (`All`) fuera de las marcas,
-  - [ ] tintas técnicas (troquel/cotas) que **no** estén en sobreimpresión (se imprimirían),
-  - [ ] RGB o Lab sin convertir,
-  - [ ] líneas finas (< 0.1 mm, configurable) en tintas de proceso combinadas.
+- [x] **Cobertura por tinta** (% del área de la página) → útil para el cálculo de consumo de tinta.
+- [x] **Chequeos de separación** (cada uno con recuadro + mensaje en español):
+  - [x] negro enriquecido en texto < 12 pt (texto con K + otras tintas; detectar con las posiciones de texto de PyMuPDF),
+  - [x] texto pequeño (< 6 pt) en más de una tinta (problemas de registro),
+  - [x] blanco o barniz en **knockout** cuando debería sobreimprimir (y al revés: blanco sobreimpreso que desaparece),
+  - [x] objetos en color de **registro** (`All`) fuera de las marcas,
+  - [x] tintas técnicas (troquel/cotas) que **no** estén en sobreimpresión (se imprimirían),
+  - [x] RGB o Lab sin convertir,
+  - [x] líneas finas (< 0.1 mm, configurable) en tintas de proceso combinadas.
 
 ### 6.4 Edición de tintas (`modules/separate/pdf_edit.py`, con pikepdf, **siempre sobre una copia**)
-- [ ] **Unir** tintas duplicadas: reescribir los arrays `Separation`/`DeviceN` para usar un nombre canónico.
-- [ ] **Renombrar** una tinta.
-- [ ] **Convertir directa → proceso**: reemplazar el espacio `Separation` por su alternativo (DeviceCMYK), aplicando la
+- [x] **Unir** tintas duplicadas: reescribir los arrays `Separation`/`DeviceN` para usar un nombre canónico.
+- [x] **Renombrar** una tinta.
+- [x] **Convertir directa → proceso**: reemplazar el espacio `Separation` por su alternativo (DeviceCMYK), aplicando la
       función de tinte a los operadores de color del contenido (`scn`/`SCN`, imágenes y shadings). Si el contenido no
       permite conversión exacta (p. ej. imágenes DeviceN complejas), avisar y omitir ese objeto.
-- [ ] **Eliminar** tintas no usadas del diccionario de recursos.
-- [ ] **Mapear** una tinta a otra (A → B).
-- [ ] Tras editar: volver a inventariar + render y **comparar visualmente** el antes y el después con el motor de Comparar
+- [x] **Eliminar** tintas no usadas del diccionario de recursos.
+- [x] **Mapear** una tinta a otra (A → B).
+- [x] Tras editar: volver a inventariar + render y **comparar visualmente** el antes y el después con el motor de Comparar
       (debe ser idéntico salvo en lo pedido; tolerancia SSIM ≥ 0.999 en las tintas no tocadas).
-- [ ] Guardar como `<nombre>_faverview.pdf`; **nunca** sobrescribir el original.
+- [x] Guardar como `<nombre>_faverview.pdf`; **nunca** sobrescribir el original.
 
 ### 6.5 Exportación
-- [ ] Placas como **TIFF** 8 bits (o 1 bit con umbral 50% para películas simples), con nombre `<archivo>_<tinta>.tif`.
-- [ ] **PDF de placas**: una página por tinta en escala de grises con su nombre, marcas de registro y la cobertura.
-- [ ] **Hoja de separaciones** (reporte): miniaturas de cada placa, Lab/alternativo, cobertura, TAC máx., chequeos.
+- [x] Placas como **TIFF** 8 bits (o 1 bit con umbral 50% para películas simples), con nombre `<archivo>_<tinta>.tif`.
+- [x] **PDF de placas**: una página por tinta en escala de grises con su nombre, marcas de registro y la cobertura.
+- [x] **Hoja de separaciones** (reporte): miniaturas de cada placa, Lab/alternativo, cobertura, TAC máx., chequeos.
 
 ### 6.6 UI (pestaña "Separar colores" → sub-pestaña "PDF")
 - Soltar el PDF → selector de página → la lista de tintas (muestra de color, nombre, tipo, cobertura %, ojo 👁,
@@ -279,13 +279,13 @@ Tareas de instalación:
 - Botones: Unir duplicadas · Renombrar · Convertir a proceso · Eliminar no usadas · Exportar placas · Reporte.
 
 ### 6.7 Pruebas S2
-- [ ] Generador `bench/synth_separations.py`: PDFs sintéticos con pikepdf/PyMuPDF que contengan: CMYK, 2 Separation,
+- [x] Generador `bench/synth_separations.py`: PDFs sintéticos con pikepdf/PyMuPDF que contengan: CMYK, 2 Separation,
       1 DeviceN de 2 tintas, un duplicado de nombre ("Demo 485C" vs "DEMO 485 C"), una tinta no usada, blanco en
       knockout, texto de 5 pt en 4 colores, negro enriquecido y una zona con TAC 340%.
-- [ ] Tests: el inventario encuentra exactamente las tintas esperadas; placas con % correctos (± 1%) en los parches;
+- [x] Tests: el inventario encuentra exactamente las tintas esperadas; placas con % correctos (± 1%) en los parches;
       TAC detectado; los 7 chequeos disparan en su caso y **no** disparan en el PDF "limpio"; unir, renombrar, convertir
       y eliminar producen el resultado esperado y el render de las demás tintas no cambia.
-- [ ] Rendimiento: PDF A4 con 6 tintas a 150 dpi → vista lista en ≤ 5 s.
+- [x] Rendimiento: PDF A4 con 6 tintas a 150 dpi → vista lista en ≤ 5 s.
 
 ---
 

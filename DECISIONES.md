@@ -50,3 +50,10 @@ Formato: fecha · contexto · decisión · alternativa descartada.
 - CSV: el delimitador se decide por la primera línea (`;` si aparece, así los decimales pueden llevar coma).
   CxF: solo se lee el bloque `ColorCIELab` de cada `Object` (sin resolver entidades XML). ASE: Lab/RGB/CMYK/Gray; el CMYK
   se convierte a Lab con el modelo de mezcla y las tintas de proceso de referencia.
+
+## S2 – Separar colores (PDF)
+- **Teselas del visor (>8000 px):** aplazadas; el render ya se limita con `max_render_mpx` y la API admite `escala` en la composición.
+- **Convertir a proceso:** solo directas `Separation` con alternativo CMYK; las `DeviceN` se informan como no convertibles (simple y honesto).
+- **Sobreimpresión:** se sigue `gs` (OP/op) recorriendo el contenido y formularios; no se evalúa OPM ni sobreimpresión en patrones/imágenes.
+- **TAC:** suma tintas de proceso y directas; blanco, barniz y técnicas no cuentan. Los perfiles son valores orientativos editables en la UI.
+- **Ediciones:** se acumulan en `editado.pdf` dentro de la carpeta del trabajo; «Deshacer» lo borra; el original nunca se modifica.
