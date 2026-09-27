@@ -9,6 +9,15 @@ IMG = HERE / "img"
 OUT = HERE.parents[1] / "docs"
 OUT.mkdir(exist_ok=True)
 
+
+def project_version() -> str:
+    import re
+    t = (HERE.parents[1] / "pyproject.toml").read_text(encoding="utf-8")
+    return re.search(r'^version\s*=\s*"([^"]+)"', t, re.M).group(1)
+
+
+VERSION = project_version()
+
 CSS = """
 body { font-family: sans-serif; font-size: 10.5pt; color: #1f2937; }
 h1 { font-size: 22pt; color: #1d4ed8; margin-top: 18pt; margin-bottom: 6pt; }
@@ -17,7 +26,7 @@ h3 { font-size: 11.5pt; color: #111827; margin-top: 10pt; margin-bottom: 2pt; }
 p { margin-top: 3pt; margin-bottom: 3pt; }
 li { margin-top: 2pt; margin-bottom: 2pt; }
 code { font-family: monospace; background-color: #e5e7eb; }
-pre { font-family: monospace; font-size: 9.5pt; border: 1px solid #6b7280; padding: 6pt; }
+pre { font-family: monospace; font-size: 9pt; border: 1px solid #6b7280; padding: 6pt; white-space: pre-wrap; }
 .nota { border: 1px solid #60a5fa; padding: 6pt; margin-top: 6pt; margin-bottom: 6pt; }
 .aviso { border: 1px solid #f59e0b; padding: 6pt; margin-top: 6pt; margin-bottom: 6pt; }
 .cap { font-size: 9pt; color: #6b7280; text-align: center; margin-bottom: 8pt; }
@@ -27,12 +36,13 @@ td { padding: 3pt; border: 1px solid #d1d5db; }
 """
 
 
-def build(html: str, path: Path, title: str, cover: tuple[str, str]):
+def build(html: str, path: Path, title: str, cover: tuple[str, str], blurb: str | None = None):
     story = pymupdf.Story(html=f"<body>{html}</body>", user_css=CSS, archive=pymupdf.Archive(str(IMG)))
     W, H = pymupdf.paper_size("a4")
     where = pymupdf.Rect(50, 60, W - 50, H - 60)
-    raw = path.with_name(path.stem + "_raw.pdf")
-    writer = pymupdf.DocumentWriter(str(raw))
+    import io
+    raw = io.BytesIO()                       # en memoria: en Windows un archivo temporal queda bloqueado por el propio proceso
+    writer = pymupdf.DocumentWriter(raw)
     more = 1
     while more:
         dev = writer.begin_page(pymupdf.Rect(0, 0, W, H))
@@ -41,15 +51,16 @@ def build(html: str, path: Path, title: str, cover: tuple[str, str]):
         writer.end_page()
     writer.close()
     # portada + pie de página
-    doc = pymupdf.open(raw)
+    doc = pymupdf.open("pdf", raw.getvalue())
     cov = doc.new_page(0, width=W, height=H)
     cov.draw_rect(pymupdf.Rect(0, 0, W, 260), color=None, fill=(0.114, 0.306, 0.847))
     cov.insert_text((50, 130), cover[0], fontsize=34, fontname="hebo", color=(1, 1, 1))
     cov.insert_text((50, 170), cover[1], fontsize=16, fontname="helv", color=(0.86, 0.92, 1))
-    cov.insert_text((50, 330), "FAVERVIEW versión 3.0", fontsize=13, fontname="hebo")
+    cov.insert_text((50, 330), f"FAVERVIEW versión {VERSION}", fontsize=13, fontname="hebo")
     cov.insert_textbox(pymupdf.Rect(50, 350, W - 50, 460),
-                       "Suite de preprensa: compara el arte con tu diseño, separa colores, vectoriza, revisa (preflight), genera códigos "
-                       "de barras y automatiza tareas. Todo corre en tu equipo, sin internet y sin costo.",
+                       blurb or ("Suite de preprensa: compara el arte con tu diseño, separa colores, vectoriza, revisa (preflight), genera "
+                                 "códigos de barras, hace reventado (trapping) y automatiza tareas; también dentro de Illustrator. Todo corre "
+                                 "en tu equipo, sin internet y sin costo."),
                        fontsize=12, fontname="helv", color=(0.2, 0.2, 0.25))
     for i in range(1, doc.page_count):
         pg = doc[i]
@@ -59,10 +70,6 @@ def build(html: str, path: Path, title: str, cover: tuple[str, str]):
     doc.save(str(path), garbage=3, deflate=True)
     n = doc.page_count
     doc.close()
-    try:
-        raw.unlink(missing_ok=True)
-    except OSError:
-        pass
     print(path.name, n, "paginas")
 
 
@@ -334,7 +341,15 @@ uv run faverview-aprender --importar aprendizaje.zip</pre>
 <h3>Historial</h3>
 <p>El selector <b>Historial</b> (arriba a la derecha) reabre cualquiera de las últimas 50 comparaciones, incluidos lotes. Los resultados se conservan 30 días.</p>
 <h3>Actualizaciones</h3>
-<p>Una vez al día, si hay internet, la app comprueba si hay una versión nueva y muestra un aviso azul con el botón <b>Actualizar</b> (equivale a <code>git pull</code>; después cierra la ventana negra y vuelve a abrir la app). Nunca bloquea el arranque. La versión actual aparece al pie de la página.</p>
+<p>La versión actual aparece al pie de la página. FAVERVIEW revisa <b>solo</b> si hay una versión nueva:</p>
+<ul>
+<li><b>Automático:</b> una vez al día, si hay internet, sin bloquear el arranque. Si hay una versión nueva aparece un aviso azul arriba con el número de versión,
+el botón <b>Actualizar</b> y un desplegable <b>Novedades</b> con lo que trae. El aviso se mantiene aunque cierres y abras la app.</li>
+<li><b>Cuando quieras:</b> en el pie de página pulsa <b>Buscar actualizaciones</b>; consulta GitHub en ese momento y te dice «Tienes la última versión» o muestra el aviso.</li>
+<li><b>Actualizar:</b> pulsa <b>Actualizar</b> (equivale a <code>git pull</code>), cierra la ventana negra y vuelve a abrir FAVERVIEW. La primera apertura puede tardar un poco más si hay librerías nuevas.</li>
+<li>Si modificaste archivos de la carpeta de la app o no está en la rama <code>main</code>, el botón no actualiza y te explica qué hacer (ver la Guía de instalación y actualización).</li>
+<li>El <b>plugin de Illustrator</b> se actualiza aparte (su pestaña <b>Ajustes</b> avisa cuando hay un <code>.zxp</code> nuevo).</li>
+</ul>
 <h3>Dónde se guarda todo</h3>
 <table>
 <tr><th>Carpeta</th><th>Contenido</th><th>¿Se sube a GitHub?</th></tr>
@@ -384,114 +399,24 @@ uv run faverview-aprender --importar aprendizaje.zip</pre>
 from capitulos_suite import suite
 manual += suite(fig)
 
-# =============================================================================== INSTALACIÓN
-guia = """
-<h1>Contenido</h1>
-<ol>
-<li>Antes de empezar</li>
-<li>Instalación paso a paso</li>
-<li>Comprobar que todo funciona</li>
-<li>Uso diario y acceso directo</li>
-<li>Instalar en varios equipos</li>
-<li>Actualizar, desinstalar y llevar tus datos</li>
-<li>Si algo falla</li>
-</ol>
+# =============================================================================== DEMÁS DOCUMENTOS
+import documentos as d
 
-<h1>1. Antes de empezar</h1>
-<h3>Qué necesitas</h3>
-<ul>
-<li>Un computador con <b>Windows 10 u 11</b> (64 bits).</li>
-<li><b>Internet</b>, solo durante la instalación y para actualizar. La app funciona sin conexión.</li>
-<li>Unos <b>2 GB libres</b> de disco y 5 a 10 minutos.</li>
-<li>No hace falta ser administrador.</li>
-</ul>
-<h3>Qué se instala</h3>
-<table>
-<tr><th>Programa</th><th>Para qué sirve</th></tr>
-<tr><td>uv</td><td>Descarga Python y las librerías de la app automáticamente.</td></tr>
-<tr><td>Git</td><td>Descarga FAVERVIEW desde GitHub y permite actualizarlo.</td></tr>
-<tr><td>Tesseract OCR</td><td>Lee el texto de las imágenes.</td></tr>
-<tr><td>Ghostscript (opcional)</td><td>Separa PDF en placas y habilita trapping, cobertura y EPS (paso 2b).</td></tr>
-</table>
-<div class="nota"><b>¿Por qué no hay un instalador .exe?</b> Windows y los antivirus marcan como sospechosos los ejecutables sin firma digital. FAVERVIEW se instala con <b>winget</b> (el instalador oficial de Windows) y paquetes firmados, así que no aparecen avisos de virus.</div>
+DOCS = [
+    (manual, "Manual_de_uso_FAVERVIEW.pdf", "Manual de uso", ("Manual de uso", "Guía completa de la aplicación"), None),
+    (d.guia_instalacion(VERSION), "Guia_de_instalacion_y_actualizacion_FAVERVIEW.pdf", "Guía de instalación y actualización",
+     ("Instalación y actualización", "Instalar, actualizar y desinstalar FAVERVIEW"),
+     "Cómo instalar FAVERVIEW, Ghostscript y el plugin de Illustrator, cómo se actualiza (la app lo revisa sola) y qué hacer si algo falla."),
+    (d.manual_plugin(fig, VERSION), "Manual_plugin_Illustrator_FAVERVIEW.pdf", "Manual del plugin de Illustrator",
+     ("Plugin de Illustrator", "FAVERVIEW dentro de Illustrator 2024–2026"),
+     "Panel de Illustrator que usa las herramientas de FAVERVIEW (vectorizar, preflight, separar, comparar, códigos y trap) sin salir del programa."),
+    (d.guia_rapida(VERSION), "Guia_rapida_FAVERVIEW.pdf", "Guía rápida", ("Guía rápida", "Cada tarea en pocos pasos"),
+     "Los pasos esenciales de cada módulo para tener a mano junto al computador."),
+    (d.guia_mantenedor(VERSION), "Guia_del_mantenedor_FAVERVIEW.pdf", "Guía del mantenedor",
+     ("Guía del mantenedor", "Publicar versiones, firmar el plugin y probar"),
+     "Para quien mantiene FAVERVIEW: flujo de trabajo con Pull Requests, versiones, actualizaciones, firma del plugin, pruebas y manuales."),
+]
 
-<h1>2. Instalación paso a paso</h1>
-<p>Solo se hace <b>una vez</b> por computador.</p>
-<h2>Paso 1 – Abrir PowerShell</h2>
-<p>Menú Inicio → escribe <b>PowerShell</b> → ábrelo. No hace falta abrirlo como administrador.</p>
-<h2>Paso 2 – Instalar las herramientas</h2>
-<p>Copia y pega este comando y presiona Enter. Acepta los permisos si Windows los pide.</p>
-<pre>winget install -e --id astral-sh.uv; winget install -e --id Git.Git; winget install -e --id UB-Mannheim.TesseractOCR</pre>
-<p><b>Cierra PowerShell y ábrelo de nuevo</b> para que Windows reconozca los programas nuevos.</p>
-<h2>Paso 2b – Instalar Ghostscript (para los módulos de preprensa)</h2>
-<p>No está en winget. Copia este comando en PowerShell: descarga la versión oficial de Artifex, <b>verifica su firma</b> y solo entonces la instala (pide permiso de administrador). Sin Ghostscript la app funciona, pero no separa PDF en placas.</p>
-<pre>$r = Invoke-RestMethod https://api.github.com/repos/ArtifexSoftware/ghostpdl-downloads/releases/latest; $a = $r.assets | ? name -like '*w64.exe'; $f = "$env:TEMP\\$($a.name)"; Invoke-WebRequest $a.browser_download_url -OutFile $f; $s = Get-AuthenticodeSignature $f; if ($s.Status -eq 'Valid' -and $s.SignerCertificate.Subject -match 'Artifex') { Start-Process $f -ArgumentList '/S' -Verb RunAs -Wait; Write-Host 'Ghostscript instalado' } else { Write-Host "Firma NO valida: $($s.Status). No se instalo." }</pre>
-<p>Verifica con <code>&amp; (Get-ChildItem "C:\\Program Files\\gs\\*\\bin\\gswin64c.exe" | Select -Last 1).FullName --version</code>. Si dice «Firma NO valida» no se instala nada: descarga Ghostscript desde ghostscript.com y comprueba la firma antes de ejecutarlo.</p>
-<h2>Paso 3 – Descargar FAVERVIEW</h2>
-<p>Esto crea la carpeta <code>FAVERVIEW</code> en tu carpeta de usuario:</p>
-<pre>git clone https://github.com/sebastiansantos0311-dev/faverview.git $HOME\\FAVERVIEW</pre>
-<p>Si el repositorio es privado, Git abrirá una ventana para iniciar sesión en GitHub; hazlo con tu cuenta.</p>
-<h2>Paso 4 – Primer arranque</h2>
-<pre>cd $HOME\\FAVERVIEW; uv run faverview</pre>
-<p>La primera vez descarga Python y las librerías (unos minutos). Después se abre el navegador con la aplicación.</p>
-<h2>Paso 5 – Acceso directo con el logo (automático)</h2>
-<p>En el <b>primer arranque</b> (paso 4) FAVERVIEW crea solo el acceso directo <b>FAVERVIEW</b> (con el logo del calvito con gafas) en tu Escritorio <b>y en la carpeta principal de la app</b>. Desde entonces basta con hacer doble clic en cualquiera de los dos. Si lo borras y quieres recrearlo:</p>
-<pre>cd $HOME\FAVERVIEW; uv run faverview --acceso-directo</pre>
-
-<h1>3. Comprobar que todo funciona</h1>
-<ol>
-<li>Con la app abierta, arrastra <code>samples\\cliente_errores.png</code> a la zona A y <code>samples\\diseno.pdf</code> a la zona B (están dentro de la carpeta FAVERVIEW).</li>
-<li>Pulsa <b>Comparar</b>.</li>
-<li>Debes ver cerca de <b>96 % «Revisar»</b> con 4 errores: un precio cambiado (12.000 vs 10.000), la palabra «especiales» sobrante, un rectángulo de otro color y un logo que falta.</li>
-<li>Con <code>samples\\cliente_ok.png</code> contra el mismo diseño debe dar <b>100 % «Aprobado»</b>.</li>
-</ol>
-<p>Opcional, para verificar la instalación completa (unos 2 minutos):</p>
-<pre>cd $HOME\\FAVERVIEW; uv run pytest</pre>
-
-<h1>4. Uso diario y acceso directo</h1>
-<ol>
-<li>Doble clic en el acceso directo <b>FAVERVIEW</b> (o <code>uv run faverview</code> dentro de la carpeta).</li>
-<li>Se abre una ventana negra (el servidor) y el navegador. <b>No cierres la ventana negra</b> mientras usas la app.</li>
-<li>Para salir, cierra la ventana negra.</li>
-</ol>
-<p>La app solo es accesible desde tu propio equipo (127.0.0.1), no desde la red.</p>
-
-<h1>5. Instalar en varios equipos</h1>
-<ul>
-<li>Repite los <b>pasos 1 a 5</b> en cada computador. No copies la carpeta <code>.venv</code> de otro equipo.</li>
-<li>Para llevar lo que el OCR aprendió: en el equipo de origen abre <b>Aprendizaje → Exportar</b> (o <code>uv run faverview-aprender --exportar aprendizaje.zip</code>) y en el nuevo <b>Importar</b> (o <code>--importar</code>). Por defecto no incluye imágenes de clientes.</li>
-<li>Tus casos de prueba, plantillas y el diccionario personal están en <code>datos_locales</code> y <code>data</code>; cópialos a mano si los quieres en el otro equipo.</li>
-<li>Si descargaste un ZIP en vez de usar <code>git clone</code>: antes de descomprimir, clic derecho en el ZIP → <b>Propiedades</b> → marca <b>Desbloquear</b> → Aceptar. Con ZIP no funcionará el aviso de actualización.</li>
-</ul>
-
-<h1>6. Actualizar, desinstalar y llevar tus datos</h1>
-<h3>Actualizar</h3>
-<p>La app avisa (una vez al día, con internet) cuando hay una versión nueva; pulsa <b>Actualizar</b> o hazlo a mano:</p>
-<pre>cd $HOME\\FAVERVIEW; git pull</pre>
-<p>La próxima vez que abras la app, uv instalará lo que haga falta.</p>
-<h3>Desinstalar</h3>
-<ol>
-<li>Cierra la app y borra la carpeta <code>FAVERVIEW</code> (antes copia <code>datos_locales</code> si quieres conservar tus casos y lo aprendido).</li>
-<li>Borra el acceso directo del Escritorio.</li>
-<li>Si ya no los necesitas: <code>winget uninstall astral-sh.uv</code>, <code>winget uninstall Git.Git</code> y <code>winget uninstall UB-Mannheim.TesseractOCR</code>.</li>
-</ol>
-
-<h1>7. Si algo falla</h1>
-<table>
-<tr><th>Problema</th><th>Solución</th></tr>
-<tr><td>«winget no se reconoce»</td><td>Instala <b>App Installer</b> desde Microsoft Store y vuelve a abrir PowerShell.</td></tr>
-<tr><td>«uv» o «git» no se reconoce después del paso 2</td><td>Cierra y vuelve a abrir PowerShell. Si sigue igual, reinicia el equipo.</td></tr>
-<tr><td>Aviso «no se encontró Tesseract»</td><td>Ejecuta <code>winget install UB-Mannheim.TesseractOCR</code> y reinicia la app.</td></tr>
-<tr><td>Aviso «falta Ghostscript» en Separar, Preflight o Herramientas</td><td>Sigue el paso 2b y reinicia la app.</td></tr>
-<tr><td>El navegador no se abre</td><td>Abre a mano la dirección que aparece en la ventana negra (por ejemplo <code>http://127.0.0.1:8000</code>).</td></tr>
-<tr><td>Puerto en uso</td><td>La app usa automáticamente el siguiente puerto libre (8001, 8002…); mira la ventana negra.</td></tr>
-<tr><td>La primera vez tarda mucho</td><td>Es normal: descarga Python y las librerías (varios cientos de MB). Las siguientes veces abre en segundos.</td></tr>
-<tr><td>El antivirus o SmartScreen avisa</td><td>FAVERVIEW no trae ejecutables propios; el aviso suele venir de PowerShell o de un programa recién descargado. Si usas <code>git clone</code> y winget, no debería aparecer.</td></tr>
-<tr><td>Error de certificados o de red al instalar</td><td>Comprueba tu conexión o proxy de la empresa y repite el comando.</td></tr>
-<tr><td>«Permiso denegado» al crear el acceso directo</td><td>Ejecuta el comando desde una carpeta tuya (<code>$HOME\\FAVERVIEW</code>) y sin abrir PowerShell como administrador.</td></tr>
-</table>
-<div class="nota">¿Sigues con problemas? Anota el mensaje exacto de la ventana negra o de PowerShell; casi siempre dice qué falta.</div>
-"""
-
-build(manual, OUT / "Manual_de_uso_FAVERVIEW.pdf", "Manual de uso", ("Manual de uso", "Guía completa de la aplicación"))
-build(guia, OUT / "Guia_de_instalacion_FAVERVIEW.pdf", "Guía de instalación", ("Guía de instalación", "Cómo instalar FAVERVIEW en un computador"))
+if __name__ == "__main__":
+    for html, name, title, cover, blurb in DOCS:
+        build(html, OUT / name, title, cover, blurb)

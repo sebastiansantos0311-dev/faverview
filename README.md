@@ -24,7 +24,17 @@ navegador. Solo necesita internet durante la instalación.
 
 Los resultados de color son **estimaciones orientativas**; confirma siempre con una prueba impresa. El botón **Tintas** abre tus bibliotecas
 (Pantone y otras se importan desde tus propios archivos ASE/CxF/CSV: FAVERVIEW no las incluye). **Plugin de Illustrator:** panel que conecta Illustrator con FAVERVIEW (vectorizar, preflight, separaciones, trap, códigos): ver [`plugin/README.md`](plugin/README.md).
-Manual completo: [`docs/Manual_de_uso_FAVERVIEW.pdf`](docs/Manual_de_uso_FAVERVIEW.pdf).
+
+## Manuales (PDF)
+
+| Documento | Para quién |
+|---|---|
+| [Guía de instalación y actualización](docs/Guia_de_instalacion_y_actualizacion_FAVERVIEW.pdf) | Instalar FAVERVIEW, Ghostscript y el plugin; actualizar; desinstalar; problemas frecuentes. |
+| [Manual de uso](docs/Manual_de_uso_FAVERVIEW.pdf) | Todas las funciones de la app, módulo por módulo. |
+| [Guía rápida](docs/Guia_rapida_FAVERVIEW.pdf) | Los pasos esenciales de cada tarea, para tener a mano. |
+| [Manual del plugin de Illustrator](docs/Manual_plugin_Illustrator_FAVERVIEW.pdf) | Instalar y usar el panel dentro de Illustrator 2024–2026. |
+| [Guía del mantenedor](docs/Guia_del_mantenedor_FAVERVIEW.pdf) | Publicar versiones, firmar el plugin, pruebas y regenerar los manuales. |
+
 Cambios: [`CHANGELOG.md`](CHANGELOG.md) · decisiones de diseño: [`DECISIONES.md`](DECISIONES.md).
 
 ---
@@ -189,13 +199,22 @@ positivos por caso, CER del OCR y tiempos, comparado con la corrida anterior. Op
 
 ## Actualizar a la última versión
 
-La app comprueba una vez al día (si hay internet y la instalaste con `git clone`) si hay una versión nueva y te lo avisa
-arriba con un botón **Actualizar**. También puedes hacerlo a mano:
+FAVERVIEW **revisa solo** si hay una versión nueva (si la instalaste con `git clone` y hay internet):
 
+- **Automático:** una vez al día, sin bloquear el arranque. Si hay una versión nueva aparece un aviso azul arriba con el **número de
+  versión**, el botón **Actualizar** y el desplegable **Novedades**. El aviso se mantiene aunque cierres y abras la app.
+- **Cuando quieras:** botón **Buscar actualizaciones** en el pie de la página.
+- **Actualizar:** pulsa **Actualizar**, cierra la ventana negra y vuelve a abrir FAVERVIEW (la primera vez puede tardar un poco más si hay
+  librerías nuevas). Tus datos (`data/`, `datos_locales/`) no se tocan.
+
+A mano:
 ```bash
 cd $HOME\FAVERVIEW; git pull
 ```
-La próxima vez que abras la app, `uv` instalará lo que haga falta.
+
+Si el botón dice que hay **cambios locales** (`git stash; git pull`) o que estás en **otra rama** (`git switch main; git pull`), sigue la
+[Guía de instalación y actualización](docs/Guia_de_instalacion_y_actualizacion_FAVERVIEW.pdf). El **plugin de Illustrator** se actualiza
+aparte: su pestaña **Ajustes** avisa cuando hay un `.zxp` nuevo en los Releases (ver [`plugin/README.md`](plugin/README.md)).
 
 ---
 

@@ -20,3 +20,4 @@ htmlcov/
 *.pfx
 *.zxp
 plugin/cep/.debug
+docs/*_raw.pdf

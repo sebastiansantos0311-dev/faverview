@@ -187,6 +187,9 @@ select { background: var(--panel2); color: var(--text); border: 1px solid var(--
 .banner.fix { background: #10261a; border: 1px solid var(--ok); margin: 0 0 8px; }
 
 .banner.update { background: #0f2a44; border: 1px solid var(--accent); }
+.banner.update details { margin-top: 6px; }
+.banner.update ul { margin: 4px 0 0 18px; padding: 0; }
+.linklike { background: none; border: 0; padding: 0; color: var(--accent); cursor: pointer; font: inherit; text-decoration: underline; }
 .foot { color: var(--muted); font-size: 12px; text-align: center; padding: 14px; }
 
 .logo { width: 34px; height: 34px; border-radius: 8px; }

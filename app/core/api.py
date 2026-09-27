@@ -38,6 +38,12 @@ def update_status():
     return {**updates.status(), "version": get_version()}
 
 
+@router.post("/api/update/check")
+def update_check_now():
+    """Botón «Buscar actualizaciones»: consulta GitHub ahora mismo (ignora el límite de 1 vez al día)."""
+    return {**updates.check(force=True), "version": get_version()}
+
+
 @router.post("/api/update/apply")
 def update_apply():
     return updates.apply()

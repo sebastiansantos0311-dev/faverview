@@ -1,4 +1,5 @@
 """Capítulos del manual para los módulos de la suite v3 (Parte II). Se importan desde build.py."""
+from documentos import GS_CMD, NOTA_PEGAR, UPIA_SET
 
 
 def suite(fig) -> str:
@@ -200,9 +201,11 @@ en <code>errores/</code> junto a su registro; los resúmenes, en <code>reportes/
 <h1>30. Instalar Ghostscript</h1>
 <p>Ghostscript (gratuito, de Artifex) se necesita para separar PDF en placas, medir cobertura, hacer trapping y otras funciones. No está en winget: usa
 este comando de PowerShell, que descarga la versión oficial más reciente, <b>verifica su firma</b> y solo entonces la instala:</p>
-<pre>$r = Invoke-RestMethod https://api.github.com/repos/ArtifexSoftware/ghostpdl-downloads/releases/latest; $a = $r.assets | ? name -like '*w64.exe'; $f = "$env:TEMP\\$($a.name)"; Invoke-WebRequest $a.browser_download_url -OutFile $f; $s = Get-AuthenticodeSignature $f; if ($s.Status -eq 'Valid' -and $s.SignerCertificate.Subject -match 'Artifex') {{ Start-Process $f -ArgumentList '/S' -Verb RunAs -Wait; Write-Host 'Ghostscript instalado' }} else {{ Write-Host "Firma NO valida: $($s.Status). No se instalo." }}</pre>
+<pre>{GS_CMD}</pre>
+{NOTA_PEGAR}
 <p>Comprueba la instalación:</p>
-<pre>&amp; (Get-ChildItem "C:\\Program Files\\gs\\*\\bin\\gswin64c.exe" | Select -Last 1).FullName --version</pre>
+<pre>$gs = Get-ChildItem "C:\\Program Files\\gs\\*\\bin\\gswin64c.exe" | Select -Last 1
+&amp; $gs.FullName --version</pre>
 <table>
 <tr><th>Si algo falla</th><th>Qué hacer</th></tr>
 <tr><td>Pide permisos de administrador y no los tienes</td><td>Pídele a quien administra el equipo que lo instale; sin Ghostscript el resto de la app funciona.</td></tr>
@@ -212,7 +215,7 @@ este comando de PowerShell, que descarga la versión oficial más reciente, <b>v
 </table>
 
 
-<h1>33. Reventado (trapping) y tolerancia de registro</h1>
+<h1>31. Reventado (trapping) y tolerancia de registro</h1>
 <p>En la máquina cada tinta sale de una pantalla, cliché o plancha distinta y <b>nunca caen exactamente en el mismo sitio</b> (mal registro). Si dos
 colores solo se tocan en el borde, al moverse aparece un <b>filete</b> de sustrato (una línea blanca) o un solape feo. El <b>reventado</b> agranda un
 color un poco <i>por debajo</i> del vecino para que, dentro de la <b>tolerancia de movimiento</b> de tu máquina, el borde siga cubierto.</p>
@@ -264,7 +267,7 @@ prueba mide algo). El resultado se muestra en mm² y como mapa (filetes en magen
 </ul>
 
 
-<h1>34. FAVERVIEW en Illustrator</h1>
+<h1>32. FAVERVIEW en Illustrator</h1>
 <p>El <b>plugin de Illustrator</b> es un panel que se conecta con FAVERVIEW (debe estar abierto) para usar sus herramientas sin salir de Illustrator. Funciona con
 Illustrator 2024, 2025 y 2026. Es un <b>puente</b>: exporta una copia de tu mesa, FAVERVIEW la analiza en tu equipo y el resultado vuelve al documento. No se conecta a internet.</p>
 <div class="nota"><b>Estado de las pruebas:</b> todo lo que se puede comprobar sin Illustrator ya está probado automáticamente. Las pruebas que necesitan Illustrator real están en
@@ -273,16 +276,18 @@ Illustrator 2024, 2025 y 2026. Es un <b>puente</b>: exporta una copia de tu mesa
 <ol>
 <li>Descarga <code>FAVERVIEW-Illustrator-&lt;versión&gt;.zxp</code> del Release de GitHub (firmado con el certificado propio del taller).</li>
 <li>En PowerShell, con el instalador oficial de Creative Cloud (verifica la ruta en tu equipo):
-<pre>&amp; "C:\\Program Files\\Common Files\\Adobe\\Adobe Desktop Common\\RemoteComponents\\UPI\\UnifiedPluginInstallerAgent\\UnifiedPluginInstallerAgent.exe" /install "C:\\ruta\\FAVERVIEW-Illustrator-3.2.0.zxp"</pre></li>
+<pre>{UPIA_SET}
+&amp; $upia /install "$HOME\\Downloads\\FAVERVIEW-Illustrator-&lt;versión&gt;.zxp"</pre></li>
 <li>Reinicia Illustrator y abre <b>Ventana → Extensiones → FAVERVIEW</b>.</li>
 </ol>
-<p>Para actualizar instala el <code>.zxp</code> nuevo (el panel avisa en <b>Ajustes</b>); para desinstalar: <code>UnifiedPluginInstallerAgent.exe /remove com.faverview.illustrator</code>.</p>
+<p>Para actualizar instala el <code>.zxp</code> nuevo (el panel avisa en <b>Ajustes</b>); para desinstalar, <code>&amp; $upia /remove com.faverview.illustrator</code> (con <code>$upia</code> definido como arriba). Todo el detalle está en el
+<b>Manual del plugin de Illustrator</b>.</p>
 <h3>La conexión</h3>
 <table>
 <tr><th>Indicador</th><th>Significa</th></tr>
-<tr><td>🟢 Conectado a FAVERVIEW</td><td>Todo listo.</td></tr>
-<tr><td>🟡 Versión incompatible</td><td>Actualiza FAVERVIEW o el plugin (el mensaje dice cuál).</td></tr>
-<tr><td>🔴 FAVERVIEW no está abierto</td><td>Abre FAVERVIEW desde su acceso directo; el panel reintenta solo cada 5 segundos.</td></tr>
+<tr><td><span style="color:#16a34a">●</span> Conectado a FAVERVIEW</td><td>Todo listo.</td></tr>
+<tr><td><span style="color:#d97706">●</span> Versión incompatible</td><td>Actualiza FAVERVIEW o el plugin (el mensaje dice cuál).</td></tr>
+<tr><td><span style="color:#dc2626">●</span> FAVERVIEW no está abierto</td><td>Abre FAVERVIEW desde su acceso directo; el panel reintenta solo cada 5 segundos.</td></tr>
 </table>
 <p>La comunicación usa un <b>token</b> que FAVERVIEW guarda en <code>%APPDATA%\\FAVERVIEW\\plugin.json</code>: ninguna página web puede llamar a la API de tu equipo.</p>
 <h3>Las pestañas</h3>
@@ -318,7 +323,7 @@ También puedes usar <b>Buscatrazos → Reventar</b> de Illustrator para casos s
 <li>La versión actual usa CEP; Adobe lo retirará en 2028–2029 y el panel está preparado para migrar a UXP (<code>plugin/MIGRACION_UXP.md</code>).</li>
 </ul>
 
-<h1>31. Glosario de preprensa</h1>
+<h1>33. Glosario de preprensa</h1>
 <table>
 <tr><th>Término</th><th>Significado</th></tr>
 <tr><td>TAC / cobertura total</td><td>Suma de los porcentajes de todas las tintas en un punto (máximo 400 % con CMYK). Cada proceso tiene su límite.</td></tr>
@@ -343,7 +348,7 @@ También puedes usar <b>Buscatrazos → Reventar</b> de Illustrator para casos s
 <tr><td>Distorsión (flexo)</td><td>Compensación del alargamiento del cliché al montarlo en el cilindro.</td></tr>
 </table>
 
-<h1>32. Qué es exacto y qué es una estimación</h1>
+<h1>34. Qué es exacto y qué es una estimación</h1>
 <ul>
 <li><b>Exacto:</b> inventario de tintas, porcentajes de cobertura de las placas, geometría de la imposición, fórmulas (distorsión flexo), decodificación
 de los códigos, ausencia de huecos entre regiones vectorizadas.</li>

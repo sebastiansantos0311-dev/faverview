@@ -1,6 +1,15 @@
 # Cambios de FAVERVIEW
 
 ## 3.2.0 (plugin de Illustrator) — 2026-09-26
+- Nuevo: plugin para usar FAVERVIEW dentro de Illustrator 2024–2026 (vectorizar, preflight, separar, comparar, códigos y trap).
+- Nuevo: auto-trap (reventado) con la tolerancia de movimiento de tu máquina y prueba de filetes.
+- Actualizaciones: el aviso muestra la versión nueva y sus novedades, y hay un botón «Buscar actualizaciones» en el pie.
+- Manuales nuevos: instalación y actualización, guía rápida, plugin de Illustrator y guía del mantenedor.
+- **Revisión previa a publicar:** el aviso de actualización ya no se pierde al reiniciar la app dentro de las 24 h (se recalcula con las
+  referencias descargadas), muestra la versión nueva (`pyproject.toml` de `origin/main`) y las novedades (primera sección de este archivo),
+  `POST /api/update/check` para comprobar en el momento y «Actualizar» se niega fuera de la rama `main`. Documentación: 5 PDF generados con
+  la versión del proyecto, capítulos renumerados, comandos largos partidos en líneas cortas (al copiarlos desde el PDF ya no se rompen),
+  generación en memoria (sin `_raw.pdf` sueltos) y eliminados dos `.md` vacíos de `docs/`.
 - **Plugin de Illustrator (CEP):** servidor con token en `%APPDATA%\FAVERVIEW\plugin.json`, CORS restringido a CEP, defensa contra DNS rebinding, `/api/plugin/*` (vectorizar, preflight,
   separar, comparar, códigos, braille, verificar códigos, trap, clasificación de tintas) con bbox en puntos PDF; panel HTML/JS sin Node con 7 pestañas y conexión verde/amarilla/roja; capa host
   ExtendScript (exportar sin tocar el documento, colocar, muestras spot sin duplicar, zoom, selección, marcadores, correcciones nativas); trap vectorial de un PDF de arte plano; empaquetado

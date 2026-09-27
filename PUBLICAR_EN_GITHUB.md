@@ -4,11 +4,20 @@ Repositorio **público**: https://github.com/sebastiansantos0311-dev/faverview
 Cualquiera puede verlo e instalarlo siguiendo el `README.md`. Solo tú puedes modificarlo.
 
 ## Publicar cambios
-Cada vez que mejores la app, en PowerShell:
+Todos los equipos se actualizan desde la rama `main` (la app avisa sola), así que **nunca subas a `main` algo sin probar**.
+Trabaja en una rama y publica con un Pull Request:
 ```bash
-cd $HOME\Desktop\FAVERVIEW; git add -A; git commit -m "Describe el cambio"; git push
+git switch -c mejora/nombre
 ```
-Los demás equipos se actualizan con `git pull` (ver el README).
+```bash
+git add -A; git commit -m "Describe el cambio"; git push -u origin mejora/nombre
+```
+```bash
+gh pr create --fill
+```
+GitHub Actions ejecuta todas las pruebas; fusiona el PR solo con la marca verde. El paso a paso completo (versiones, novedades que ve
+el usuario, etiquetas, Releases y firma del plugin) está en la
+[Guía del mantenedor](docs/Guia_del_mantenedor_FAVERVIEW.pdf).
 
 ## Privacidad
 - Los commits usan el correo anónimo de GitHub (`…@users.noreply.github.com`), configurado solo en este repositorio.
