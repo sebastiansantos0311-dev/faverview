@@ -10,7 +10,8 @@ import time
 from .config import BASE_DIR, DATOS_DIR, load_config
 
 STATE = DATOS_DIR / "actualizaciones.json"
-_status: dict = {"disponible": False, "commits": 0, "comprobado": None, "mensaje": ""}
+_status: dict = {"disponible": False, "commits": 0, "comprobado": None, "mensaje": "", "plugin_version": None, "plugin_url": None}
+RELEASES_URL = "https://api.github.com/repos/sebastiansantos0311-dev/faverview/releases"
 _lock = threading.Lock()
 TIMEOUT = 3
 DAY = 86400
@@ -44,6 +45,27 @@ def _save(d: dict) -> None:
         pass
 
 
+def plugin_release() -> tuple[str | None, str | None]:
+    """Versión y enlace del último plugin de Illustrator publicado (archivo FAVERVIEW-Illustrator-<versión>.zxp en un Release)."""
+    import re
+    import urllib.request
+    try:
+        req = urllib.request.Request(RELEASES_URL, headers={"Accept": "application/vnd.github+json", "User-Agent": "FAVERVIEW"})
+        with urllib.request.urlopen(req, timeout=TIMEOUT) as r:
+            releases = json.loads(r.read().decode("utf-8"))
+        best = None
+        for rel in releases:
+            for a in rel.get("assets", []):
+                m = re.match(r"^FAVERVIEW-Illustrator-(\d+(?:\.\d+)*)\.zxp$", a.get("name", ""))
+                if m:
+                    v = tuple(int(x) for x in m.group(1).split("."))
+                    if best is None or v > best[0]:
+                        best = (v, m.group(1), rel.get("html_url") or a.get("browser_download_url"))
+        return (best[1], best[2]) if best else (None, None)
+    except Exception:
+        return None, None
+
+
 def check(force: bool = False) -> dict:
     """Consulta si hay commits nuevos en origin/main. Nunca lanza excepciones."""
     with _lock:
@@ -62,6 +84,8 @@ def check(force: bool = False) -> dict:
             _status.update(disponible=n > 0, commits=n, comprobado=time.time(),
                            mensaje=("Hay una versión nueva. Cierra la app y ejecuta «git pull» "
                                     "(o pulsa Actualizar).") if n > 0 else "")
+            v, url = plugin_release()
+            _status.update(plugin_version=v, plugin_url=url)
             _save({"ultima": time.time(), "commits": n})
         except Exception:
             pass

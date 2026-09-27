@@ -105,6 +105,7 @@ manual = f"""
 <li>Automatizar</li>
 <li>Instalar Ghostscript</li>
 <li>Reventado (trapping) y tolerancia de registro</li>
+<li>FAVERVIEW en Illustrator</li>
 <li>Glosario de preprensa</li>
 <li>Qué es exacto y qué es una estimación</li>
 </ol>

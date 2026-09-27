@@ -263,6 +263,61 @@ prueba mide algo). El resultado se muestra en mm² y como mapa (filetes en magen
 <li>La retracción del negro, los objetos finos y el texto pequeño solo se aplican en el trap por placas, no en el vectorial.</li>
 </ul>
 
+
+<h1>34. FAVERVIEW en Illustrator</h1>
+<p>El <b>plugin de Illustrator</b> es un panel que se conecta con FAVERVIEW (debe estar abierto) para usar sus herramientas sin salir de Illustrator. Funciona con
+Illustrator 2024, 2025 y 2026. Es un <b>puente</b>: exporta una copia de tu mesa, FAVERVIEW la analiza en tu equipo y el resultado vuelve al documento. No se conecta a internet.</p>
+<div class="nota"><b>Estado de las pruebas:</b> todo lo que se puede comprobar sin Illustrator ya está probado automáticamente. Las pruebas que necesitan Illustrator real están en
+<code>plugin/PRUEBAS_MANUALES.md</code> y las ejecuta el usuario; hasta entonces el panel debe considerarse <b>sin validar en Illustrator</b>.</div>
+<h3>Instalación</h3>
+<ol>
+<li>Descarga <code>FAVERVIEW-Illustrator-&lt;versión&gt;.zxp</code> del Release de GitHub (firmado con el certificado propio del taller).</li>
+<li>En PowerShell, con el instalador oficial de Creative Cloud (verifica la ruta en tu equipo):
+<pre>&amp; "C:\\Program Files\\Common Files\\Adobe\\Adobe Desktop Common\\RemoteComponents\\UPI\\UnifiedPluginInstallerAgent\\UnifiedPluginInstallerAgent.exe" /install "C:\\ruta\\FAVERVIEW-Illustrator-3.2.0.zxp"</pre></li>
+<li>Reinicia Illustrator y abre <b>Ventana → Extensiones → FAVERVIEW</b>.</li>
+</ol>
+<p>Para actualizar instala el <code>.zxp</code> nuevo (el panel avisa en <b>Ajustes</b>); para desinstalar: <code>UnifiedPluginInstallerAgent.exe /remove com.faverview.illustrator</code>.</p>
+<h3>La conexión</h3>
+<table>
+<tr><th>Indicador</th><th>Significa</th></tr>
+<tr><td>🟢 Conectado a FAVERVIEW</td><td>Todo listo.</td></tr>
+<tr><td>🟡 Versión incompatible</td><td>Actualiza FAVERVIEW o el plugin (el mensaje dice cuál).</td></tr>
+<tr><td>🔴 FAVERVIEW no está abierto</td><td>Abre FAVERVIEW desde su acceso directo; el panel reintenta solo cada 5 segundos.</td></tr>
+</table>
+<p>La comunicación usa un <b>token</b> que FAVERVIEW guarda en <code>%APPDATA%\\FAVERVIEW\\plugin.json</code>: ninguna página web puede llamar a la API de tu equipo.</p>
+<h3>Las pestañas</h3>
+{fig("p01_vectorizar", "Vectorizar: la imagen seleccionada se vectoriza y se coloca encima.", 42)}
+<ul>
+<li><b>Vectorizar:</b> con una imagen seleccionada (vinculada o incrustada, incluso rotada) elige preajuste, colores, detalle, tintas de tu biblioteca y, si quieres, el trap. Ves una
+vista previa y <b>Colocar sobre la imagen</b> pone el vector en la capa «FAVERVIEW – Vector», con las mismas posición, tamaño y rotación, y con muestras spot (sin duplicar las que ya existen).</li>
+</ul>
+{fig("p02_preflight", "Preflight: resultados por severidad, clic para hacer zoom y correcciones nativas.", 42)}
+<ul>
+<li><b>Preflight:</b> revisa la mesa actual o todas con un perfil. Un clic en un hallazgo hace <b>zoom y selecciona</b> los objetos de esa zona; «Marcar todos» dibuja marcadores en la capa
+«FAVERVIEW – Revisión» (bloqueada y que no se imprime). Las <b>correcciones nativas</b> trabajan sobre tu documento (siguen siendo editables): sobreimpresión en tintas técnicas, texto negro
+pequeño a K 100 %, unir muestras spot duplicadas y eliminar las que no se usan. Cada una tiene «Ver» (cuántos objetos afecta), confirmación y se puede deshacer con Ctrl+Z.</li>
+<li><b>Separar:</b> muestra las tintas del PDF frente a las muestras del documento (avisa de las que faltan y de las que sobran), la cobertura por tinta, el TAC máximo, los problemas de separación
+(clic → zoom), las placas («Solo» y «Negativo»), un densitómetro (toca la vista previa) y «Exportar placas…».</li>
+<li><b>Comparar:</b> elige el arte del cliente (o pégalo con Ctrl+V) y compáralo con la mesa: marca las diferencias en el documento y puedes abrir la comparación completa en FAVERVIEW.</li>
+</ul>
+{fig("p03_codigos", "Códigos: vista previa con validación en vivo e inserción como vector.", 42)}
+<ul>
+<li><b>Códigos:</b> genera EAN/UPC, ITF-14, Code 128, GS1-128, Code 39, DataBar, DataMatrix, GS1 DataMatrix y QR con validación en vivo, y braille (tinta técnica «Braille» en sobreimpresión). «Insertar»
+lo coloca como vector en el centro de la vista o de la selección. «Verificar códigos del documento» decodifica los de la mesa y estima su grado (no certificado).</li>
+</ul>
+{fig("p04_trap", "Trap: prueba de movimiento con la tolerancia de la máquina.", 42)}
+<ul>
+<li><b>Trap:</b> elige el perfil de máquina y la tolerancia. <b>Analizar registro</b> hace la prueba de movimiento de la mesa y marca los filetes en el documento; <b>Crear traps vectoriales</b> (solo arte
+plano) añade en la capa «FAVERVIEW – Traps» los trazos de trap, en sobreimpresión y con las mismas tintas. Con degradados, transparencias o imágenes el panel lo dice y propone las placas con trap (ráster).
+También puedes usar <b>Buscatrazos → Reventar</b> de Illustrator para casos simples. Es una estimación: confirma con tu imprenta.</li>
+</ul>
+<h3>Qué no hace el plugin</h3>
+<ul>
+<li>No modifica tu documento sin una acción explícita (colocar, corregir, marcar), y todo se puede deshacer.</li>
+<li>No corrige RGB a CMYK ni incrusta fuentes: solo lo reporta.</li>
+<li>La versión actual usa CEP; Adobe lo retirará en 2028–2029 y el panel está preparado para migrar a UXP (<code>plugin/MIGRACION_UXP.md</code>).</li>
+</ul>
+
 <h1>31. Glosario de preprensa</h1>
 <table>
 <tr><th>Término</th><th>Significado</th></tr>

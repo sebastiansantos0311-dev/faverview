@@ -115,3 +115,18 @@ Formato: fecha · contexto · decisión · alternativa descartada.
 - **Trap vectorial:** trazo centrado de ancho 2 × (trap + 0,03 mm de margen), recortado a A ∪ B (regla de relleno no cero), sobreimpresión OP/op/OPM 1 en un OCG «Traps FAVERVIEW». Verificado renderizando con Ghostscript a 600 dpi (a 300 dpi el antialias deja restos de pocos píxeles).
 - **Banco `bench/trapping`:** 20 casos × 3 perfiles con divisiones en guillotina (uniones en T); se evitaron astillas y bolsillos de sustrato en las esquinas porque no se pueden proteger por completo. Umbral CI: 0 filetes, ≤ 15 % de área modificada.
 - **No se aplica en vectorial:** R7, R8, R9 (no hay información de texto ni de CMY por debajo).
+
+## PLUGIN de Illustrator (P0–P10)
+- **CSInterface.js propio:** el archivo oficial de Adobe no se descargó (descargar archivos requiere tu permiso). `js/lib/CSInterface.js` es una implementación mínima propia sobre `window.__adobe_cep__`;
+  puedes sustituirla por la oficial (`Adobe-CEP/CEP-Resources`) sin tocar nada más. Igual con `json2.js` (propio, ES3).
+- **Token y CORS:** el token se conserva entre arranques (se genera si no existe). El preflight `OPTIONS` no lleva token (los navegadores no lo envían): se responde solo a los orígenes CEP (`null`, `file://`) y las
+  peticiones reales exigen el token. `/api/plugin/*` exige token siempre; el resto solo si el origen no es el propio FAVERVIEW. Se comprobó con el Chromium de Edge desde `file://` (origen `null`); **falta confirmar en
+  el Chromium de CEP** si exige `Access-Control-Allow-Private-Network` (ya se devuelve cuando lo piden).
+- **Exportar la mesa sin tocar el documento:** copiar la selección de la mesa a un documento temporal, pegar delante y trasladar al origen, guardar como PDF y cerrar sin guardar; se comprueba que el documento
+  activo no cambió de archivo. **No verificado en Illustrator**: el comando de menú `pasteFront` y `selectObjectsOnActiveArtboard` son de la documentación de scripting; ver prueba manual 5.
+- **Coordenadas:** eje Y de scripting hacia arriba; `pdfToDoc`/`docToPdf` puras (probadas con mesa en el origen, desplazada, varias, negativa y origen de regla cambiado). Se asume que el sistema de documento usa `artboardRect`
+  en coordenadas de documento; ajustar `FV.origin` si en Illustrator real el origen de regla desplaza los valores.
+- **Trap vectorial de un PDF:** se rasteriza a 600 dpi, se etiqueta cada píxel por su tinta dominante, se reutiliza el vectorizador (cadenas compartidas) y se emiten solo los trazos en sobreimpresión con los nombres exactos de las tintas.
+  Solo arte plano (sin imágenes, degradados, transparencias ni patrones); el resto se deriva a las placas con trap.
+- **Correcciones nativas:** sobreimpresión de tintas técnicas, negro pequeño, unir/eliminar muestras; «RGB a CMYK» solo se reporta (no hay forma fiable desde ExtendScript).
+- **UXP:** ver `plugin/MIGRACION_UXP.md`; el panel no usa Node y las APIs de CEP están aisladas en `host.js`/`files.js`.

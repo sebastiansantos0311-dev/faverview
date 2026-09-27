@@ -108,6 +108,6 @@ class PluginGuard(BaseHTTPMiddleware):
         resp = await call_next(request)
         if cep_origin and token_ok(token):
             resp.headers["Access-Control-Allow-Origin"] = origin
-            resp.headers["Access-Control-Expose-Headers"] = "Content-Disposition, X-Errores"
+            resp.headers["Access-Control-Expose-Headers"] = "Content-Disposition, X-Errores, X-Ancho-mm, X-Alto-mm"
             resp.headers["Vary"] = "Origin"
         return resp

@@ -23,7 +23,8 @@ navegador. Solo necesita internet durante la instalación.
 | **Automatizar** | Recetas que encadenan pasos sobre un archivo, una carpeta o una carpeta vigilada. |
 
 Los resultados de color son **estimaciones orientativas**; confirma siempre con una prueba impresa. El botón **Tintas** abre tus bibliotecas
-(Pantone y otras se importan desde tus propios archivos ASE/CxF/CSV: FAVERVIEW no las incluye). Manual completo: [`docs/Manual_de_uso_FAVERVIEW.pdf`](docs/Manual_de_uso_FAVERVIEW.pdf).
+(Pantone y otras se importan desde tus propios archivos ASE/CxF/CSV: FAVERVIEW no las incluye). **Plugin de Illustrator:** panel que conecta Illustrator con FAVERVIEW (vectorizar, preflight, separaciones, trap, códigos): ver [`plugin/README.md`](plugin/README.md).
+Manual completo: [`docs/Manual_de_uso_FAVERVIEW.pdf`](docs/Manual_de_uso_FAVERVIEW.pdf).
 Cambios: [`CHANGELOG.md`](CHANGELOG.md) · decisiones de diseño: [`DECISIONES.md`](DECISIONES.md).
 
 ---

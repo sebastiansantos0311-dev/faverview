@@ -1,5 +1,13 @@
 # Cambios de FAVERVIEW
 
+## 3.2.0 (plugin de Illustrator) — 2026-09-26
+- **Plugin de Illustrator (CEP):** servidor con token en `%APPDATA%\FAVERVIEW\plugin.json`, CORS restringido a CEP, defensa contra DNS rebinding, `/api/plugin/*` (vectorizar, preflight,
+  separar, comparar, códigos, braille, verificar códigos, trap, clasificación de tintas) con bbox en puntos PDF; panel HTML/JS sin Node con 7 pestañas y conexión verde/amarilla/roja; capa host
+  ExtendScript (exportar sin tocar el documento, colocar, muestras spot sin duplicar, zoom, selección, marcadores, correcciones nativas); trap vectorial de un PDF de arte plano; empaquetado
+  y firma (`build_zxp.py`), instalación de desarrollo, aviso de nueva versión del plugin, CI, documentación y `MIGRACION_UXP.md`.
+- Pruebas automáticas sin Illustrator: mock de Illustrator (Node), núcleo del panel contra un servidor real y el panel completo en Edge con CEP simulado. Las **pruebas manuales en Illustrator
+  (`plugin/PRUEBAS_MANUALES.md`) están pendientes**.
+
 ## 3.1.0 (auto-trap) — 2026-09-26
 - **Auto-trap con tolerancia de registro:** perfiles de máquina (`core/press`), motor de reglas R1–R12 (corrige el defecto de luminosidad parecida con trap centrado,
   retracción del negro enriquecido, objetos finos, texto pequeño, tolerancia elíptica), **prueba de movimiento** objetiva, auto-trap integrado en Separar (imagen y PDF),

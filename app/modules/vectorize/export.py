@@ -81,8 +81,8 @@ def to_svg(res, size_mm: float | None = None, trap=None) -> str:
 class _CS:
     """Espacios de color del PDF: un Separation por color (o CMYK puro)."""
 
-    def __init__(self, pdf, mode, names):
-        self.pdf, self.mode, self.names = pdf, mode, names
+    def __init__(self, pdf, mode, names, exact_names=False):
+        self.pdf, self.mode, self.names, self.exact = pdf, mode, names, exact_names
         self.res = pikepdf.Dictionary()
         self.cache: dict[int, str] = {}
 
@@ -94,14 +94,15 @@ class _CS:
             name = (self.names[label] if self.names and label < len(self.names) else None) or f"Color {label + 1}"
             fn = pikepdf.Dictionary(FunctionType=2, Domain=[0, 1], C0=[0, 0, 0, 0], C1=cmyk, N=1)
             key = f"CS{label}"
-            self.res[f"/{key}"] = pikepdf.Array([pikepdf.Name.Separation, pikepdf.Name("/" + name.replace(" ", "_")),
+            self.res[f"/{key}"] = pikepdf.Array([pikepdf.Name.Separation, pikepdf.Name("/" + (name if self.exact else name.replace(" ", "_"))),
                                                  pikepdf.Name.DeviceCMYK, fn])
             self.cache[label] = key
         return f"/{self.cache[label]} {'CS' if stroke else 'cs'} 1 {'SCN' if stroke else 'scn'}"
 
 
 def to_pdf(res, size_mm: float | None = None, mode: str = "separation", names: list[str] | None = None,
-           overprint: set[str] | None = None, trap=None, sin_fondo: bool | None = None) -> bytes:
+           overprint: set[str] | None = None, trap=None, sin_fondo: bool | None = None, solo_traps: bool = False,
+           exact_names: bool = False) -> bytes:
     """PDF: cada color es una tinta directa Separation con su nombre y alternativo CMYK (o CMYK puro).
 
     Con `trap` (perfil de máquina) añade la capa «Traps FAVERVIEW»: trazos en sobreimpresión recortados a A ∪ B. Con trap el fondo del
@@ -116,10 +117,10 @@ def to_pdf(res, size_mm: float | None = None, mode: str = "separation", names: l
     wp, hp = res.width * f, res.height * f
     pdf = pikepdf.new()
     page = pdf.add_blank_page(page_size=(wp, hp))
-    cso = _CS(pdf, mode, names)
+    cso = _CS(pdf, mode, names, exact_names)
     gs_res = pikepdf.Dictionary()
     ops = []
-    for r in res.regions:
+    for r in (res.regions if not solo_traps else []):
         if r.label in skip:
             continue
         name = (names[r.label] if names and r.label < len(names) else None) or f"Color {r.label + 1}"

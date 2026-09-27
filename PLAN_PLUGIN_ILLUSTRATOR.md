@@ -89,19 +89,19 @@ plugin/
 
 ## 2. P0 – Servidor listo para el plugin
 
-- [ ] **Token del plugin**: al arrancar, FAVERVIEW genera (si no existe) un token aleatorio de 32 bytes
+- [x] **Token del plugin**: al arrancar, FAVERVIEW genera (si no existe) un token aleatorio de 32 bytes
       (`secrets.token_urlsafe`) y lo guarda junto con el puerto en un archivo de ruta fija:
       Windows `%APPDATA%\FAVERVIEW\plugin.json`, macOS `~/Library/Application Support/FAVERVIEW/plugin.json`:
       `{"puerto": 8000, "token": "…", "version": "3.x.y", "pid": 1234}`. Se actualiza en cada arranque (el puerto puede cambiar).
-- [ ] **Middleware de autenticación**: las peticiones con cabecera `Origin` distinta de `http://127.0.0.1:<puerto>` (el propio
+- [x] **Middleware de autenticación**: las peticiones con cabecera `Origin` distinta de `http://127.0.0.1:<puerto>` (el propio
       frontend) **deben** traer `X-FAVERVIEW-Token` válido. Sin token → 401. Comparar con `secrets.compare_digest`.
-- [ ] **CORS**: permitir solo los orígenes que usa CEP (`null` y `file://`), **y solo** junto con un token válido. Métodos
+- [x] **CORS**: permitir solo los orígenes que usa CEP (`null` y `file://`), **y solo** junto con un token válido. Métodos
       GET/POST, cabeceras `Content-Type` y `X-FAVERVIEW-Token`. Responder a los preflight `OPTIONS`. No usar `*`.
-- [ ] Verificar si el Chromium de CEP exige **Private Network Access** (cabecera `Access-Control-Allow-Private-Network: true`
+- [x] Verificar si el Chromium de CEP exige **Private Network Access** (cabecera `Access-Control-Allow-Private-Network: true`
       en el preflight); si hace falta, añadirla solo para los orígenes permitidos. Documentar lo observado.
-- [ ] `GET /api/plugin/handshake` → `{version, api_version: 1, modulos, herramientas}` (reutiliza `/api/status`).
+- [x] `GET /api/plugin/handshake` → `{version, api_version: 1, modulos, herramientas}` (reutiliza `/api/status`).
       `api_version` sube si cambia algo incompatible; el panel muestra "Actualiza FAVERVIEW" o "Actualiza el plugin" según el caso.
-- [ ] Rutas **orientadas al plugin** (`app/modules/plugin/api.py`), finas, que reutilizan los módulos:
+- [x] Rutas **orientadas al plugin** (`app/modules/plugin/api.py`), finas, que reutilizan los módulos:
   | Ruta | Entrada | Salida |
   |---|---|---|
   | `POST /api/plugin/vectorizar` | imagen + parámetros + `tamano_mm` | trabajo → **PDF** vectorial (tintas directas, capa de traps opcional) + estadísticas |
@@ -111,96 +111,96 @@ plugin/
   | `POST /api/plugin/codigo` | tipo, datos, parámetros | **PDF** vectorial del código |
   | `POST /api/plugin/braille` | texto, parámetros | **PDF** vectorial (tinta técnica Braille) |
   | `POST /api/plugin/trap` | PDF + perfil de máquina | trabajo → placas con trap + prueba de movimiento + (si es arte plano) PDF de traps vectoriales |
-- [ ] **Coordenadas**: todos los bbox devueltos al plugin en **puntos PDF de la página enviada** (`[x0, y0, x1, y1]`, origen
+- [x] **Coordenadas**: todos los bbox devueltos al plugin en **puntos PDF de la página enviada** (`[x0, y0, x1, y1]`, origen
       abajo-izquierda, sin rotación) + `page_size_pt`. La conversión a coordenadas de Illustrator se hace en `fv_geom.jsx` (P2).
-- [ ] Tests (pytest): sin token → 401; token malo → 401; origen desconocido con token → rechazado; handshake OK; cada ruta
+- [x] Tests (pytest): sin token → 401; token malo → 401; origen desconocido con token → rechazado; handshake OK; cada ruta
       del plugin con archivos sintéticos devuelve la forma esperada; los bbox en pt coinciden con objetos conocidos (± 0.5 pt).
 
 ## 3. P1 – Esqueleto del panel CEP
 
-- [ ] `manifest.xml` (ExtensionManifest versión 7.0 o la que exija CEP 11/12):
+- [x] `manifest.xml` (ExtensionManifest versión 7.0 o la que exija CEP 11/12):
       `ExtensionBundleId="com.faverview.illustrator"`, extensión `com.faverview.illustrator.panel`, `Host Name="ILST" Version="[28.0,99.9]"`,
       `RequiredRuntime Name="CSXS" Version="11.0"` (funciona en CEP 11 y 12), `ScriptPath=./host/fv_host.jsx`,
       tipo `Panel`, tamaño 360×640 (mín. 300×400), íconos, menú "Ventana → Extensiones → FAVERVIEW".
       **Sin** `--enable-nodejs` ni `--mixed-context` (diseño listo para UXP).
-- [ ] `CSInterface.js` oficial (CEP 12) copiado con su licencia.
-- [ ] `host.js` → `HostAdapter` con **una única** forma de llamar: `await host.call("exportSelection", {...})` →
+- [x] `CSInterface.js` oficial (CEP 12) copiado con su licencia.
+- [x] `host.js` → `HostAdapter` con **una única** forma de llamar: `await host.call("exportSelection", {...})` →
       `evalScript('FV.dispatch(' + JSON.stringify(nombre) + ',' + JSON.stringify(json) + ')')` → parsea el resultado.
       Escapar correctamente (`JSON.stringify` doble). Timeout configurable.
-- [ ] `fv_host.jsx`: `#include "json2.js"`; `FV.dispatch(nombre, argsJson)` con una lista blanca de funciones, `try/catch` y
+- [x] `fv_host.jsx`: `#include "json2.js"`; `FV.dispatch(nombre, argsJson)` con una lista blanca de funciones, `try/catch` y
       respuesta `{ok, data|error}`; `FV.ping()` → versión de Illustrator (`app.version`), documento activo (sí/no), unidades.
-- [ ] **Conexión**: al abrir el panel, leer `plugin.json` con `window.cep.fs.readFile` (API nativa de CEP, **no** Node) →
+- [x] **Conexión**: al abrir el panel, leer `plugin.json` con `window.cep.fs.readFile` (API nativa de CEP, **no** Node) →
       handshake → indicador de estado:
       🟢 "Conectado a FAVERVIEW 3.x" · 🟡 "Versión incompatible: actualiza X" · 🔴 "FAVERVIEW no está abierto" (con
       instrucciones: "Abre FAVERVIEW desde su acceso directo y pulsa Reintentar"). Reintento automático cada 5 s mientras está en rojo.
-- [ ] **Tema**: leer el color de la interfaz de Illustrator (`CSInterface.getHostEnvironment().appSkinInfo`) y escuchar
+- [x] **Tema**: leer el color de la interfaz de Illustrator (`CSInterface.getHostEnvironment().appSkinInfo`) y escuchar
       `com.adobe.csxs.events.ThemeColorChanged` → tema claro/oscuro.
-- [ ] Todo el texto en español mediante `i18n.js` (preparado para agregar idiomas).
-- [ ] Desarrollo: `.debug` con el puerto de DevTools (p. ej. 8088); `plugin/README.md` explica cómo activar `PlayerDebugMode`
+- [x] Todo el texto en español mediante `i18n.js` (preparado para agregar idiomas).
+- [x] Desarrollo: `.debug` con el puerto de DevTools (p. ej. 8088); `plugin/README.md` explica cómo activar `PlayerDebugMode`
       (clave `HKCU\Software\Adobe\CSXS.11` **y** `CSXS.12`, valor cadena `1`), que es **solo para desarrollo** y lo hace el usuario.
 
 ## 4. P2 – Transporte de archivos y geometría
 
 **Exportar desde Illustrator (ExtendScript):**
-- [ ] `FV.exportArtboardPDF({artboard, preset})`: guarda una **copia** del documento como PDF en `Folder.temp/FAVERVIEW/<uuid>.pdf`
+- [x] `FV.exportArtboardPDF({artboard, preset})`: guarda una **copia** del documento como PDF en `Folder.temp/FAVERVIEW/<uuid>.pdf`
       con `PDFSaveOptions` (preset configurable; por defecto "[PDF/X-4:2008]" si existe, si no "[Calidad de prensa]"), solo la mesa
       de trabajo indicada (`artboardRange`), **sin** alterar el documento del usuario (usar `saveAs` sobre un **duplicado**
       o `exportFile`; comprobar que el documento activo sigue apuntando a su archivo original y que no queda marcado como
       guardado con otro nombre). Devolver la ruta, el tamaño de la mesa en pt, su `artboardRect` y el origen de la regla.
-- [ ] `FV.exportSelectionPNG({ppi})`: para una imagen colocada/incrustada seleccionada: si está **vinculada**, devolver la
+- [x] `FV.exportSelectionPNG({ppi})`: para una imagen colocada/incrustada seleccionada: si está **vinculada**, devolver la
       ruta del archivo original (mejor calidad) + su transformación (matriz, bounds); si está incrustada, exportar la selección
       con `exportFile(ExportType.PNG24, ...)` a `ppi` (por defecto la resolución efectiva, máx. 600) con fondo transparente.
-- [ ] `FV.exportSelectionPDF()`: copia la selección a un documento temporal nuevo, del tamaño de la selección, y lo guarda como PDF.
+- [x] `FV.exportSelectionPDF()`: copia la selección a un documento temporal nuevo, del tamaño de la selección, y lo guarda como PDF.
 
 **Mover archivos entre el panel y el servidor:**
-- [ ] `files.js`: leer el temporal con `cep.fs.readFile(ruta, cep.encoding.Base64)` → `Blob` → `FormData` → `POST` multipart.
+- [x] `files.js`: leer el temporal con `cep.fs.readFile(ruta, cep.encoding.Base64)` → `Blob` → `FormData` → `POST` multipart.
       Descargar el resultado con `fetch` → `ArrayBuffer` → Base64 → `cep.fs.writeFile(ruta, datos, cep.encoding.Base64)` en temporales.
-- [ ] Límite de tamaño (el del servidor, `max_upload_mb`) con un mensaje claro.
-- [ ] Limpieza: borrar `Folder.temp/FAVERVIEW/*` de más de 24 h al abrir el panel.
+- [x] Límite de tamaño (el del servidor, `max_upload_mb`) con un mensaje claro.
+- [x] Limpieza: borrar `Folder.temp/FAVERVIEW/*` de más de 24 h al abrir el panel.
 
 **Traer a Illustrator:**
-- [ ] `FV.placePDF({ruta, x, y, ancho, alto, capa, nombre, incrustar})`: `groupItems.createFromFile(File(ruta))` → queda un grupo
+- [x] `FV.placePDF({ruta, x, y, ancho, alto, capa, nombre, incrustar})`: `groupItems.createFromFile(File(ruta))` → queda un grupo
       con los vectores y **las tintas directas como muestras spot** (verificar; si alguna llega como proceso, recrearla con
       `doc.spots.add()` y reasignarla). Posicionarlo en coordenadas de la mesa, en la capa indicada (crearla si no existe), con nombre.
-- [ ] `FV.ensureSpot({nombre, cmyk|lab, tipo})`: busca la muestra por nombre **normalizado** (mismas reglas que
+- [x] `FV.ensureSpot({nombre, cmyk|lab, tipo})`: busca la muestra por nombre **normalizado** (mismas reglas que
       `core/inks.normalize_name`) y la crea si no existe (`SpotColor`, modelo Lab o CMYK), para no duplicar tintas.
 
 **Geometría (`fv_geom.jsx`) — la parte más delicada:**
-- [ ] Convertir un bbox en **puntos PDF de la mesa exportada** (origen abajo-izquierda) a **coordenadas de documento de
+- [x] Convertir un bbox en **puntos PDF de la mesa exportada** (origen abajo-izquierda) a **coordenadas de documento de
       Illustrator** usando el `artboardRect` de la mesa `[izq, arriba, der, abajo]` (el eje Y de Illustrator crece hacia arriba
       en el sistema de scripting), el origen de regla (`doc.rulerOrigin` / `artboard.rulerOrigin`) y el sistema de
       coordenadas activo (`app.coordinateSystem`). Fijar explícitamente `CoordinateSystem.DOCUMENTCOORDINATESYSTEM` dentro
       de cada función y restaurarlo al final.
-- [ ] Casos a cubrir con tests (mock): mesa en el origen, mesa desplazada, varias mesas, mesa en posición negativa, documento
+- [x] Casos a cubrir con tests (mock): mesa en el origen, mesa desplazada, varias mesas, mesa en posición negativa, documento
       con origen de regla cambiado, unidades en mm/pt/px.
-- [ ] `FV.zoomTo({bbox, margen})`: `doc.views[0].centerPoint` al centro y `zoom` para que el bbox + margen quepa en la ventana.
-- [ ] `FV.selectInBBox({bbox, capas})`: selecciona los objetos de página (no bloqueados ni ocultos) cuyo `visibleBounds`
+- [x] `FV.zoomTo({bbox, margen})`: `doc.views[0].centerPoint` al centro y `zoom` para que el bbox + margen quepa en la ventana.
+- [x] `FV.selectInBBox({bbox, capas})`: selecciona los objetos de página (no bloqueados ni ocultos) cuyo `visibleBounds`
       intersecta el bbox. Límite de objetos recorridos (p. ej. 20 000) con aviso para documentos enormes.
-- [ ] `FV.markers({lista})`: crea en una capa **"FAVERVIEW – Revisión"** (bloqueada, que no se imprime:
+- [x] `FV.markers({lista})`: crea en una capa **"FAVERVIEW – Revisión"** (bloqueada, que no se imprime:
       `layer.printable = false`) rectángulos sin relleno y con trazo de color por categoría, más una etiqueta con el número.
       `FV.clearMarkers()` borra la capa.
 
 ## 5. P3 – Vectorizar dentro de Illustrator
 
-- [ ] UI: con una imagen seleccionada → preajuste (Logo, Línea, Ilustración, Escaneo, Foto posterizada), número de colores,
+- [x] UI: con una imagen seleccionada → preajuste (Logo, Línea, Ilustración, Escaneo, Foto posterizada), número de colores,
       detalle mínimo, geometría limpia, **"Usar tintas de la biblioteca"** (lista de bibliotecas del servidor),
       **"Añadir trap"** (perfil de máquina; requiere `PLAN_AUTOTRAP.md` T4) y el tamaño final (por defecto el tamaño de la
       imagen en el documento).
-- [ ] **Vista previa** en el panel (PNG reducido del servidor) antes de colocar.
-- [ ] "Colocar": el PDF vectorial se coloca **exactamente encima** de la imagen original (misma posición y tamaño, respetando
+- [x] **Vista previa** en el panel (PNG reducido del servidor) antes de colocar.
+- [x] "Colocar": el PDF vectorial se coloca **exactamente encima** de la imagen original (misma posición y tamaño, respetando
       la rotación de la imagen colocada: aplicar su matriz), en una capa nueva "FAVERVIEW – Vector"; la imagen original se
       oculta o bloquea (opción). Las tintas se crean o reutilizan como muestras spot. El grupo de traps queda como subgrupo aparte.
-- [ ] Deshacer: todo el colocado en **una sola operación** si es posible (un único `evalScript`), para que un solo Ctrl+Z lo revierta.
+- [x] Deshacer: todo el colocado en **una sola operación** si es posible (un único `evalScript`), para que un solo Ctrl+Z lo revierta.
       Si Illustrator registra varios pasos, documentarlo.
-- [ ] Estadísticas en el panel: nodos, trazados, colores y tiempo.
+- [x] Estadísticas en el panel: nodos, trazados, colores y tiempo.
 
 ## 6. P4 – Preflight dentro de Illustrator
 
-- [ ] UI: perfil (lista del servidor) + "Revisar mesa actual" / "Revisar todas las mesas".
-- [ ] Flujo: `exportArtboardPDF` → `POST /api/plugin/preflight` → lista agrupada por severidad (errores / advertencias / info).
-- [ ] Clic en un hallazgo → `zoomTo` + `selectInBBox` (+ marcador temporal).
-- [ ] Botón "Marcar todos en el documento" → `markers` en la capa de revisión; "Quitar marcas".
-- [ ] **Correcciones nativas en Illustrator** (mejor que corregir el PDF, porque el documento sigue editable), cada una con
+- [x] UI: perfil (lista del servidor) + "Revisar mesa actual" / "Revisar todas las mesas".
+- [x] Flujo: `exportArtboardPDF` → `POST /api/plugin/preflight` → lista agrupada por severidad (errores / advertencias / info).
+- [x] Clic en un hallazgo → `zoomTo` + `selectInBBox` (+ marcador temporal).
+- [x] Botón "Marcar todos en el documento" → `markers` en la capa de revisión; "Quitar marcas".
+- [x] **Correcciones nativas en Illustrator** (mejor que corregir el PDF, porque el documento sigue editable), cada una con
       vista previa del número de objetos afectados y confirmación:
   - sobreimpresión en tintas técnicas (troquel, cotas, braille): `fillOverprint`/`strokeOverprint = true` en los objetos
     que usan esas muestras;
@@ -210,47 +210,47 @@ plugin/
   - convertir un color RGB a CMYK (mediante `app.executeMenuCommand` de conversión de modo de color **solo** si es fiable;
     si no, **solo reportar**).
   Las correcciones que no se puedan hacer con seguridad desde ExtendScript **solo se reportan** (documentar en `DECISIONES.md`).
-- [ ] Re-preflight automático después de corregir.
+- [x] Re-preflight automático después de corregir.
 
 ## 7. P5 – Separaciones y tintas dentro de Illustrator
 
-- [ ] "Analizar separaciones" de la mesa: tintas (comparadas con las **muestras del documento**: marcar las muestras spot sin
+- [x] "Analizar separaciones" de la mesa: tintas (comparadas con las **muestras del documento**: marcar las muestras spot sin
       uso y las tintas del PDF sin muestra), cobertura por tinta, TAC máximo con perfil y hallazgos (clic → zoom).
-- [ ] Vista de **placas** en el panel (miniaturas por tinta, del servidor), con "solo esta tinta" y negativo.
-- [ ] **Densitómetro** simplificado: clic en la vista previa del panel → % por tinta en ese punto.
-- [ ] "Exportar placas" (TIFF/PDF de placas) → diálogo de guardado nativo (`cep.fs.showSaveDialogEx`) → escribir el zip.
-- [ ] Enlace "Abrir en FAVERVIEW" (abre la app web con este trabajo cargado: `cep.util.openURLInDefaultBrowser`).
+- [x] Vista de **placas** en el panel (miniaturas por tinta, del servidor), con "solo esta tinta" y negativo.
+- [x] **Densitómetro** simplificado: clic en la vista previa del panel → % por tinta en ese punto.
+- [x] "Exportar placas" (TIFF/PDF de placas) → diálogo de guardado nativo (`cep.fs.showSaveDialogEx`) → escribir el zip.
+- [x] Enlace "Abrir en FAVERVIEW" (abre la app web con este trabajo cargado: `cep.util.openURLInDefaultBrowser`).
 
 ## 8. P6 – Comparar con el arte del cliente
 
-- [ ] "Elegir arte del cliente" (`cep.fs.showOpenDialogEx`: JPG/PNG/PDF/…) o **pegar** una imagen del portapapeles.
-- [ ] Flujo: exportar la mesa → `POST /api/plugin/comparar` → % de similitud, semáforo y lista de diferencias.
-- [ ] Marcadores de las diferencias sobre el diseño (capa de revisión); clic → zoom al objeto.
-- [ ] Botón "Ver comparación completa en FAVERVIEW" (abre la app con el resultado).
+- [x] "Elegir arte del cliente" (`cep.fs.showOpenDialogEx`: JPG/PNG/PDF/…) o **pegar** una imagen del portapapeles.
+- [x] Flujo: exportar la mesa → `POST /api/plugin/comparar` → % de similitud, semáforo y lista de diferencias.
+- [x] Marcadores de las diferencias sobre el diseño (capa de revisión); clic → zoom al objeto.
+- [x] Botón "Ver comparación completa en FAVERVIEW" (abre la app con el resultado).
 
 ## 9. P7 – Trap (reventado) dentro de Illustrator
 
 **Requiere `PLAN_AUTOTRAP.md` terminado.**
-- [ ] UI: perfil de máquina + tolerancia (mm) → "Analizar registro": exporta la mesa → prueba de movimiento → mapa de filetes
+- [x] UI: perfil de máquina + tolerancia (mm) → "Analizar registro": exporta la mesa → prueba de movimiento → mapa de filetes
       en el panel y marcadores en el documento donde hay filetes.
-- [ ] **"Crear traps vectoriales"** (solo arte vectorial plano, sin degradados ni imágenes en la zona):
+- [x] **"Crear traps vectoriales"** (solo arte vectorial plano, sin degradados ni imágenes en la zona):
       el servidor calcula, a partir del PDF, las fronteras entre tintas (render a alta resolución → mapa planar → cadenas,
       reutilizando el vectorizador) y devuelve un **PDF con los trazos de trap** (overprint, clip A ∪ B) → se coloca en una
       capa **"FAVERVIEW – Traps"** encima del arte, alineado al pt.
       Límite honesto: en arte con degradados, transparencias o imágenes → "usa la exportación de placas con trap (raster)".
-- [ ] Verificación posterior: volver a exportar → prueba de movimiento → "✔ 0 filetes con ±X mm".
-- [ ] Mencionar en la ayuda la alternativa nativa de Illustrator (Buscatrazos → Reventar/Trap) para casos simples.
+- [x] Verificación posterior: volver a exportar → prueba de movimiento → "✔ 0 filetes con ±X mm".
+- [x] Mencionar en la ayuda la alternativa nativa de Illustrator (Buscatrazos → Reventar/Trap) para casos simples.
 
 ## 10. P8 – Códigos de barras y braille
 
-- [ ] Formulario de código (tipo, datos con validación en vivo, magnificación, BWR, tinta) → vista previa → "Insertar" en
+- [x] Formulario de código (tipo, datos con validación en vivo, magnificación, BWR, tinta) → vista previa → "Insertar" en
       el centro de la vista o en la posición de la selección → PDF vectorial colocado como grupo, con su muestra spot.
-- [ ] "Verificar códigos del documento": exportar la mesa → verificar → lista con el grado estimado → clic → zoom.
-- [ ] Braille: texto → vista previa → "Insertar" en la tinta técnica "Braille" (sobreimpresión) en una capa propia.
+- [x] "Verificar códigos del documento": exportar la mesa → verificar → lista con el grado estimado → clic → zoom.
+- [x] Braille: texto → vista previa → "Insertar" en la tinta técnica "Braille" (sobreimpresión) en una capa propia.
 
 ## 11. P9 – Empaquetado, firma, instalación y actualizaciones
 
-- [ ] `plugin/tools/build_zxp.py`:
+- [x] `plugin/tools/build_zxp.py`:
   1. copia `plugin/cep/` a `build/zxp/` **excluyendo** `.debug`, tests y mapas de código;
   2. escribe la versión en el manifest (igual a la de FAVERVIEW o con su propia versión `plugin_version`);
   3. firma con `ZXPSignCmd` (herramienta oficial de Adobe, se descarga del repositorio `Adobe-CEP/CEP-Resources`;
@@ -271,14 +271,14 @@ plugin/
   - Desinstalar: `UnifiedPluginInstallerAgent.exe /remove com.faverview.illustrator` (verificar la sintaxis).
 - [ ] **Firma propia y avisos**: documentar que un certificado propio es válido para CEP, y qué hacer si Creative Cloud
       muestra un aviso de editor no verificado (verificar el comportamiento real y documentarlo con una captura).
-- [ ] **Actualizaciones**: el panel compara su versión con la del último Release (vía `/api/update` del servidor, que ya
+- [x] **Actualizaciones**: el panel compara su versión con la del último Release (vía `/api/update` del servidor, que ya
       consulta GitHub) y muestra "Hay una versión nueva del plugin" con el enlace de descarga.
-- [ ] CI: job que valida el `manifest.xml` (XML bien formado, versiones) y ejecuta las pruebas del host con el mock y las del
+- [x] CI: job que valida el `manifest.xml` (XML bien formado, versiones) y ejecuta las pruebas del host con el mock y las del
       panel contra el servidor en modo test. La firma **no** se hace en CI salvo que el usuario configure el secreto.
 
 ## 12. P10 – Preparación para UXP (hacer al terminar; migrar cuando exista la beta)
 
-- [ ] `plugin/MIGRACION_UXP.md`: mapa de cada pieza CEP → UXP:
+- [x] `plugin/MIGRACION_UXP.md`: mapa de cada pieza CEP → UXP:
   | CEP | UXP (esperado) |
   |---|---|
   | `CSInterface.evalScript` + ExtendScript | API DOM de Illustrator para UXP (JavaScript moderno) |
@@ -286,7 +286,7 @@ plugin/
   | `fetch` a 127.0.0.1 | `fetch` con permiso `network.domains` en el manifest |
   | `manifest.xml` | `manifest.json` (v5) |
   | `.zxp` + UPIA | `.ccx` + Creative Cloud / UPIA |
-- [ ] Confirmar que ningún archivo del panel usa Node, `window.__adobe_cep__` fuera de `host.js`/`files.js` ni APIs de CEP fuera
+- [x] Confirmar que ningún archivo del panel usa Node, `window.__adobe_cep__` fuera de `host.js`/`files.js` ni APIs de CEP fuera
       del `HostAdapter` (test estático con grep en CI).
 - [ ] Cuando Adobe publique la **beta de UXP para Illustrator (primavera 2027)**: crear `PLAN_PLUGIN_UXP.md` a partir de la
       documentación oficial y migrar antes de **diciembre 2028**.
@@ -296,15 +296,15 @@ plugin/
 ## 13. Pruebas
 
 ### Automatizables (el agente las ejecuta)
-- [ ] **Servidor** (pytest): token, CORS, handshake y rutas del plugin (P0).
-- [ ] **ExtendScript con mock** (`plugin/tests/host_mock/`): implementar un mock mínimo de `app`, `Document`, `Artboard`,
+- [x] **Servidor** (pytest): token, CORS, handshake y rutas del plugin (P0).
+- [x] **ExtendScript con mock** (`plugin/tests/host_mock/`): implementar un mock mínimo de `app`, `Document`, `Artboard`,
       `GroupItem`, `Spot`, `SpotColor`, `View`, `File`, `Folder` suficiente para ejecutar `fv_host.jsx` en Node (solo para
       tests, **no** en el panel) y probar: `dispatch` con lista blanca, manejo de errores, conversión de geometría (todos los
       casos de P2), `ensureSpot` sin duplicados, `markers` y `selectInBBox`.
-- [ ] **Panel** (Playwright o pruebas JS en un navegador normal con `CSInterface`/`cep.fs` simulados): flujo de conexión
+- [x] **Panel** (Playwright o pruebas JS en un navegador normal con `CSInterface`/`cep.fs` simulados): flujo de conexión
       (verde/amarillo/rojo), subida y descarga de archivos, trabajos con progreso y cancelación, errores del servidor
       mostrados en español.
-- [ ] **Estático**: sin Node (`require(`), sin `eval` en el panel, textos sin traducir (todas las cadenas visibles pasan por `i18n`).
+- [x] **Estático**: sin Node (`require(`), sin `eval` en el panel, textos sin traducir (todas las cadenas visibles pasan por `i18n`).
 
 ### Manuales (`plugin/PRUEBAS_MANUALES.md`, las ejecuta el usuario en Illustrator)
 Formato por prueba: **pasos → resultado esperado → ✔/✘ → observaciones/captura**. Mínimo:
@@ -323,11 +323,11 @@ Formato por prueba: **pasos → resultado esperado → ✔/✘ → observaciones
 13. Desinstalar con UPIA → el panel desaparece.
 
 ## 14. Documentación
-- [ ] `plugin/README.md`: requisitos (Illustrator 2024+, FAVERVIEW abierto), instalación, actualización, desinstalación y
+- [x] `plugin/README.md`: requisitos (Illustrator 2024+, FAVERVIEW abierto), instalación, actualización, desinstalación y
       resolución de problemas (panel en blanco → versión de CSXS; "no conecta" → FAVERVIEW cerrado o firewall; aviso de
       firma).
-- [ ] Manual de usuario: capítulo "FAVERVIEW en Illustrator" con capturas de cada pestaña.
-- [ ] `CHANGELOG.md`, `DECISIONES.md` y `README.md` principal (enlace al plugin).
+- [x] Manual de usuario: capítulo "FAVERVIEW en Illustrator" con capturas de cada pestaña.
+- [x] `CHANGELOG.md`, `DECISIONES.md` y `README.md` principal (enlace al plugin).
 
 ## 15. Criterios de aceptación finales
 - [ ] Todas las pruebas automatizables en verde; tests del servidor y bancos existentes sin regresiones.

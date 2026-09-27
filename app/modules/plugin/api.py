@@ -73,7 +73,7 @@ def handshake():
     for k, m in tools.MODULOS.items():
         falta = [h for h in m["requiere"] if not st[h]["ok"]]
         modulos[k] = {"nombre": m["nombre"], "habilitado": not falta}
-    return {"version": get_version(), "api_version": plugin_auth.API_VERSION, "modulos": modulos,
+    return {"version": get_version(), "api_version": plugin_auth.API_VERSION, "modulos": modulos, "max_upload_mb": load_config()["max_upload_mb"],
             "herramientas": {k: {"ok": v["ok"], "version": v["version"]} for k, v in st.items()}}
 
 
@@ -251,6 +251,52 @@ def verify_codes(file: UploadFile = File(...), dpi: int = Form(600), direccion: 
             c["bbox_pt"] = px_to_pt_bbox(c["bbox"], r["dpi"], h)
     shutil.rmtree(d, ignore_errors=True)
     return r
+
+
+class NombresIn(BaseModel):
+    nombres: list[str]
+
+
+@router.post("/tintas/clasificar")
+def classify_inks(p: NombresIn):
+    """Tipo (proceso, directa, blanco, barniz, técnica) y nombre normalizado de cada tinta (para las correcciones nativas del plugin)."""
+    from app.core import inks as inkmod
+    return {n: {"tipo": inkmod.classify_ink(n), "norm": inkmod.normalize_name(n)} for n in p.nombres[:500]}
+
+
+@router.post("/trap")
+def trap(file: UploadFile = File(...), perfil: str = Form("serigrafia_textil_automatica"), tolerancia_mm: float | None = Form(None),
+         crear_vectorial: bool = Form(False), pagina: int = Form(1), dpi: float = Form(600)):
+    """Analiza el registro de la mesa (prueba de movimiento) y, si se pide y el arte es plano, crea el PDF de traps vectoriales."""
+    jid, d = _new_job()
+    src = _save(file, d, "entrada", {".pdf"})
+
+    def work(progress):
+        from app.core import press
+        from app.modules.plugin import vector_trap as vt
+        pf = press.resolve(perfil, tolerancia_mm)
+        info = page_info(src, pagina - 1)
+        progress("Analizando", 0.2, "Separando y comprobando el registro…")
+        plates, meta, r = vt.analyze(src, pf, pagina - 1, dpi)
+        out = {"perfil": pf.nombre, "tolerancia_mm": pf.tolerancia_mm, "registro": r.to_dict(), "filetes": vt.filete_boxes(r, plates, info["page_size_pt"][1]),
+               "ok": r.filetes_px == 0, "avisos": ["Estimación orientativa: confirma con tu imprenta."], **info}
+        flat = vt.is_flat_art(src, pagina - 1)
+        out["arte_plano"] = flat.plano
+        out["vectorial"] = {"disponible": flat.plano, "motivos": flat.motivos}
+        if crear_vectorial:
+            if not flat.plano:
+                out["vectorial"]["mensaje"] = "Este arte tiene " + ", ".join(flat.motivos) + ": usa la exportación de placas con trap (ráster) en FAVERVIEW."
+            else:
+                progress("Trap vectorial", 0.6, "Creando los traps vectoriales…")
+                pdf, resumen, avisos = vt.build_trap_pdf(src, pf, pagina - 1, dpi)
+                out["avisos"] += avisos
+                if pdf:
+                    (d / "traps.pdf").write_bytes(pdf)
+                    out["vectorial"].update({"resumen": resumen, "archivos": _files(d, ["traps.pdf"])})
+        return out
+
+    jobs.start(jid, work)
+    return {"job_id": jid}
 
 
 @router.get("/prensas")

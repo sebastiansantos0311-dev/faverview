@@ -28,6 +28,11 @@ jobs:
           if (-not $bin) { $bin = (Get-ChildItem "C:\Program Files\gs\*\bin" | Select-Object -Last 1).FullName }
           $bin | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
 
+      - name: Instalar Node.js (pruebas del plugin de Illustrator)
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
       - name: Instalar dependencias
         run: uv sync
 
@@ -36,6 +41,15 @@ jobs:
 
       - name: Banco de pruebas (casos sintéticos)
         run: uv run python -m bench.run --sinteticos --ci --workers 2 --etiqueta "CI"
+
+      - name: Bancos de separacion de imagen, vectorizador y trapping
+        run: |
+          uv run python -m bench.separation.run --ci
+          uv run python -m bench.vector.run --casos 12 --ci
+          uv run python -m bench.trapping.run --ci
+
+      - name: Plugin de Illustrator (empaquetado sin firma; la firma la hace el usuario con su certificado)
+        run: uv run python plugin/tools/build_zxp.py --sin-firma
 
       - name: Guardar reporte del banco de pruebas
         if: always()
