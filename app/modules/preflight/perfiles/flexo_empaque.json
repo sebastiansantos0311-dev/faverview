@@ -97,6 +97,11 @@
    "activa": true,
    "severidad": "advertencia",
    "min": 60
+  },
+  "bordes_sin_proteccion": {
+   "activa": true,
+   "severidad": "advertencia",
+   "prensa": "flexo_banda_angosta"
   }
  }
 }

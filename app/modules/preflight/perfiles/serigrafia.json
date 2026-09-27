@@ -86,6 +86,11 @@
    "activa": true,
    "severidad": "advertencia",
    "min": 50
+  },
+  "bordes_sin_proteccion": {
+   "activa": true,
+   "severidad": "advertencia",
+   "prensa": "serigrafia_textil_automatica"
   }
  }
 }

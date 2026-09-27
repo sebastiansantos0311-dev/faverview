@@ -126,6 +126,55 @@ def exportar_placas(ctx: Ctx, dpi=600, formato="tiff8", pagina=1):
     ctx.say(f"Placas exportadas ({len(plates.names)} tintas a {plates.dpi:g} dpi, formato {formato}).")
 
 
+def _press(perfil, tolerancia_mm):
+    from app.core import press
+    return press.resolve(perfil, tolerancia_mm)
+
+
+def auto_trap(ctx: Ctx, perfil="serigrafia_textil_automatica", tolerancia_mm=None, dpi=600, detener_si_filetes=False):
+    """Trap automático de las placas del PDF con el perfil de máquina; guarda las placas con trap (ZIP) y la prueba de movimiento."""
+    _need(ctx, "pdf", "auto_trap")
+    _gs("auto_trap")
+    from app.modules.separate import export
+    from app.modules.separate.pdf_inks import read_inventory
+    from app.modules.separate.pdf_render import render_plates
+    from app.modules.tools import registration_check as rc
+    from app.modules.tools import trapping as tp
+    pf = _press(perfil, tolerancia_mm)
+    plates = render_plates(ctx.path, 0, dpi)
+    meta = {i.name: {"tipo": i.kind, "lab": i.lab} for i in read_inventory(ctx.path).inks}
+    mask = tp.text_mask(ctx.path, 0, plates, pf.no_trapear_texto_menor_pt)
+    res = tp.trap(plates, meta, press=pf, tac_max=None, mantener_texto=mask)
+    before, after = rc.check(plates, pf, meta), rc.check(res.plates, pf, meta, ignore=res.pullback_mask)
+    ctx.data["trap_plates"] = (res.plates, meta, pf)
+    lines = [f"Trapping (perfil «{pf.nombre}», tolerancia {pf.tolerancia_mm} mm):"] + [f"- {t['de']} bajo {t['bajo']} ({t['regla']}): {t['ancho_mm']} mm" for t in res.traps]
+    lines.append(f"Prueba de movimiento: {before.filetes_mm2:.2f} mm² de filetes sin trap → {after.filetes_mm2:.2f} mm² con trap.")
+    ctx.out("placas_con_trap.zip").write_bytes(export.export_zip(res.plates, meta, "tiff8", [], 128, lines))
+    ctx.say(f"Auto-trap ({pf.nombre}, ±{pf.tolerancia_mm} mm): {len(res.traps)} traps; filetes {before.filetes_mm2:.2f} → {after.filetes_mm2:.2f} mm².")
+    if detener_si_filetes and after.filetes_px:
+        raise StopRecipe(f"Quedan {after.filetes_mm2:.2f} mm² de filetes con ±{pf.tolerancia_mm} mm tras el auto-trap.")
+
+
+def prueba_movimiento(ctx: Ctx, perfil="serigrafia_textil_automatica", tolerancia_mm=None, dpi=600, detener_si_filetes=True):
+    """Prueba de movimiento sobre las placas actuales (las del paso auto_trap si existe, si no las del PDF)."""
+    _need(ctx, "pdf", "prueba_movimiento")
+    _gs("prueba_movimiento")
+    from app.modules.separate.pdf_inks import read_inventory
+    from app.modules.separate.pdf_render import render_plates
+    from app.modules.tools import registration_check as rc
+    pf = _press(perfil, tolerancia_mm)
+    if "trap_plates" in ctx.data:
+        plates, meta, _ = ctx.data["trap_plates"]
+    else:
+        plates = render_plates(ctx.path, 0, dpi)
+        meta = {i.name: {"tipo": i.kind, "lab": i.lab} for i in read_inventory(ctx.path).inks}
+    r = rc.check(plates, pf, meta)
+    ctx.data["prueba_movimiento"] = r.to_dict()
+    ctx.say(f"Prueba de movimiento ±{pf.tolerancia_mm} mm: " + ("sin filetes." if r.filetes_px == 0 else f"{r.filetes_mm2:.2f} mm² de filetes."))
+    if detener_si_filetes and r.filetes_px:
+        raise StopRecipe(f"La prueba de movimiento encontró {r.filetes_mm2:.2f} mm² de filetes con ±{pf.tolerancia_mm} mm.")
+
+
 def step_repeat(ctx: Ctx, hoja_ancho=300, hoja_alto=200, columnas=None, filas=None, gap_x=3, gap_y=3, margen=(10, 10, 10, 10),
                 marcas=None, trabajo=""):
     _need(ctx, "pdf", "tools.step_repeat")
@@ -191,7 +240,8 @@ def vectorizar(ctx: Ctx, preset="logo", colores=None, ancho_mm=None, formatos=("
     ctx.say(f"Vectorizado ({preset}): {res.stats['trazados']} trazados, {res.stats['nodos']} nodos, {res.stats['colores']} colores.")
 
 
-def separar_imagen(ctx: Ctx, modo="planas", colores=6, dpi_salida=600, trama=None):
+def separar_imagen(ctx: Ctx, modo="planas", colores=6, dpi_salida=600, trama=None, auto_trap=False, perfil="serigrafia_textil_automatica",
+                   tolerancia_mm=None):
     _need(ctx, "imagen", "separar.imagen")
     from app.modules.separate import raster, raster_export
     rgb, dpi = raster.load_image(ctx.path)
@@ -204,6 +254,10 @@ def separar_imagen(ctx: Ctx, modo="planas", colores=6, dpi_salida=600, trama=Non
         res = raster.separate_cmyk(rgb)
     else:
         raise StepError("El modo automático solo admite planas, indice o cmyk (proceso necesita elegir las tintas en la pantalla).")
+    if auto_trap:
+        from app.modules.separate import autotrap
+        res = autotrap.apply_raster(res, d, _press(perfil, tolerancia_mm), modo=modo)
+        ctx.say("Auto-trap: " + (autotrap.registro_texto(res) or str(res.stats.get("auto_trap"))))
     ctx.out("separacion.zip").write_bytes(raster_export.export_zip(res, d, {"modo": modo}, {"kind": trama} if trama else None, True, dpi_salida))
     ctx.say(f"Imagen separada en {len(res.names)} canales (modo {modo}).")
 
@@ -229,10 +283,17 @@ CATALOG = {
         "dpi": ("numero", 600, "Resolución"), "formato": ("texto", "tiff8", "tiff8, tiff1 o pdf"), "pagina": ("numero", 1, "Página")}),
     "separar.imagen": (separar_imagen, "imagen", "Separar una imagen en tintas", {
         "modo": ("texto", "planas", "planas, indice o cmyk"), "colores": ("numero", 6, "Colores"), "dpi_salida": ("numero", 600, "dpi de las placas"),
-        "trama": ("texto", "", "am o fm (vacío = sin tramado)")}),
+        "trama": ("texto", "", "am o fm (vacío = sin tramado)"), "auto_trap": ("bool", False, "Aplicar auto-trap"),
+        "perfil": ("texto", "serigrafia_textil_automatica", "Perfil de máquina"), "tolerancia_mm": ("numero", None, "Tolerancia (mm)")}),
     "vectorizar": (vectorizar, "imagen", "Vectorizar una imagen", {
         "preset": ("texto", "logo", "logo, linea, ilustracion, escaneo o foto"), "colores": ("numero", None, "Máx. de colores"),
         "ancho_mm": ("numero", None, "Ancho final en mm"), "formatos": ("lista", ["svg", "pdf"], "svg, pdf, eps, dxf")}),
+    "auto_trap": (auto_trap, "pdf", "Auto-trap de las placas con un perfil de máquina", {
+        "perfil": ("texto", "serigrafia_textil_automatica", "Perfil de máquina"), "tolerancia_mm": ("numero", None, "Tolerancia de movimiento (mm)"),
+        "dpi": ("numero", 600, "dpi"), "detener_si_filetes": ("bool", False, "Detener si quedan filetes")}),
+    "prueba_movimiento": (prueba_movimiento, "pdf", "Prueba de movimiento (filetes de sustrato)", {
+        "perfil": ("texto", "serigrafia_textil_automatica", "Perfil de máquina"), "tolerancia_mm": ("numero", None, "Tolerancia de movimiento (mm)"),
+        "dpi": ("numero", 600, "dpi"), "detener_si_filetes": ("bool", True, "Si hay filetes: detener y mover a errores/")}),
     "tools.step_repeat": (step_repeat, "pdf", "Step & repeat en una hoja", {
         "hoja_ancho": ("numero", 300, "mm"), "hoja_alto": ("numero", 200, "mm"), "columnas": ("numero", None, "vacío = rellenar"),
         "filas": ("numero", None, "vacío = rellenar"), "gap_x": ("numero", 3, "mm"), "gap_y": ("numero", 3, "mm"),

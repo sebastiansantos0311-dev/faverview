@@ -34,6 +34,7 @@ class VectorResult:
     text_zones: list = field(default_factory=list)
     texts: list = field(default_factory=list)         # texto real que reemplaza a zonas (modo «reemplazar»)
     symmetry: str | None = None
+    edges: list = field(default_factory=list)         # [(izq, der, segmentos)]: fronteras compartidas (para los traps vectoriales)
     work: np.ndarray | None = None                   # imagen de trabajo (escalada y limpia) para volver a trazar zonas
 
 
@@ -65,7 +66,8 @@ def trace(labels, pal, *, fit_tol=0.8, corner_angle=60.0, smooth=1.6, scale=1.0,
         drop = {s["label"] for s in stroke_list}
         regs = [r for r in regs if r.label not in drop]
     regs = sorted(regs, key=lambda r: -r.filled_area())
-    return regs, stroke_list
+    edges = [(c.left, c.right, f) for c, f in zip(chains, fitted)]
+    return regs, stroke_list, edges
 
 
 def vectorize(rgb: np.ndarray, dpi: float | None = None, *, preset: str | None = None, palette=None, k_max: int = 8,
@@ -102,7 +104,7 @@ def vectorize(rgb: np.ndarray, dpi: float | None = None, *, preset: str | None =
         labels, sym = geometry.symmetrize(labels)
     opts = dict(fit_tol=fit_tol, corner_angle=corner_angle, smooth=smooth, scale=scale, prims=primitives,
                 clean=geometria_limpia, mode=mode, strokes=trazos)
-    regs, strokes = trace(labels, pal, **opts)
+    regs, strokes, edges = trace(labels, pal, **opts)
     texts = []
     if texto == "reemplazar" and zones:
         regs, texts = _replace_text(regs, zones, work, fuente)
@@ -114,7 +116,7 @@ def vectorize(rgb: np.ndarray, dpi: float | None = None, *, preset: str | None =
     if zones:
         stats["zonas_texto"] = len(zones)
     h, w = labels.shape
-    return VectorResult(w, h, wdpi, pal, regs, stats, mode, scale, labels, opts, strokes, zones, texts, sym, work)
+    return VectorResult(w, h, wdpi, pal, regs, stats, mode, scale, labels, opts, strokes, zones, texts, sym, edges, work)
 
 
 def _replace_text(regs, zones, work, font):
@@ -143,10 +145,10 @@ def _replace_text(regs, zones, work, font):
 def retrace(res: VectorResult, labels: np.ndarray, pal: list) -> VectorResult:
     """Vuelve a trazar tras una edición del mapa de etiquetas (fusionar, borrar, recolorear, zona)."""
     t0 = time.time()
-    regs, strokes = trace(labels, pal, **res.opts)
+    regs, strokes, edges = trace(labels, pal, **res.opts)
     nodes = sum(len(l.segs) for r in regs for l in r.loops) + sum(len(s["segs"]) for s in strokes)
     stats = dict(res.stats, trazados=sum(len(r.loops) for r in regs) + len(strokes), nodos=nodes, colores=len(pal),
                  segundos=round(time.time() - t0, 2))
     h, w = labels.shape
     return VectorResult(w, h, res.dpi, pal, regs, stats, res.mode, res.source_scale, labels, res.opts, strokes,
-                        res.text_zones, [], res.symmetry, res.work)
+                        res.text_zones, [], res.symmetry, edges, res.work)

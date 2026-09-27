@@ -211,6 +211,58 @@ este comando de PowerShell, que descarga la versión oficial más reciente, <b>v
 <tr><td>La app sigue sin encontrarlo</td><td>Reinicia FAVERVIEW. Si está en otra carpeta, indica la ruta en <code>ghostscript_cmd</code> de <code>data/config.json</code>.</td></tr>
 </table>
 
+
+<h1>33. Reventado (trapping) y tolerancia de registro</h1>
+<p>En la máquina cada tinta sale de una pantalla, cliché o plancha distinta y <b>nunca caen exactamente en el mismo sitio</b> (mal registro). Si dos
+colores solo se tocan en el borde, al moverse aparece un <b>filete</b> de sustrato (una línea blanca) o un solape feo. El <b>reventado</b> agranda un
+color un poco <i>por debajo</i> del vecino para que, dentro de la <b>tolerancia de movimiento</b> de tu máquina, el borde siga cubierto.</p>
+<h3>1. Elige (o crea) un perfil de máquina</h3>
+<p>Un <b>perfil de máquina</b> guarda la tolerancia en mm, el factor del trap, el choke del blanco, la retracción del negro y otras reglas. Vienen
+ejemplos <b>orientativos</b>: serigrafía textil manual 0,40 mm, serigrafía textil automática 0,20 mm, flexo banda angosta 0,15 mm, flexo banda ancha /
+corrugado 0,25 mm, offset pliego 0,08 mm y digital 0 (sin trap). Tú puedes guardar los tuyos (incluso con una tolerancia distinta en x e y).</p>
+<div class="aviso"><b>Cómo elegir la tolerancia:</b> imprime una prueba de registro (por ejemplo cruces y filetes finos en varias tintas) y mide
+cuánto se mueve <b>realmente</b> tu máquina entre tintas. Usa ese valor: los de ejemplo son solo un punto de partida.</div>
+<p><b>Ancho del trap = tolerancia × factor</b> (por defecto 1,0). El choke del blanco y la retracción del negro usan la tolerancia si no indicas otro valor.</p>
+<h3>2. Dónde se aplica</h3>
+<ul>
+<li><b>Separar colores → Imagen:</b> la casilla <b>Auto-trap</b> viene activada con los perfiles de serigrafía y flexo. Se aplica a los canales antes del tramado y de
+la exportación. Ves el <b>Mapa de traps</b> y la <b>Prueba de movimiento</b> (sin trap | con trap) y un mensaje como «✔ Sin filetes con ±0,20 mm». En el modo
+índice no se aplica (no hay bordes a tope); en proceso simulado solo el choke del blanco y las tintas opacas.</li>
+<li><b>Separar colores → PDF:</b> el botón <b>Auto-trap</b> usa el perfil elegido, muestra la vista con trap, el mapa, la prueba de movimiento y un
+<b>deslizador de movimiento</b> que desplaza una placa hasta el doble de la tolerancia. El trap se aplica a las placas rasterizadas (sube la resolución a 300 dpi o más);
+el PDF original no se modifica. El informe de separaciones incluye una sección «Trapping».</li>
+<li><b>Vectorizar:</b> «Añadir trap para impresión» crea en el PDF una capa <b>Traps FAVERVIEW</b> con trazos en <b>sobreimpresión</b> recortados a la unión
+de las dos regiones. Como las fronteras se comparten, el trap vectorial es exacto. El SVG no tiene sobreimpresión: lleva traps simulados.</li>
+<li><b>Herramientas → Trapping:</b> lo mismo con tabla de anchos por par de tintas, trap reducido y tope de cobertura.</li>
+<li><b>Preflight</b> (perfiles de serigrafía y flexo): la regla «Bordes sin protección de registro» avisa dónde un mal registro dejaría un filete.
+<b>Automatizar:</b> los pasos <code>auto_trap</code> y <code>prueba_movimiento</code> (que puede mover el archivo a <code>errores/</code> si hay filetes).</li>
+</ul>
+<h3>3. Reglas que se aplican (orientativas)</h3>
+<table>
+<tr><th>Situación</th><th>Qué hace</th></tr>
+<tr><td>Tinta técnica o barniz</td><td>Nunca se trapea.</td></tr>
+<tr><td>Blanco (base)</td><td>Solo se contrae (choke).</td></tr>
+<tr><td>Negro o tinta muy oscura</td><td>La otra se expande <b>bajo</b> la oscura; el negro no se mueve.</td></tr>
+<tr><td>Luminosidad muy distinta</td><td>La más clara se expande bajo la más oscura.</td></tr>
+<tr><td>Luminosidad parecida</td><td><b>Trap centrado</b>: cada tinta se expande la mitad hacia la otra.</td></tr>
+<tr><td>Tinta opaca contra transparente</td><td>La transparente se expande bajo la opaca.</td></tr>
+<tr><td>Negro enriquecido (K + CMY)</td><td>Retracción de CMY desde el borde del negro.</td></tr>
+<tr><td>Objetos finos</td><td>El trap se limita a un tercio del grosor del objeto que se expande.</td></tr>
+<tr><td>Texto pequeño (PDF)</td><td>Sin trap.</td></tr>
+<tr><td>Degradados</td><td>Solo se trapea entre zonas sólidas (≥ 50 %); tope de cobertura total en la zona.</td></tr>
+</table>
+<h3>4. La prueba de movimiento</h3>
+<p>Para comprobar que la tolerancia se cumple, cada placa se desplaza una distancia igual a la tolerancia en 8 direcciones y se cuentan los <b>filetes</b>: píxeles entre dos
+zonas entintadas que estaban cubiertos y dejan de estarlo. Con el trap debe dar <b>0</b>; con el movimiento al doble de la tolerancia dará filetes (así se ve que la
+prueba mide algo). El resultado se muestra en mm² y como mapa (filetes en magenta).</p>
+<h3>Límites</h3>
+<ul>
+<li>Es una <b>estimación</b>: confirma con tu imprenta. No sustituye una prueba de máquina.</li>
+<li>Un objeto de debajo más fino que el trap no se puede proteger del todo (el trap no puede salir al sustrato).</li>
+<li>El trap vectorial funciona con arte plano; con degradados, transparencias o imágenes usa las placas con trap (ráster) o el Buscatrazos de Illustrator.</li>
+<li>La retracción del negro, los objetos finos y el texto pequeño solo se aplican en el trap por placas, no en el vectorial.</li>
+</ul>
+
 <h1>31. Glosario de preprensa</h1>
 <table>
 <tr><th>Término</th><th>Significado</th></tr>
@@ -221,6 +273,7 @@ este comando de PowerShell, que descarga la versión oficial más reciente, <b>v
 <tr><td>Sobreimpresión</td><td>Imprimir una tinta encima de otra en vez de borrar lo de abajo (<i>knockout</i>).</td></tr>
 <tr><td>Trapping (reventado)</td><td>Solapar un poco dos colores vecinos para que un mal registro no deje huecos blancos.</td></tr>
 <tr><td>Choke</td><td>Reducir un objeto (típicamente el blanco) para que no asome por los bordes.</td></tr>
+<tr><td>Tolerancia de registro / filete</td><td>Movimiento máximo entre tintas de tu máquina / línea de sustrato que aparece entre dos colores cuando se mueven.</td></tr>
 <tr><td>Registro</td><td>Alineación de las placas entre sí; las marcas de registro sirven para comprobarla.</td></tr>
 <tr><td>Sangrado / TrimBox / BleedBox</td><td>Margen de arte más allá del corte / caja del tamaño final / caja del arte con sangrado.</td></tr>
 <tr><td>Ganancia de punto</td><td>El punto impreso sale más grande que el de la placa; se compensa con curvas o con BWR en códigos de barras.</td></tr>

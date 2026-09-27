@@ -10,6 +10,7 @@ import pikepdf
 from app.core import ghostscript
 from app.core.errors import UserError
 from app.modules.separate.raster_export import _alt_cmyk
+from app.modules.vectorize import traps as traps_mod
 from app.modules.vectorize.fit import seg_points
 
 
@@ -39,13 +40,35 @@ def _d(loop, f=1.0) -> str:
     return _d_segs(loop.segs, True, f)
 
 
-def to_svg(res, size_mm: float | None = None) -> str:
+def _check_trap(res, trap):
+    if trap is not None and res.mode == "apilado":
+        raise UserError("El trap vectorial necesita el modo «sin solapes» (fronteras compartidas).")
+
+
+def to_svg(res, size_mm: float | None = None, trap=None) -> str:
+    """SVG. Con `trap` (perfil de máquina) añade un grupo «Traps FAVERVIEW» SIMULADO (el SVG no tiene sobreimpresión: usa multiplicar)."""
     k = _mm_per_px(res, size_mm)
+    _check_trap(res, trap)
+    groups = traps_mod.build(res, trap, k) if trap is not None else []
+    skip = traps_mod.paper_labels(res) if trap is not None else set()
     dims = f' width="{res.width * k:.3f}mm" height="{res.height * k:.3f}mm"' if k else ""
     parts = [f'<svg xmlns="http://www.w3.org/2000/svg"{dims} viewBox="0 0 {res.width} {res.height}">']
     for r in res.regions:
+        if r.label in skip:
+            continue
         d = "".join(_d(l) for l in _loops(res, r))
         parts.append(f'<path fill="{r.color}" fill-rule="evenodd" d="{d}"/>')
+    if groups:
+        by = {r.label: r for r in res.regions}
+        parts.append(f'<g id="traps-faverview" data-nombre="{traps_mod.LAYER}" style="mix-blend-mode:multiply">')
+        for n, g in enumerate(groups):
+            clip = "".join(_d(l) for lab in g["par"] if lab in by for l in by[lab].loops)
+            parts.append(f'<clipPath id="tc{n}"><path d="{clip}"/></clipPath><g clip-path="url(#tc{n})">')
+            for t in g["trazos"]:
+                parts.append(f'<path fill="none" stroke="{by[t["color"]].color if t["color"] in by else "#000"}" stroke-width="{t["ancho_px"]:.3f}" '
+                             f'stroke-linecap="round" stroke-linejoin="round" d="{_d_segs(t["segs"], False)}"/>')
+            parts.append("</g>")
+        parts.append("</g>")
     for s in res.strokes:
         parts.append(f'<path fill="none" stroke="{s["color"]}" stroke-width="{s["width"]:.2f}" d="{_d_segs(s["segs"], False)}"/>')
     for t in res.texts:
@@ -78,9 +101,17 @@ class _CS:
 
 
 def to_pdf(res, size_mm: float | None = None, mode: str = "separation", names: list[str] | None = None,
-           overprint: set[str] | None = None) -> bytes:
-    """PDF: cada color es una tinta directa Separation con su nombre y alternativo CMYK (o CMYK puro)."""
+           overprint: set[str] | None = None, trap=None, sin_fondo: bool | None = None) -> bytes:
+    """PDF: cada color es una tinta directa Separation con su nombre y alternativo CMYK (o CMYK puro).
+
+    Con `trap` (perfil de máquina) añade la capa «Traps FAVERVIEW»: trazos en sobreimpresión recortados a A ∪ B. Con trap el fondo del
+    color del papel no se imprime (`sin_fondo`, por defecto sí)."""
+    _check_trap(res, trap)
     k = _mm_per_px(res, size_mm) or (1 / 72 * 25.4)          # sin dato: 1 px = 1 pt
+    groups = traps_mod.build(res, trap, _mm_per_px(res, size_mm)) if trap is not None else []
+    if sin_fondo is None:
+        sin_fondo = trap is not None
+    skip = traps_mod.paper_labels(res) if sin_fondo else set()
     f = k / 25.4 * 72
     wp, hp = res.width * f, res.height * f
     pdf = pikepdf.new()
@@ -89,6 +120,8 @@ def to_pdf(res, size_mm: float | None = None, mode: str = "separation", names: l
     gs_res = pikepdf.Dictionary()
     ops = []
     for r in res.regions:
+        if r.label in skip:
+            continue
         name = (names[r.label] if names and r.label < len(names) else None) or f"Color {r.label + 1}"
         if overprint and name in overprint:
             gs_res["/GSop"] = pikepdf.Dictionary(Type=pikepdf.Name.ExtGState, OP=True, op=True, OPM=1)
@@ -98,6 +131,22 @@ def to_pdf(res, size_mm: float | None = None, mode: str = "separation", names: l
     for s in res.strokes:
         ops.append(cso.fill_op(s["label"], s.get("lab", (50, 0, 0)), True))
         ops.append(f"{s['width'] * f:.3f} w 0 J 1 j " + _pdf_path(s["segs"], f, res.height, False) + "S")
+    props = pikepdf.Dictionary()
+    if groups:
+        ocg = pdf.make_indirect(pikepdf.Dictionary(Type=pikepdf.Name.OCG, Name=pikepdf.String(traps_mod.LAYER)))
+        pdf.Root["/OCProperties"] = pikepdf.Dictionary(OCGs=pikepdf.Array([ocg]), D=pikepdf.Dictionary(Order=pikepdf.Array([ocg]), ON=pikepdf.Array([ocg])))
+        props["/FVTraps"] = ocg
+        gs_res["/GSop"] = pikepdf.Dictionary(Type=pikepdf.Name.ExtGState, OP=True, op=True, OPM=1)
+        by = {r.label: r for r in res.regions}
+        ops.append("/OC /FVTraps BDC")
+        for g in groups:
+            clip = "".join(_pdf_path(l.segs, f, res.height, True) for lab in g["par"] if lab in by for l in by[lab].loops)
+            ops.append("q " + clip + "W n /GSop gs 1 J 1 j")
+            for t in g["trazos"]:
+                ops.append(cso.fill_op(t["color"], res.palette[t["color"]].lab, True))
+                ops.append(f"{t['ancho_px'] * f:.3f} w " + _pdf_path(t["segs"], f, res.height, False) + "S")
+            ops.append("Q")
+        ops.append("EMC")
     fonts = pikepdf.Dictionary()
     if res.texts:
         fonts["/F1"] = pikepdf.Dictionary(Type=pikepdf.Name.Font, Subtype=pikepdf.Name.Type1, BaseFont=pikepdf.Name.Helvetica,
@@ -107,7 +156,7 @@ def to_pdf(res, size_mm: float | None = None, mode: str = "separation", names: l
         txt = t["text"].encode("cp1252", "replace").decode("latin-1").replace("\\", "\\\\").replace("(", "\\(").replace(")", "\\)")
         ops.append("BT {:.3f} {:.3f} {:.3f} rg /F1 {:.2f} Tf {:.3f} {:.3f} Td ({}) Tj ET".format(
             *rgb, t["size"] * f, t["x"] * f, (res.height - t["y"]) * f, txt))
-    page.Resources = pikepdf.Dictionary(ColorSpace=cso.res, ExtGState=gs_res, Font=fonts)
+    page.Resources = pikepdf.Dictionary(ColorSpace=cso.res, ExtGState=gs_res, Font=fonts, Properties=props)
     page.Contents = pdf.make_stream("\n".join(ops).encode("latin-1", "replace"))
     out = io.BytesIO()
     pdf.save(out)

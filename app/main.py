@@ -8,7 +8,7 @@ from fastapi.staticfiles import StaticFiles
 from app import history, updates
 from app.config import DATOS_DIR, RESULTS_DIR, UPLOADS_DIR, WEB_DIR, setup_tesseract  # noqa: F401 (re-export)
 from app.core import api as core_api
-from app.core import inks_api, press_api
+from app.core import inks_api, plugin_auth, press_api
 from app.learning import api as learning_api
 from app.core.errors import UserError
 from app.loaders import FileError
@@ -20,17 +20,23 @@ from app.modules.preflight import api as preflight_api
 from app.modules.barcodes import api as barcodes_api
 from app.modules.tools import api as tools_api
 from app.modules.automation import api as automation_api
+from app.modules.plugin import api as plugin_api
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     history.cleanup(30)
     setup_tesseract()
+    try:
+        plugin_auth.write_connection_file()   # puerto y token para el plugin de Illustrator
+    except OSError:
+        pass
     updates.check_background()  # aviso de versión nueva (1 vez al día, sin bloquear el arranque)
     yield
 
 
 app = FastAPI(title="FAVERVIEW", lifespan=lifespan)
+app.add_middleware(plugin_auth.PluginGuard)
 
 
 @app.exception_handler(FileError)
@@ -64,5 +70,6 @@ app.include_router(preflight_api.router)
 app.include_router(barcodes_api.router)
 app.include_router(tools_api.router)
 app.include_router(automation_api.router)
+app.include_router(plugin_api.router)
 app.include_router(learning_api.router)
 app.mount("/static", StaticFiles(directory=WEB_DIR), name="static")

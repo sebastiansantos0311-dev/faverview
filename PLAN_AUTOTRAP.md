@@ -45,7 +45,7 @@ Los clientes quieren:
 
 ## 2. T0 – Perfiles de máquina y tolerancia
 
-- [ ] Nuevo modelo `PressProfile` (`app/core/press.py`), guardado en `datos_locales/prensas/*.json` y editable en la UI
+- [x] Nuevo modelo `PressProfile` (`app/core/press.py`), guardado en `datos_locales/prensas/*.json` y editable en la UI
       (pantalla **Tintas → Prensas**, o panel propio):
   ```json
   {
@@ -61,7 +61,7 @@ Los clientes quieren:
     "direccion_impresion": "vertical"
   }
   ```
-- [ ] Perfiles de ejemplo (valores **orientativos**, documentados como tales en la UI):
+- [x] Perfiles de ejemplo (valores **orientativos**, documentados como tales en la UI):
   | Perfil | Tolerancia |
   |---|---|
   | Serigrafía textil manual | 0.40 mm |
@@ -70,9 +70,9 @@ Los clientes quieren:
   | Flexo banda ancha / corrugado | 0.25 mm |
   | Offset pliego | 0.08 mm |
   | Digital | 0 (sin trap) |
-- [ ] Regla de cálculo: **ancho del trap = tolerancia × factor_trap** (por defecto 1.0). Choke del blanco = tolerancia
+- [x] Regla de cálculo: **ancho del trap = tolerancia × factor_trap** (por defecto 1.0). Choke del blanco = tolerancia
       (si `null`). Retracción del negro = tolerancia (si `null`).
-- [ ] `trapping.trap()` acepta `press: PressProfile` y mantiene la compatibilidad con los parámetros actuales (`proceso`, `ancho_mm`).
+- [x] `trapping.trap()` acepta `press: PressProfile` y mantiene la compatibilidad con los parámetros actuales (`proceso`, `ancho_mm`).
 
 ## 3. T1 – Reglas de trapping corregidas (`app/modules/tools/trapping.py`)
 
@@ -93,8 +93,8 @@ Implementar un **motor de decisión por pares de tintas** probado, con estas reg
 | R11 | Tope de TAC | Se mantiene el tope actual en la zona del trap |
 | R12 | Dirección de impresión (opcional) | Tolerancia distinta en la dirección de la máquina y en la transversal (`tolerancia_mm` o `[x, y]`) → elemento estructurante **elíptico** |
 
-- [ ] Devolver en cada trap: `{de, bajo, regla, ancho_mm, pixeles}` para mostrarlo en la UI y en el informe.
-- [ ] `DECISIONES.md`: registrar las reglas y que son **estándar de la industria, orientativas**.
+- [x] Devolver en cada trap: `{de, bajo, regla, ancho_mm, pixeles}` para mostrarlo en la UI y en el informe.
+- [x] `DECISIONES.md`: registrar las reglas y que son **estándar de la industria, orientativas**.
 
 ## 4. T2 – Verificación objetiva de la tolerancia (`app/modules/tools/registration_check.py`)
 
@@ -104,62 +104,62 @@ tolerancia, **combinada** con el desplazamiento opuesto de cada otra tinta (peor
   ninguna tinta ≥ 50% → **deben ser 0** con trap.
 - **Área de solape visible** (dos tintas oscuras superpuestas fuera de lo previsto) → informativo.
 - Resultado: `{filetes_px, filetes_mm2, bordes_protegidos_pct, peor_par, mapa_png}`.
-- [ ] Mapa visual: filetes en **magenta brillante** sobre el trabajo en gris, para "sin trap" y "con trap", lado a lado.
-- [ ] **Deslizador de movimiento** en la UI (0 → 2 × tolerancia) que anima la vista simulada con las placas desplazadas.
-- [ ] Rendimiento: a 300 dpi, A4 con 6 tintas ≤ 10 s (usar operaciones morfológicas equivalentes en lugar de rehacer el
+- [x] Mapa visual: filetes en **magenta brillante** sobre el trabajo en gris, para "sin trap" y "con trap", lado a lado.
+- [x] **Deslizador de movimiento** en la UI (0 → 2 × tolerancia) que anima la vista simulada con las placas desplazadas.
+- [x] Rendimiento: a 300 dpi, A4 con 6 tintas ≤ 10 s (usar operaciones morfológicas equivalentes en lugar de rehacer el
       render por cada dirección: el filete aparece donde `max(dilatación de los desplazamientos)` no cubre; calcular por
       pares con máscaras binarias).
 
 ## 5. T3 – Auto-trap integrado en la separación
 
 ### 5.1 Separar → Imagen (tintas planas)
-- [ ] En el paso "Ajustes": casilla **"Auto-trap (reventado)"**, **activada por defecto** cuando el perfil de máquina es
+- [x] En el paso "Ajustes": casilla **"Auto-trap (reventado)"**, **activada por defecto** cuando el perfil de máquina es
       serigrafía o flexo, más el selector **Perfil de máquina** y el campo **Tolerancia de movimiento (mm)**.
-- [ ] Se aplica a los canales **antes** del tramado y de la exportación (orden: separar → limpiar → **trap** → choke del
+- [x] Se aplica a los canales **antes** del tramado y de la exportación (orden: separar → limpiar → **trap** → choke del
       blanco → tramado → exportar).
-- [ ] En el modo **Índice** (difusión de error) no se aplica (no hay bordes a tope) y se informa por qué.
-- [ ] En el modo **Proceso simulado**: trap solo para la base blanca (choke) y las tintas opacas (R6); el resto se superpone
+- [x] En el modo **Índice** (difusión de error) no se aplica (no hay bordes a tope) y se informa por qué.
+- [x] En el modo **Proceso simulado**: trap solo para la base blanca (choke) y las tintas opacas (R6); el resto se superpone
       por naturaleza. Informarlo.
-- [ ] Visor: capas **"Mapa de traps"** y **"Prueba de movimiento"** (T2) + el resultado "✔ Sin filetes con ±0.20 mm" o
+- [x] Visor: capas **"Mapa de traps"** y **"Prueba de movimiento"** (T2) + el resultado "✔ Sin filetes con ±0.20 mm" o
       "✘ 3.2 mm² de filetes: ver mapa".
 
 ### 5.2 Separar → PDF
-- [ ] Botón **"Auto-trap"** en la barra (usa el perfil de máquina) → placas con trap en la vista y en **Exportar placas**
+- [x] Botón **"Auto-trap"** en la barra (usa el perfil de máquina) → placas con trap en la vista y en **Exportar placas**
       (TIFF/PDF de placas con trap). El PDF original **no** se modifica (el trap es raster, a la resolución de salida).
-- [ ] Aviso honesto: "El trap se aplica a las placas rasterizadas a X dpi; para un trap vectorial usa el Vectorizador o
+- [x] Aviso honesto: "El trap se aplica a las placas rasterizadas a X dpi; para un trap vectorial usa el Vectorizador o
       Illustrator".
 
 ### 5.3 Herramientas → Trapping
-- [ ] Se mantiene, ahora con los perfiles de máquina, las reglas nuevas y la prueba de movimiento.
+- [x] Se mantiene, ahora con los perfiles de máquina, las reglas nuevas y la prueba de movimiento.
 
 ## 6. T4 – Trap vectorial en la salida del Vectorizador
 
 El vectorizador ya produce un **mapa planar con fronteras compartidas** (cada frontera es una cadena entre exactamente dos
 regiones). Eso permite un trap **vectorial exacto**:
-- [ ] Para cada cadena entre las regiones A y B, decidir la dirección con las reglas de T1 (R1–R6).
-- [ ] Emitir un **trazo (stroke)** a lo largo de la cadena, con el color de la tinta que se expande, **ancho = 2 × trap**,
+- [x] Para cada cadena entre las regiones A y B, decidir la dirección con las reglas de T1 (R1–R6).
+- [x] Emitir un **trazo (stroke)** a lo largo de la cadena, con el color de la tinta que se expande, **ancho = 2 × trap**,
       **sobreimpresión (overprint) activada**, extremos y uniones redondeados, **recortado** a la unión A ∪ B (para no salir
       al sustrato ni a regiones de terceros), con máscara de recorte (clip path) de A ∪ B.
       Para el trap centrado (R5): dos trazos de ancho = trap (uno por tinta), cada uno en overprint.
-- [ ] Capa/grupo separado **"Traps FAVERVIEW"** en el PDF/SVG, para poder revisarlo o borrarlo.
-- [ ] PDF: overprint real (ExtGState `OP/op true, OPM 1`). SVG no tiene overprint → avisar y exportar el SVG sin traps por
+- [x] Capa/grupo separado **"Traps FAVERVIEW"** en el PDF/SVG, para poder revisarlo o borrarlo.
+- [x] PDF: overprint real (ExtGState `OP/op true, OPM 1`). SVG no tiene overprint → avisar y exportar el SVG sin traps por
       defecto (opción "incluir traps simulados").
-- [ ] Opción en la UI de Vectorizar: **"Añadir trap para impresión"** + perfil de máquina.
-- [ ] Verificación: renderizar el PDF con Ghostscript `tiffsep` (con overprint) → pasar la prueba de movimiento (T2) →
+- [x] Opción en la UI de Vectorizar: **"Añadir trap para impresión"** + perfil de máquina.
+- [x] Verificación: renderizar el PDF con Ghostscript `tiffsep` (con overprint) → pasar la prueba de movimiento (T2) →
       0 filetes.
 
 ## 7. T5 – Automatización, preflight e informes
 
-- [ ] Paso de receta `auto_trap(perfil, tolerancia_mm)` y `prueba_movimiento(tolerancia_mm)` (con la condición
+- [x] Paso de receta `auto_trap(perfil, tolerancia_mm)` y `prueba_movimiento(tolerancia_mm)` (con la condición
       "si hay filetes → mover a `errores/`").
-- [ ] Chequeo de preflight **"Bordes sin protección de registro"** (perfiles serigrafía/flexo): ejecuta la prueba T2 sobre
+- [x] Chequeo de preflight **"Bordes sin protección de registro"** (perfiles serigrafía/flexo): ejecuta la prueba T2 sobre
       las placas y reporta las zonas con filetes.
-- [ ] Informe de separaciones: sección "Trapping" con el perfil, la tolerancia, la tabla de traps (de, bajo, regla, ancho)
+- [x] Informe de separaciones: sección "Trapping" con el perfil, la tolerancia, la tabla de traps (de, bajo, regla, ancho)
       y los mapas.
 
 ## 8. T6 – Pruebas y banco
 
-- [ ] Tests unitarios, uno por regla (R1–R12), con placas sintéticas:
+- [x] Tests unitarios, uno por regla (R1–R12), con placas sintéticas:
   - dos tintas con ΔL grande → la clara se expande exactamente el ancho;
   - **ΔL pequeño → trap centrado, cada una la mitad (regresión de D1)**;
   - negro vs color → el color se expande bajo el negro y el negro no cambia;
@@ -169,14 +169,14 @@ regiones). Eso permite un trap **vectorial exacto**:
   - técnica y barniz → sin cambios;
   - tope de TAC respetado;
   - tolerancia elíptica (x ≠ y).
-- [ ] Test de la **prueba de movimiento**: sin trap → filetes > 0; con auto-trap a la misma tolerancia → **filetes = 0**;
+- [x] Test de la **prueba de movimiento**: sin trap → filetes > 0; con auto-trap a la misma tolerancia → **filetes = 0**;
       con el movimiento 2 × tolerancia → filetes > 0 (el test demuestra que mide algo).
-- [ ] Test del **trap vectorial**: el PDF tiene overprint en el grupo de traps, el render con tiffsep pasa la prueba T2 y
+- [x] Test del **trap vectorial**: el PDF tiene overprint en el grupo de traps, el render con tiffsep pasa la prueba T2 y
       las regiones fuera de A ∪ B no cambian.
-- [ ] Banco (`bench/trapping/`): 20 casos sintéticos (logos de 2–6 tintas planas, pares con ΔL parecido, texto fino,
+- [x] Banco (`bench/trapping/`): 20 casos sintéticos (logos de 2–6 tintas planas, pares con ΔL parecido, texto fino,
       negro enriquecido, base blanca sobre prenda) × 3 perfiles. Métricas: filetes tras movimiento (debe ser 0), % de
       área modificada (menos es mejor, sin filetes) y tiempo. Umbral en CI.
-- [ ] Manual: capítulo **"Reventado (trapping) y tolerancia de registro"**, con qué es, cómo elegir la tolerancia (medir
+- [x] Manual: capítulo **"Reventado (trapping) y tolerancia de registro"**, con qué es, cómo elegir la tolerancia (medir
       el movimiento real de la máquina con una prueba de registro), capturas y los límites.
 
 ### Criterios de aceptación

@@ -104,6 +104,7 @@ manual = f"""
 <li>Herramientas</li>
 <li>Automatizar</li>
 <li>Instalar Ghostscript</li>
+<li>Reventado (trapping) y tolerancia de registro</li>
 <li>Glosario de preprensa</li>
 <li>Qué es exacto y qué es una estimación</li>
 </ol>

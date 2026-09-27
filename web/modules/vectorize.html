@@ -26,6 +26,9 @@
       <label>Suavidad <input id="vz-suav" type="number" min="0" max="5" step="0.2" value="1.6" class="num"></label>
       <label>Modo <select id="vz-modo"><option value="sin_solapes">Sin solapes (fronteras compartidas)</option><option value="apilado">Apilado (sin agujeros)</option></select></label>
       <label>Tamaño final (mm de ancho) <input id="vz-mm" type="number" min="0" step="1" value="0" class="num"></label>
+      <label><input id="vz-trap" type="checkbox"> Añadir trap para impresión (PDF y SVG)</label>
+      <label>Perfil de máquina <select id="vz-press"></select></label>
+      <div id="vz-trapinfo" class="hint"></div>
       <details><summary>Geometría y preprensa (v2)</summary>
         <label><input id="vz-prim" type="checkbox"> Primitivas (arcos, círculos, elipses)</label>
         <label><input id="vz-limpia" type="checkbox"> Geometría limpia (enderezar)</label>

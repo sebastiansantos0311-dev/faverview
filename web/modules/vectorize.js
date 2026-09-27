@@ -61,12 +61,13 @@ function show(keep) {
     h("span", { class: "sp-sw", style: { background: c.hex } }), h("span", { class: "sp-nm" }, c.nombre), h("small", {}, c.hex))));
   if (keep) return;
   const mm = num("#vz-mm") || "";
+  const tq = q("#vz-trap").checked ? `&trap_prensa=${encodeURIComponent(q("#vz-press").value)}` : "";
   const t = "?t=" + Date.now();
   imgO.src = `${base()}/original.png${t}`;
   imgV.src = `${base()}/vector.svg${t}`;
-  q("#vz-dsvg").href = `${base()}/descargar?formato=svg&tam_mm=${mm}`;
-  q("#vz-dpdf").href = `${base()}/descargar?formato=pdf&tam_mm=${mm}`;
-  q("#vz-deps").href = `${base()}/descargar?formato=eps&tam_mm=${mm}`;
+  q("#vz-dsvg").href = `${base()}/descargar?formato=svg&tam_mm=${mm}${tq}`;
+  q("#vz-dpdf").href = `${base()}/descargar?formato=pdf&tam_mm=${mm}${tq}`;
+  q("#vz-deps").href = `${base()}/descargar?formato=eps&tam_mm=${mm}${tq}`;
   q("#vz-ddxf").href = `${base()}/descargar?formato=dxf&tam_mm=${mm}`;
   const box = q("#vz-viewer"); box.innerHTML = "";
   const el = h("div", { class: "pane" }); el.append(stage); box.append(el);
@@ -119,4 +120,25 @@ viewer.onPointerDown = (p, ev) => {
   p.el.addEventListener("pointermove", mv); p.el.addEventListener("pointerup", up, { once: true });
   return true;
 };
+
+/* ---- trap vectorial (AUTOTRAP T4) ---- */
+(async function () {
+  try {
+    const r = await FVApi.getJSON("/api/prensas");
+    r.perfiles.forEach(p => q("#vz-press").append(h("option", { value: p.id }, `${p.nombre} (${Array.isArray(p.tolerancia_mm) ? p.tolerancia_mm.join("×") : p.tolerancia_mm} mm)`)));
+    q("#vz-press").value = "serigrafia_textil_automatica";
+  } catch {}
+  async function info() {
+    const box = q("#vz-trapinfo"); box.textContent = "";
+    if (!q("#vz-trap").checked || !job || !last) { if (last) show(true); return; }
+    try {
+      const mm = num("#vz-mm");
+      if (!mm && !last.ancho) return;
+      const r = await FVApi.getJSON(`/api/vectorizar/${job}/traps?trap_prensa=${encodeURIComponent(q("#vz-press").value)}${mm ? "&tam_mm=" + mm : ""}`);
+      box.innerHTML = `${r.traps.length} traps con «${r.perfil}»: ` + r.traps.map(x => `color ${x.de + 1} bajo ${x.bajo + 1} (${x.regla}, trazo ${x.ancho_trazo_mm} mm)`).join(" · ") + `<br>${r.avisos.join(" ")}`;
+    } catch (e) { box.textContent = e.message; }
+    show(true);
+  }
+  q("#vz-trap").onchange = info; q("#vz-press").onchange = info; q("#vz-mm").addEventListener("change", info);
+})();
 })();

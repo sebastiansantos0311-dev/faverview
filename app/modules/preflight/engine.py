@@ -29,7 +29,7 @@ RULE_NAMES = {
     "negro_enriquecido_texto": "Negro enriquecido en texto", "sobreimpresion": "Sobreimpresión (blanco, barniz, técnicas)",
     "sangrado": "Sangrado", "trimbox_ausente": "TrimBox ausente", "zona_segura": "Objetos cerca del corte",
     "transparencias": "Transparencias", "capas_ocultas": "Capas ocultas", "anotaciones": "Anotaciones y formularios",
-    "pdfx": "Versión PDF/X", "output_intent": "OutputIntent", "jpeg_calidad": "Compresión JPEG fuerte",
+    "bordes_sin_proteccion": "Bordes sin protección de registro", "pdfx": "Versión PDF/X", "output_intent": "OutputIntent", "jpeg_calidad": "Compresión JPEG fuerte",
 }
 
 
@@ -242,7 +242,7 @@ def rule_structure(c: Ctx):
 
 def rule_plates(c: Ctx):
     """Reglas que necesitan las placas (TAC, líneas finas, texto pequeño, sobreimpresión)."""
-    keys = ("tac", "linea_fina", "texto_pequeno", "negro_enriquecido_texto", "sobreimpresion")
+    keys = ("tac", "linea_fina", "texto_pequeno", "negro_enriquecido_texto", "sobreimpresion", "bordes_sin_proteccion")
     if not any(c.on(k)[0] for k in keys):
         return
     if not ghostscript.available():
@@ -272,10 +272,36 @@ def rule_plates(c: Ctx):
                 for size, text, bbox in analysis._text_spans(c.path, pno, plates.dpi):
                     if size < rt.get("min_pt", 6):
                         c.add("texto_pequeno", rt, f"Texto de {size:.1f} pt (mínimo {rt.get('min_pt', 6)} pt): «{text[:30]}».", page, bbox)
+        on, r = c.on("bordes_sin_proteccion")
+        if on:
+            _registration(c, r, pno, meta)
         on, r = c.on("sobreimpresion")
         if on:
             for f in analysis.check_overprint(plates, c.path, pno, c.inv, meta):
                 c.add("sobreimpresion", r, f.mensaje, page, f.bbox, "error" if f.severidad == "error" else None)
+
+
+def _registration(c: Ctx, r: dict, pno: int, meta: dict):
+    """AUTOTRAP T5: prueba de movimiento sobre las placas; reporta las zonas con filetes (bordes sin protección de registro)."""
+    import cv2
+    import numpy as np
+    from app.core import press as pressmod
+    from app.modules.tools import registration_check as rc
+    pf = pressmod.resolve(r.get("prensa") or "serigrafia_textil_automatica", r.get("tolerancia_mm"))
+    if max(pf.tol_xy()) <= 0:
+        return
+    plates = render_plates(c.path, pno, 300)
+    res = rc.check(plates, pf, meta)
+    if res.filetes_px == 0:
+        return
+    mask = (res.mapa == np.array([255, 0, 200])).all(-1).astype(np.uint8)
+    mask = cv2.dilate(mask, np.ones((9, 9), np.uint8))
+    n, _, st, _ = cv2.connectedComponentsWithStats(mask)
+    s = DPI / 300.0
+    for i in range(1, min(n, 40)):
+        x, y, w, h = st[i, :4]
+        c.add("bordes_sin_proteccion", r, f"Bordes sin protección de registro con ±{pf.tolerancia_mm} mm (perfil «{pf.nombre}»): un mal registro dejaría un filete de sustrato aquí. Añade trap.",
+              pno + 1, [int(x * s), int(y * s), max(2, int(w * s)), max(2, int(h * s))])
 
 
 RULES = [rule_fonts, rule_images, rule_inks, rule_boxes, rule_structure, rule_plates]

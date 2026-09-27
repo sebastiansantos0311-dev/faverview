@@ -55,6 +55,15 @@ def _ell(rx: int, ry: int):
     return cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (2 * rx + 1, 2 * ry + 1))
 
 
+def _trap_kernel(rx: int, ry: int):
+    """Elemento estructurante del trap: elipse de semiejes (rx + 0,5, ry + 0,5). El medio píxel extra garantiza cubrir el movimiento
+    también en los bordes diagonales de la cuadrícula (una elipse de radio 1 no incluye las diagonales)."""
+    ax, ay = rx + 0.5, ry + 0.5
+    nx, ny = int(math.ceil(ax)), int(math.ceil(ay))
+    y, x = np.mgrid[-ny:ny + 1, -nx:nx + 1]
+    return ((x / ax) ** 2 + (y / ay) ** 2 <= 1.0 + 1e-9).astype(np.uint8)
+
+
 def decide(a: str, b: str, info: dict, press: PressProfile, solo_opacas: bool = False) -> list[tuple]:
     """Decisión para el par: lista de (expande, bajo, fracción_del_trap, regla). Vacía = sin trap."""
     (La, ka, oa), (Lb, kb, ob) = info[a], info[b]
@@ -129,16 +138,18 @@ def trap(plates: Plates, meta: dict | None = None, *, press: PressProfile | None
             rx, ry = _px(mx, px_mm), _px(my, px_mm)
         if rx == 0 and ry == 0:
             return
-        grown = cv2.dilate(solid[a].astype(np.uint8), _ell(rx, ry)) > 0
+        grown = cv2.dilate(solid[a].astype(np.uint8), _trap_kernel(rx, ry)) > 0
         zone = grown & solid[b] & ~solid[a]
         if frac:
             r8 = max(rx, ry)
-            zone &= dist_to(a) <= np.maximum(frac * np.minimum(thickness(a, r8), thickness(b, r8)), 1.0)     # R8: objetos finos
+            # R8: objetos finos. Bajo un objeto oscuro fino (R3/R4) el trap no lo deforma (el oscuro domina): solo limita el que se expande
+            th = thickness(a, r8) if regla in ("R3", "R4") else np.minimum(thickness(a, r8), thickness(b, r8))
+            zone &= dist_to(a) <= np.maximum(frac * th, 1.0)
         if keep is not None:
             zone &= ~keep                                                               # R9
         if not zone.any():
             return
-        val = cv2.dilate(plates.arrays[a], _ell(rx, ry)).astype(np.float32) * factor
+        val = cv2.dilate(plates.arrays[a], _trap_kernel(rx, ry)).astype(np.float32) * factor
         if tac_max:                                                                     # R11
             total = sum(arrays[n].astype(np.float32) for n in names if n != a) / 255 * 100
             val = np.minimum(val, np.maximum(tac_max - total, 0) / 100 * 255)

@@ -105,3 +105,13 @@ Formato: fecha · contexto · decisión · alternativa descartada.
 - **Cancelar:** cooperativo, entre etapas (no interrumpe un cálculo a mitad); Ghostscript ya admite cancelación al llamarse directamente.
 - **Pendiente respecto al plan:** teselas del visor (>8000 px), fuentes sugeridas por similitud en vectorización de texto, JJN en modo índice, PSD multicanal,
   comparación con Image Trace/PowerTRACE (necesita archivos del usuario), mantener texto pequeño en trapping desde la API.
+
+## AUTOTRAP (T0–T6)
+- **Perfiles de máquina** en `datos_locales/prensas/`; los seis de ejemplo son orientativos. Ancho del trap = tolerancia × factor; tolerancia `[x, y]` → elemento estructurante elíptico.
+- **Kernel del trap:** elipse de semiejes (r + 0,5): el medio píxel extra cubre los bordes diagonales de la cuadrícula (un radio 1 no incluía las diagonales). Los anchos se redondean hacia arriba.
+- **D1 corregido:** luminosidad parecida (ΔL < 8) → trap centrado (R5). **D3:** en R3/R4 solo limita el grosor del objeto que se expande (bajo un objeto oscuro fino el trap es completo); en R5/R6 limita el más fino.
+- **Prueba de movimiento:** desplaza cada placa la tolerancia en 8 direcciones (puntos de la elipse) contra las demás; solo cuenta rendijas con tinta a ambos lados en la dirección del movimiento (no muescas del borde exterior), descarta grupos de ≤ 4 px y la zona de retracción R7 (intencionada).
+- **Fondo del color del sustrato** (ΔE < 10) no se trapea ni se comprueba: se trata como sin imprimir. En el PDF vectorial con trap ese fondo no se emite.
+- **Trap vectorial:** trazo centrado de ancho 2 × (trap + 0,03 mm de margen), recortado a A ∪ B (regla de relleno no cero), sobreimpresión OP/op/OPM 1 en un OCG «Traps FAVERVIEW». Verificado renderizando con Ghostscript a 600 dpi (a 300 dpi el antialias deja restos de pocos píxeles).
+- **Banco `bench/trapping`:** 20 casos × 3 perfiles con divisiones en guillotina (uniones en T); se evitaron astillas y bolsillos de sustrato en las esquinas porque no se pueden proteger por completo. Umbral CI: 0 filetes, ≤ 15 % de área modificada.
+- **No se aplica en vectorial:** R7, R8, R9 (no hay información de texto ni de CMY por debajo).

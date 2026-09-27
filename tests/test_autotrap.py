@@ -110,15 +110,26 @@ def test_R7_retraccion_de_cmy_bajo_negro_enriquecido():
 def test_R8_objeto_fino_trap_limitado():
     h, w = 60, 200
     Y = np.zeros((h, w), np.uint8)
-    Y[:, :100] = 255
+    Y[:, 97:100] = 255                                                    # trazo claro de 0,3 mm que se expande bajo el cian
     C = np.zeros((h, w), np.uint8)
-    C[:, 100:103] = 255                                                   # trazo de 0,3 mm
+    C[:, 100:] = 255
     p = Plates(["Yellow", "Cyan"], {"Yellow": Y, "Cyan": C}, DPI, 0, w, h)
     r = t.trap(p, press=PressProfile(tolerancia_mm=0.3), tac_max=None)
-    assert int((r.plates.arrays["Yellow"][:, 100:103] > 0).sum() / h) <= 1     # trap de 3 px reducido a ≈ 1/3 del grosor
-    assert (r.plates.arrays["Cyan"] == C).all()
+    assert int((r.plates.arrays["Yellow"][:, 100:] > 0).sum() / h) <= 1     # trap de 3 px reducido a ≈ 1/3 del grosor del trazo
+    assert (r.plates.arrays["Yellow"][:, 97:100] == 255).all() and (r.plates.arrays["Cyan"] == C).all()     # el trazo conserva su ancho
     sin = t.trap(p, press=PressProfile(tolerancia_mm=0.3, trap_max_fraccion_objeto=0.0), tac_max=None)
-    assert int((sin.plates.arrays["Yellow"][:, 100:103] > 0).sum() / h) == 3
+    assert int((sin.plates.arrays["Yellow"][:, 100:] > 0).sum() / h) == 3
+
+
+def test_R8_bajo_un_trazo_oscuro_fino_el_trap_es_completo():
+    h, w = 60, 200
+    Y = np.zeros((h, w), np.uint8)
+    Y[:, :100] = 255
+    C = np.zeros((h, w), np.uint8)
+    C[:, 100:103] = 255                                                   # trazo oscuro fino: el oscuro domina, no se deforma
+    p = Plates(["Yellow", "Cyan"], {"Yellow": Y, "Cyan": C}, DPI, 0, w, h)
+    r = t.trap(p, press=PressProfile(tolerancia_mm=0.3), tac_max=None)
+    assert int((r.plates.arrays["Yellow"][:, 100:103] > 0).sum() / h) == 3
 
 
 def test_R9_texto_pequeno_sin_trap():

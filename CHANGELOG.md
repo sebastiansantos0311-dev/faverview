@@ -1,5 +1,11 @@
 # Cambios de FAVERVIEW
 
+## 3.1.0 (auto-trap) — 2026-09-26
+- **Auto-trap con tolerancia de registro:** perfiles de máquina (`core/press`), motor de reglas R1–R12 (corrige el defecto de luminosidad parecida con trap centrado,
+  retracción del negro enriquecido, objetos finos, texto pequeño, tolerancia elíptica), **prueba de movimiento** objetiva, auto-trap integrado en Separar (imagen y PDF),
+  trap vectorial con sobreimpresión en el Vectorizador, regla de preflight «Bordes sin protección de registro», pasos de receta `auto_trap` y `prueba_movimiento`,
+  banco `bench/trapping` (60 casos, 0 filetes) y capítulo del manual.
+
 ## 3.0.0 (suite) — 2026-09-26
 - **S0 – Preparación:** código de Comparar movido a `app/modules/compare/` y `app/core/`, rutas repartidas en routers
   (`app/main.py` ≤ 80 líneas), `GET /api/status`, detección de Ghostscript, nuevas dependencias y interfaz con pestañas.

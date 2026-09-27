@@ -97,6 +97,12 @@ def check(plates: Plates, press: PressProfile, meta: dict | None = None, *, fact
                 if worst is None or c > worst["filetes_px"]:
                     worst = {"tinta": n, "direccion": [ux, uy], "filetes_px": c}
         per[n] = worst_n
+    # se descartan los grupos de ≤ 4 píxeles (esquinas de la cuadrícula del render): no son rendijas reales
+    n, lab, st, _ = cv2.connectedComponentsWithStats(union_fil.astype(np.uint8), connectivity=8)
+    small = np.flatnonzero((st[:, cv2.CC_STAT_AREA] <= 4) & (np.maximum(st[:, cv2.CC_STAT_WIDTH], st[:, cv2.CC_STAT_HEIGHT]) <= 3))
+    small = small[small != 0]
+    if len(small):
+        union_fil &= ~np.isin(lab, small)
     npx = int(union_fil.sum())
     ink = np.max([plates.arrays[n] for n in names], axis=0) if names else np.zeros((h, w), np.uint8)
     g = (255 - ink.astype(np.float32) * 0.35).astype(np.uint8)

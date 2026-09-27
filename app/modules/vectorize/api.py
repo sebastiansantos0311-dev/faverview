@@ -155,18 +155,40 @@ def diff(job_id: str):
     return _png(heat)
 
 
+def _press(prensa, tol):
+    if not prensa and tol is None:
+        return None
+    from app.core import press
+    return press.resolve(prensa, tol)
+
+
+@router.get("/{job_id}/traps")
+def traps_info(job_id: str, tam_mm: float | None = None, trap_prensa: str | None = "serigrafia_textil_automatica", trap_tolerancia_mm: float | None = None):
+    """Resumen de los traps vectoriales que se añadirían (qué tinta se expande bajo cuál y cuánto)."""
+    from app.modules.vectorize import traps
+    res = _get(job_id)
+    pf = _press(trap_prensa, trap_tolerancia_mm)
+    k = export._mm_per_px(res, tam_mm)
+    groups = traps.build(res, pf, k)
+    return {"perfil": pf.nombre, "tolerancia_mm": pf.tolerancia_mm, "traps": traps.summary(groups, k) if k else [],
+            "avisos": ["Solo arte vectorial plano. R7 (retracción), R8 y R9 no se aplican en vectorial.", "SVG no tiene sobreimpresión: el SVG lleva traps simulados; el PDF, sobreimpresión real.",
+                       "Estimación orientativa: confirma con tu imprenta."]}
+
+
 def _attach(name: str) -> dict:
     return {"Content-Disposition": f'attachment; filename="{name}"'}
 
 
 @router.get("/{job_id}/descargar")
-def download(job_id: str, formato: str = "svg", tam_mm: float | None = None, pdf_modo: str = "separation"):
+def download(job_id: str, formato: str = "svg", tam_mm: float | None = None, pdf_modo: str = "separation", trap_prensa: str | None = None,
+             trap_tolerancia_mm: float | None = None, sin_fondo: bool | None = None):
     res = _get(job_id)
+    pf = _press(trap_prensa, trap_tolerancia_mm)
     if formato == "svg":
-        return Response(export.to_svg(res, tam_mm), media_type="image/svg+xml", headers=_attach("vector.svg"))
+        return Response(export.to_svg(res, tam_mm, pf), media_type="image/svg+xml", headers=_attach("vector.svg"))
     names = [i.name for i in res.palette]
     if formato in ("pdf", "eps"):
-        pdf = export.to_pdf(res, tam_mm, pdf_modo, names)
+        pdf = export.to_pdf(res, tam_mm, pdf_modo, names, trap=pf, sin_fondo=sin_fondo)
         if formato == "pdf":
             return Response(pdf, media_type="application/pdf", headers=_attach("vector.pdf"))
         return Response(export.to_eps(pdf), media_type="application/postscript", headers=_attach("vector.eps"))
