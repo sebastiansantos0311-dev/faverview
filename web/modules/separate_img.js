@@ -2,6 +2,7 @@
 (function () {
 /* Separar colores → Imagen (S3): asistente de 4 pasos con vista previa en vivo a baja resolución. */
 const { h, toast } = FV;
+const esc = s => String(s).replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
 const root = document.getElementById("vista-separar");
 const q = s => root.querySelector(s);
 const box = q("#sub-img");
@@ -162,7 +163,7 @@ function show() {
   Q("#si-ver option[value=de]").disabled = !r.de;
   const tp = r.trap;
   Q("#si-ver option[value=trap]").disabled = !tp; Q("#si-ver option[value=prueba]").disabled = !(tp && tp.ok !== null);
-  Q("#si-trapmsg").innerHTML = tp ? `<b style="color:${tp.ok === false ? "#ef4444" : "#22c55e"}">${tp.registro || ""}</b><br>` + tp.traps.map(t => `${t.de} bajo ${t.bajo} (${t.regla}) ${t.ancho_mm} mm`).join("<br>")
+  Q("#si-trapmsg").innerHTML = tp ? `<b style="color:${tp.ok === false ? "#ef4444" : "#22c55e"}">${esc(tp.registro || "")}</b><br>` + tp.traps.map(t => `${esc(t.de)} bajo ${esc(t.bajo)} (${esc(t.regla)}) ${t.ancho_mm} mm`).join("<br>")
     : "Valores orientativos: mide el movimiento real de tu máquina.";
   render();
 }

@@ -2,7 +2,7 @@
 (function (g) {
   "use strict";
   var FVP = g.FVP, el = FVP.ui.el, t = FVP.t;
-  var PLUGIN_VERSION = "3.2.0";
+  var PLUGIN_VERSION = "3.2.1";
 
   /** compara versiones «3.1.0» → -1, 0, 1 */
   FVP.cmpVersion = function (a, b) {
