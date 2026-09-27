@@ -24,6 +24,11 @@ const postForm = async (url, fields) => {
 
 /* consulta el progreso por etapas hasta que termina; `onProgress(mensaje, 0..1)` es opcional */
 async function pollJob(id, onProgress) {
+  window.FVApi.currentJob = id;
+  document.getElementById("loading-cancel")?.classList.remove("hidden");
+  try { return await _poll(id, onProgress); } finally { window.FVApi.currentJob = null; document.getElementById("loading-cancel")?.classList.add("hidden"); }
+}
+async function _poll(id, onProgress) {
   for (;;) {
     const st = await (await api("/api/jobs/" + id)).json();
     (onProgress || FV.setProgress)(st.message, st.pct);

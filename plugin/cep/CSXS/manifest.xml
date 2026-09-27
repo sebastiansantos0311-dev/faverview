@@ -1,0 +1,53 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ExtensionManifest Version="7.0" ExtensionBundleId="com.faverview.illustrator" ExtensionBundleVersion="3.2.0" ExtensionBundleName="FAVERVIEW"
+                   xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+  <ExtensionList>
+    <Extension Id="com.faverview.illustrator.panel" Version="3.2.0" />
+  </ExtensionList>
+  <ExecutionEnvironment>
+    <HostList>
+      <!-- Illustrator 2024 (v28), 2025 (v29) y 2026 (v30) -->
+      <Host Name="ILST" Version="[28.0,99.9]" />
+    </HostList>
+    <LocaleList>
+      <Locale Code="All" />
+    </LocaleList>
+    <RequiredRuntimeList>
+      <!-- CEP 11 (CSXS.11) y también funciona en CEP 12 (CSXS.12). Sin Node.js: el panel queda listo para UXP. -->
+      <RequiredRuntime Name="CSXS" Version="11.0" />
+    </RequiredRuntimeList>
+  </ExecutionEnvironment>
+  <DispatchInfoList>
+    <Extension Id="com.faverview.illustrator.panel">
+      <DispatchInfo>
+        <Resources>
+          <MainPath>./index.html</MainPath>
+          <ScriptPath>./host/fv_host.jsx</ScriptPath>
+        </Resources>
+        <Lifecycle>
+          <AutoVisible>true</AutoVisible>
+        </Lifecycle>
+        <UI>
+          <Type>Panel</Type>
+          <Menu>FAVERVIEW</Menu>
+          <Geometry>
+            <Size>
+              <Height>640</Height>
+              <Width>360</Width>
+            </Size>
+            <MinSize>
+              <Height>400</Height>
+              <Width>300</Width>
+            </MinSize>
+          </Geometry>
+          <Icons>
+            <Icon Type="Normal">./icons/iconNormal.png</Icon>
+            <Icon Type="RollOver">./icons/iconRollover.png</Icon>
+            <Icon Type="DarkNormal">./icons/iconDarkNormal.png</Icon>
+            <Icon Type="DarkRollOver">./icons/iconDarkRollover.png</Icon>
+          </Icons>
+        </UI>
+      </DispatchInfo>
+    </Extension>
+  </DispatchInfoList>
+</ExtensionManifest>

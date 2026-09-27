@@ -92,6 +92,7 @@ def main() -> None:
     import uvicorn
 
     port = free_port()
+    os.environ["FAVERVIEW_PORT"] = str(port)     # lo lee el lifespan para escribir plugin.json
     threading.Thread(target=lambda: (time.sleep(2.5), webbrowser.open(f"http://127.0.0.1:{port}")),
                      daemon=True).start()
     print(f"FAVERVIEW en http://127.0.0.1:{port}  (cierra esta ventana para salir)")

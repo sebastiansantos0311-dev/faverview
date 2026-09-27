@@ -1,0 +1,12 @@
+{
+  "planas": {
+    "iou_medio": 0.9682,
+    "de_paleta_medio": 0.374,
+    "tintas_de_mas": 2
+  },
+  "proceso": {
+    "de_medio": 4.982,
+    "de_p95": 18.629,
+    "tac_medio": 150.1
+  }
+}

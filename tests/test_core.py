@@ -71,3 +71,26 @@ def test_inks_api_import_list_export_delete(tmp_path, monkeypatch):
     assert bad.status_code == 400 and "no admitido" in bad.json()["error"]
     assert c.delete("/api/tintas/Mi taller").json() == {"ok": True}
     assert c.delete("/api/tintas/ISO 12647-2 PC1 (FOGRA51) + básicas").status_code == 400
+
+
+def test_cancelar_trabajo():
+    import time
+    from fastapi.testclient import TestClient
+    from app.core import jobs
+    from app.main import app
+
+    def work(progress):
+        for i in range(50):
+            time.sleep(0.05)
+            progress("x", i / 50)
+        return {"ok": True}
+
+    j = jobs.start("abcdef012345", work)
+    c = TestClient(app)
+    assert c.post("/api/jobs/abcdef012345/cancel").json() == {"ok": True}
+    for _ in range(60):
+        st = c.get("/api/jobs/abcdef012345").json()
+        if st["status"] != "running":
+            break
+        time.sleep(0.1)
+    assert st["status"] == "error" and "cancelada" in st["error"]

@@ -65,7 +65,7 @@ def report_csv(rows: list[dict]) -> bytes:
     return ("﻿" + s.getvalue()).encode("utf-8")
 
 
-def export_zip(plates: Plates, meta: dict, formato: str, findings: list[dict], threshold: int = 128) -> bytes:
+def export_zip(plates: Plates, meta: dict, formato: str, findings: list[dict], threshold: int = 128, extra_lines: list[str] | None = None) -> bytes:
     """ZIP con las placas en el formato pedido (`tiff8`, `tiff1`, `pdf`) más el informe."""
     buf = io.BytesIO()
     with zipfile.ZipFile(buf, "w", zipfile.ZIP_DEFLATED) as z:
@@ -81,6 +81,8 @@ def export_zip(plates: Plates, meta: dict, formato: str, findings: list[dict], t
         lines = [f"Informe de separaciones — {datetime.now():%Y-%m-%d %H:%M}",
                  f"Resolución: {plates.dpi:g} dpi. Valores orientativos.", ""]
         lines += [f"{r['tinta']}: {r['cobertura_pct']} %" for r in rows]
+        if extra_lines:
+            lines += [""] + extra_lines
         lines += ["", "Problemas detectados:"] + ([f"- [{f['severidad']}] {f['mensaje']}" for f in findings] or ["- ninguno"])
         z.writestr("informe_separaciones.txt", "\n".join(lines))
     return buf.getvalue()

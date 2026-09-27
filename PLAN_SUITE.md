@@ -313,7 +313,7 @@ vista simulada y PDF con canales DeviceN.
 5. Bordes antialias: opción **"bordes duros"** (asignación directa) u **"bordes suaves"** (en los píxeles de borde,
    % proporcional a la mezcla estimada de las dos tintas vecinas).
 6. Salida: 1 canal por tinta (0/255 o suave).
-- [ ] Opción "enviar al vectorizador" con la misma paleta (enlace con S4).
+- [x] Opción "enviar al vectorizador" con la misma paleta (enlace con S4).
 
 ### 7.3 Modelo de mezcla de tintas (`core/colorscience.py`, compartido)
 Aproximación documentada (no espectral):
@@ -337,8 +337,8 @@ Aproximación documentada (no espectral):
    con **choke** (erosión de 1–3 px al dpi de salida) para que no asome por los bordes, y **blanco de luces** opcional
    (una segunda pasada de blanco solo en las luces).
 5. Postproceso por canal: curva (gamma), punto mínimo (eliminar < 3–5%, que no se imprime) y punto máximo.
-- [ ] Mostrar el **ΔE estimado** (mapa de calor de lo que el juego de tintas no alcanza a reproducir) y el ΔE medio/p95.
-- [ ] Rendimiento: imagen de 4000×5000 con 6 tintas → ≤ 30 s (la tabla lo hace viable; paralelizar las entradas por bloques).
+- [x] Mostrar el **ΔE estimado** (mapa de calor de lo que el juego de tintas no alcanza a reproducir) y el ΔE medio/p95.
+- [x] Rendimiento: imagen de 4000×5000 con 6 tintas → ≤ 30 s (la tabla lo hace viable; paralelizar las entradas por bloques).
 
 ### 7.5 Modo **Índice** y modo **CMYK**
 - **Índice:** paleta (automática o fija) + **difusión de error** (Floyd–Steinberg o Jarvis-Judice-Ninke, elegible)
@@ -352,26 +352,26 @@ Aproximación documentada (no espectral):
   descargarlos).
 
 ### 7.6 Calibración opcional (mejora del modelo)
-- [ ] Generar un **gráfico de prueba** PDF (rampas 0–100% por tinta + sobreimpresiones de pares) para imprimir con el
+- [x] Generar un **gráfico de prueba** PDF (rampas 0–100% por tinta + sobreimpresiones de pares) para imprimir con el
       juego de tintas real.
-- [ ] El usuario introduce los Lab medidos (CSV o manual) → ajustar por mínimos cuadrados: reflectancia sólida real,
+- [x] El usuario introduce los Lab medidos (CSV o manual) → ajustar por mínimos cuadrados: reflectancia sólida real,
       factor n y curva de ganancia por tinta. Guardar como "perfil de tintas" en `datos_locales/tintas/perfiles/`.
 
 ### 7.7 Tramado (`modules/separate/halftone.py`)
-- [ ] **AM**: punto redondo/elíptico/cuadrado, lineatura (lpi) y ángulo por tinta (por defecto: serigrafía 45–65 lpi
+- [x] **AM**: punto redondo/elíptico/cuadrado, lineatura (lpi) y ángulo por tinta (por defecto: serigrafía 45–65 lpi
       a 22.5°; offset 150 lpi con C15 M75 Y0 K45), generado con una **matriz umbral** rotada a la resolución de salida
       (600–2400 dpi). Procesar por mosaicos para no exceder la memoria.
-- [ ] **FM/estocástico**: difusión de error o *blue noise* (máscara precomputada, generada por el agente con el
+- [x] **FM/estocástico**: difusión de error o *blue noise* (máscara precomputada, generada por el agente con el
       algoritmo *void-and-cluster* y guardada en `tools/`).
-- [ ] Punto mínimo y máximo imprimible (p. ej. 3%/95%).
-- [ ] Salida: TIFF 1 bit por placa (compresión CCITT G4) y vista previa ampliada.
-- [ ] Test: una rampa 0–100% tramada tiene una cobertura medida ≈ la nominal (± 2%) en cada escalón.
+- [x] Punto mínimo y máximo imprimible (p. ej. 3%/95%).
+- [x] Salida: TIFF 1 bit por placa (compresión CCITT G4) y vista previa ampliada.
+- [x] Test: una rampa 0–100% tramada tiene una cobertura medida ≈ la nominal (± 2%) en cada escalón.
 
 ### 7.8 Salidas S3
-- [ ] Canales 8 bits (TIFF por tinta), placas 1 bit, **PSD multicanal** (opcional: si no hay librería fiable, omitir y
+- [x] Canales 8 bits (TIFF por tinta), placas 1 bit, **PSD multicanal** (opcional: si no hay librería fiable, omitir y
       documentar), **PDF DeviceN** (una imagen con n canales y los nombres de las tintas, con alternativos CMYK
       desde el Lab) y vista simulada sobre el sustrato (PNG).
-- [ ] Reporte: tintas, orden, cobertura, ΔE estimado y parámetros.
+- [x] Reporte: tintas, orden, cobertura, ΔE estimado y parámetros.
 
 ### 7.9 UI (pestaña "Separar colores" → sub-pestaña "Imagen")
 Asistente de 4 pasos: **1. Imagen y sustrato → 2. Modo y tintas → 3. Ajustes (con vista previa en vivo a baja
@@ -379,13 +379,13 @@ resolución) → 4. Salida**. En el visor: vista simulada, canal individual, "so
 (original | simulada).
 
 ### 7.10 Pruebas y banco S3 (`bench/separation/`)
-- [ ] 25 casos sintéticos generados por código: logos planos de 2–8 colores con antialias + JPEG, degradados,
+- [x] 25 casos sintéticos generados por código: logos planos de 2–8 colores con antialias + JPEG, degradados,
       "fotos" sintéticas (ruido de Perlin coloreado), sobre sustrato blanco y negro.
-- [ ] Métricas: tintas planas → precisión de la paleta (ΔE a los colores verdaderos), IoU por región y nº de islas
+- [x] Métricas: tintas planas → precisión de la paleta (ΔE a los colores verdaderos), IoU por región y nº de islas
       espurias; proceso simulado → ΔE medio/p95 de la simulación vs el original y la cobertura total media.
-- [ ] Metas: tintas planas IoU medio ≥ 0.97 y ΔE de paleta ≤ 3; proceso simulado ΔE medio ≤ 6 con 6 tintas sobre
+- [x] Metas: tintas planas IoU medio ≥ 0.97 y ΔE de paleta ≤ 3; proceso simulado ΔE medio ≤ 6 con 6 tintas sobre
       negro (orientativo, ajustar tras la línea base).
-- [ ] Guardar la línea base y comparar en cada cambio (mismo mecanismo que `bench.run`).
+- [x] Guardar la línea base y comparar en cada cambio (mismo mecanismo que `bench.run`).
 
 ---
 
@@ -428,11 +428,11 @@ preprocess.py → quantize.py → regions.py → boundaries.py → fit.py → ex
    - Unidades: el usuario indica el tamaño final en mm → escalar las coordenadas.
 
 ### 8.2 Controles de preprensa (v1)
-- [ ] `min_detail_mm` (por defecto 0.15 mm): detalles más finos que eso → eliminar o engrosar (opción) según
+- [x] `min_detail_mm` (por defecto 0.15 mm): detalles más finos que eso → eliminar o engrosar (opción) según
       el tamaño final.
-- [ ] Número máximo de colores; bloquear colores de la biblioteca.
-- [ ] Simplificación global (tolerancia), respetando las esquinas.
-- [ ] Estadísticas: nº de trazados, nodos, colores y tiempo.
+- [x] Número máximo de colores; bloquear colores de la biblioteca.
+- [x] Simplificación global (tolerancia), respetando las esquinas.
+- [x] Estadísticas: nº de trazados, nodos, colores y tiempo.
 
 ### 8.3 UI (pestaña "Vectorizar")
 - Soltar la imagen → preajustes: **Logo**, **Línea (B/N)**, **Ilustración**, **Escaneo**, **Foto posterizada**.
@@ -444,10 +444,10 @@ preprocess.py → quantize.py → regions.py → boundaries.py → fit.py → ex
 
 ### 8.4 Banco de pruebas del vectorizador (`bench/vector/`), obligatorio en S4
 **Casos con verdad exacta (sintéticos):**
-- [ ] 40 logos vectoriales generados por código (formas geométricas, curvas Bézier aleatorias, texto convertido a
+- [x] 40 logos vectoriales generados por código (formas geométricas, curvas Bézier aleatorias, texto convertido a
       trazados con fuentes libres incluidas en el repositorio, trazos finos, colores de 2 a 8 tintas).
-- [ ] Rasterizados con degradaciones: 72–300 ppi, JPEG q 50–95, desenfoque, antialias, rotación ±2° y ruido.
-- [ ] Como el vector original se conoce, se mide contra él.
+- [x] Rasterizados con degradaciones: 72–300 ppi, JPEG q 50–95, desenfoque, antialias, rotación ±2° y ruido.
+- [x] Como el vector original se conoce, se mide contra él.
 
 **Casos reales:** `datos_locales/vector_bench/reales/` (el usuario aporta 10–20 imágenes: logos de WhatsApp, escaneos, etc.).
 
@@ -465,9 +465,9 @@ preprocess.py → quantize.py → regions.py → boundaries.py → fit.py → ex
 PowerTRACE**, cuyos SVG el usuario genera **a mano** con preajustes documentados y guarda en
 `datos_locales/vector_bench/externos/<herramienta>/<caso>.svg`. El banco los incluye si existen.
 
-- [ ] `uv run python -m bench.vector.run [--etiqueta …]` → reporte `.md`/`.html` con una tabla por herramienta y por tipo de caso,
+- [x] `uv run python -m bench.vector.run [--etiqueta …]` → reporte `.md`/`.html` con una tabla por herramienta y por tipo de caso,
       imágenes lado a lado y el ganador por métrica.
-- [ ] Guía en el manual: "Cómo generar los archivos de Illustrator/Corel para el banco" (preajuste, colores, exportar SVG).
+- [x] Guía en el manual: "Cómo generar los archivos de Illustrator/Corel para el banco" (preajuste, colores, exportar SVG).
 
 **Metas S4 (sintéticos):** huecos = 0% (por construcción); SSIM ≥ VTracer en ≥ 80% de los casos; nodos ≤ VTracer
 en ≥ 70% de los casos a SSIM igual o mayor (± 0.005).
@@ -476,25 +476,25 @@ en ≥ 70% de los casos a SSIM igual o mayor (± 0.005).
 
 ## 9. S5 – Vectorizador v2 (superar a Image Trace)
 
-- [ ] **Primitivas**: para cada cadena (o secuencia de cadenas entre esquinas) intentar ajustar:
+- [x] **Primitivas**: para cada cadena (o secuencia de cadenas entre esquinas) intentar ajustar:
   - **segmento recto** (mínimos cuadrados + error máximo < `prim_tol_px`),
   - **arco / círculo** (ajuste algebraico de Kåsa o Taubin + refinamiento geométrico),
   - **elipse** (Fitzgibbon directo),
   - si una región completa es un círculo, elipse o rectángulo (con esquinas redondeadas o no) → emitirla como tal.
   Aceptar la primitiva solo si el error ≤ tolerancia **y** no empeora el SSIM local. Las primitivas se convierten a
   Bézier exactas en la salida (círculo = 4 cúbicas, κ = 0.5523).
-- [ ] **Enderezado**: segmentos casi horizontales/verticales (< 2°) → exactos; ángulos casi rectos → 90°
+- [x] **Enderezado**: segmentos casi horizontales/verticales (< 2°) → exactos; ángulos casi rectos → 90°
       (opción "geometría limpia").
-- [ ] **Simetría**: detectar un eje de simetría global o por región (comparar la región reflejada, IoU > 0.97) →
+- [x] **Simetría**: detectar un eje de simetría global o por región (comparar la región reflejada, IoU > 0.97) →
       ajustar una mitad y reflejarla (opción).
-- [ ] **Paralelismo y grosor constante** en trazos (líneas de ancho uniforme): detectar trazos por la transformada de
+- [x] **Paralelismo y grosor constante** en trazos (líneas de ancho uniforme): detectar trazos por la transformada de
       distancia + esqueleto; opción de exportarlos como **trazo con grosor** en lugar de relleno (modo "línea").
-- [ ] **Zonas de texto**: detectar texto con el OCR existente; opciones: vectorizar normal / marcar la zona /
+- [x] **Zonas de texto**: detectar texto con el OCR existente; opciones: vectorizar normal / marcar la zona /
       reemplazar por texto real con una fuente elegida por el usuario (sugerir fuentes instaladas por la similitud de
       las métricas: altura x, contraste de trazo, serifas; **orientativo**).
-- [ ] **Controles de preprensa v2**: engrosar automáticamente los detalles < mínimo (dilatación vectorial por
+- [x] **Controles de preprensa v2**: engrosar automáticamente los detalles < mínimo (dilatación vectorial por
       offset), cerrar contornos para corte y opción "sin nodos duplicados".
-- [ ] **Edición básica** en la UI: fusionar dos colores, recolorear, borrar una región y volver a vectorizar una zona
+- [x] **Edición básica** en la UI: fusionar dos colores, recolorear, borrar una región y volver a vectorizar una zona
       seleccionada con otros parámetros.
 
 **Metas S5 (banco):** frente a Image Trace (cuando haya archivos) en logos: SSIM igual o mayor en ≥ 70% de los casos,
@@ -506,13 +506,13 @@ respalda. Mostrar la fecha y el enlace al reporte.
 ## 10. S6 – Preflight y códigos de barras
 
 ### 10.1 Preflight (`modules/preflight/`)
-- [ ] **Motor de reglas**: cada regla = función `check(doc, ctx) -> list[Finding]` con `id`, `severidad`
+- [x] **Motor de reglas**: cada regla = función `check(doc, ctx) -> list[Finding]` con `id`, `severidad`
       (`error` / `advertencia` / `info`), mensaje en español, página y bbox (para el visor).
-- [ ] **Perfiles** en JSON (`app/modules/preflight/perfiles/*.json`), editables y duplicables:
+- [x] **Perfiles** en JSON (`app/modules/preflight/perfiles/*.json`), editables y duplicables:
       "Offset hoja (tipo GWG2015 Sheetfed CMYK)", "Flexo empaque", "Etiquetas digital", "Serigrafía",
       "Solo revisión básica". Cada perfil activa reglas con umbrales. **No llamar a los perfiles "GWG"** (no estamos
       certificados): usar "inspirado en GWG 2015".
-- [ ] Reglas (mínimo):
+- [x] Reglas (mínimo):
   | Regla | Fuente del dato |
   |---|---|
   | Fuentes no incrustadas / Type 3 / subconjunto | PyMuPDF `get_fonts` |
@@ -531,35 +531,35 @@ respalda. Mostrar la fecha y el enlace al reporte.
   | Anotaciones/campos de formulario en el área de impresión | Annots |
   | Versión PDF/X y OutputIntent presentes/correctos | pdfinfo |
   | Imágenes con compresión JPEG muy fuerte (estimación de la calidad por las tablas de cuantización) | flujo de la imagen |
-- [ ] **Correcciones seguras** (sobre una copia, cada una opcional). **No** se intenta incrustar fuentes que faltan
+- [x] **Correcciones seguras** (sobre una copia, cada una opcional). **No** se intenta incrustar fuentes que faltan
       (no están disponibles; solo se reporta). Correcciones permitidas: eliminar anotaciones, unir tintas duplicadas (S2), añadir TrimBox/BleedBox con valores
       indicados, poner la sobreimpresión en tintas técnicas y en texto negro 100% K pequeño.
       Cada corrección → re-preflight + comparación visual antes/después (motor de Comparar).
-- [ ] Reporte PDF: resumen (errores/advertencias), lista con miniatura de la zona, perfil usado y fecha.
-- [ ] UI: soltar el PDF → elegir el perfil → resultados agrupados por severidad → clic → zoom en el visor.
+- [x] Reporte PDF: resumen (errores/advertencias), lista con miniatura de la zona, perfil usado y fecha.
+- [x] UI: soltar el PDF → elegir el perfil → resultados agrupados por severidad → clic → zoom en el visor.
 
 ### 10.2 Códigos de barras (`modules/barcodes/`)
 **Generar**
-- [ ] Tipos: EAN-13, EAN-8, UPC-A, UPC-E, ITF-14, GS1-128, Code 128, Code 39, GS1 DataMatrix, QR (segno),
+- [x] Tipos: EAN-13, EAN-8, UPC-A, UPC-E, ITF-14, GS1-128, Code 128, Code 39, GS1 DataMatrix, QR (segno),
       GS1 DataBar (vía BWIPP/treepoem).
-- [ ] Validación de datos: dígito de control (calcular o verificar), longitudes y AIs de GS1 (tabla básica de AIs
+- [x] Validación de datos: dígito de control (calcular o verificar), longitudes y AIs de GS1 (tabla básica de AIs
       comunes: 01, 10, 17, 21, 310x, 11, 15). Mensajes claros en español.
-- [ ] Parámetros: **magnificación** 80–200% (EAN-13 al 100% = 37.29 × 25.93 mm, con el módulo X = 0.33 mm), altura,
+- [x] Parámetros: **magnificación** 80–200% (EAN-13 al 100% = 37.29 × 25.93 mm, con el módulo X = 0.33 mm), altura,
       **reducción de barras (BWR)** en mm o µm (compensación de la ganancia: el usuario la indica según su proceso),
       zonas de silencio (con el indicador `>` opcional en EAN), texto legible (fuente OCR-B libre si está disponible;
       si no, documentar), color = una tinta de la biblioteca.
-- [ ] Salida **vectorial**: PDF (tinta directa o K), SVG y EPS. Nunca raster.
-- [ ] Lote: CSV → un PDF por código o una hoja.
+- [x] Salida **vectorial**: PDF (tinta directa o K), SVG y EPS. Nunca raster.
+- [x] Lote: CSV → un PDF por código o una hoja.
 
 **Verificar** (en un PDF o una imagen)
-- [ ] Detectar y **decodificar** todos los códigos con zxing-cpp sobre el render a 600 dpi (PDF) o la imagen.
-- [ ] Informar: tipo, contenido, dígito de control correcto, **magnificación medida** (desde el ancho del módulo en mm),
+- [x] Detectar y **decodificar** todos los códigos con zxing-cpp sobre el render a 600 dpi (PDF) o la imagen.
+- [x] Informar: tipo, contenido, dígito de control correcto, **magnificación medida** (desde el ancho del módulo en mm),
       zonas de silencio suficientes, contraste entre barras y fondo (desde el render en color y el Lab de las
       tintas: p. ej. rojo sobre blanco = ilegible para escáneres de luz roja → **error**), orientación respecto a la
       dirección de impresión flexo (advertencia si las barras son paralelas a la dirección de impresión).
-- [ ] **Grado estimado** inspirado en ISO/IEC 15416 (reflectancia mínima, contraste del símbolo, modulación,
+- [x] **Grado estimado** inspirado en ISO/IEC 15416 (reflectancia mínima, contraste del símbolo, modulación,
       defectos) a partir del render: mostrar como **"estimación A–F, no es una verificación certificada"**.
-- [ ] Test: generar cada tipo → verificar → decodifica el mismo contenido; casos inválidos (dígito de control malo,
+- [x] Test: generar cada tipo → verificar → decodifica el mismo contenido; casos inválidos (dígito de control malo,
       zona de silencio corta, rojo sobre blanco) disparan los avisos.
 
 ---
@@ -568,67 +568,67 @@ respalda. Mostrar la fecha y el enlace al reporte.
 
 ### 11.1 Trapping (reventado)
 Enfoque **por placas (raster)**, robusto y explicable; el trapping vectorial queda fuera de alcance (documentado).
-- [ ] Entrada: placas de S2 (a dpi de salida) + tintas con Lab.
-- [ ] Para cada par de tintas adyacentes (bordes donde una termina y otra empieza), decidir la dirección con
+- [x] Entrada: placas de S2 (a dpi de salida) + tintas con Lab.
+- [x] Para cada par de tintas adyacentes (bordes donde una termina y otra empieza), decidir la dirección con
       reglas estándar: **la tinta más clara se expande bajo la más oscura** (luminancia L*, o densidad);
       el negro/tintas oscuras no se expanden; blanco y barniz: reglas propias (el blanco se contrae = choke);
       tintas técnicas: nunca.
-- [ ] Ancho del trap por tinta y por proceso (por defecto flexo 0.15 mm, offset 0.08 mm, serigrafía 0.2–0.3 mm), con
+- [x] Ancho del trap por tinta y por proceso (por defecto flexo 0.15 mm, offset 0.08 mm, serigrafía 0.2–0.3 mm), con
       una tabla editable "tinta A → tinta B: ancho".
-- [ ] Implementación: dilatación morfológica de la placa clara **restringida** a la zona de la oscura (máscara de
+- [x] Implementación: dilatación morfológica de la placa clara **restringida** a la zona de la oscura (máscara de
       borde), con un elemento estructurante circular del radio en px. Opción de "trap al 100%" o "reducido" (p. ej. 50%) y
       tope de TAC en la zona del trap.
-- [ ] No trapear: texto < X pt (opción "mantener el texto pequeño"), degradados que se tocan (opción), imágenes
+- [x] No trapear: texto < X pt (opción "mantener el texto pequeño"), degradados que se tocan (opción), imágenes
       (opción).
-- [ ] Salida: placas con trapping (TIFF) + **mapa de traps** (capa de color en el visor para revisarlos) + PDF de placas.
-- [ ] Simulación de **mal registro**: desplazar una placa ±N µm y mostrar la vista con y sin trap (lo convence al cliente).
-- [ ] Tests: dos rectángulos adyacentes (claro/oscuro) → el claro se expande exactamente el ancho, solo bajo el oscuro.
+- [x] Salida: placas con trapping (TIFF) + **mapa de traps** (capa de color en el visor para revisarlos) + PDF de placas.
+- [x] Simulación de **mal registro**: desplazar una placa ±N µm y mostrar la vista con y sin trap (lo convence al cliente).
+- [x] Tests: dos rectángulos adyacentes (claro/oscuro) → el claro se expande exactamente el ancho, solo bajo el oscuro.
 
 ### 11.2 Step & repeat / imposición / marcas
-- [ ] Entrada: un PDF de etiqueta/diseño (usa TrimBox/BleedBox).
-- [ ] Parámetros: hoja o banda (ancho × repetición o largo en mm), filas × columnas (o "rellenar"), separación
+- [x] Entrada: un PDF de etiqueta/diseño (usa TrimBox/BleedBox).
+- [x] Parámetros: hoja o banda (ancho × repetición o largo en mm), filas × columnas (o "rellenar"), separación
       horizontal/vertical (gap), **sangrado compartido** o no, rotación por fila/columna (0/90/180/270),
       **desfase** (stagger) por fila/columna, márgenes.
-- [ ] Implementación: PyMuPDF `show_pdf_page` (reutiliza el contenido como Form XObject; el archivo no crece por copia).
-- [ ] **Marcas dinámicas**: registro (cruz, en la tinta de registro `All`), corte, **barra de control de color** con
+- [x] Implementación: PyMuPDF `show_pdf_page` (reutiliza el contenido como Form XObject; el archivo no crece por copia).
+- [x] **Marcas dinámicas**: registro (cruz, en la tinta de registro `All`), corte, **barra de control de color** con
       parches sólidos de cada tinta del trabajo y 50%, **microdots** (flexo), texto de identificación (trabajo, fecha,
       tinta: en cada placa sale su nombre con el color de esa tinta), guías de troquel.
-- [ ] Exportar PDF + reporte (nº de repeticiones, aprovechamiento %).
-- [ ] Tests: 3×4 con gap 3 mm → posiciones exactas (± 0.01 mm); las marcas aparecen en todas las placas (verificar con S2).
+- [x] Exportar PDF + reporte (nº de repeticiones, aprovechamiento %).
+- [x] Tests: 3×4 con gap 3 mm → posiciones exactas (± 0.01 mm); las marcas aparecen en todas las placas (verificar con S2).
 
 ### 11.3 Distorsión flexo
-- [ ] Compensación del alargamiento del cliché al montarlo en el cilindro:
+- [x] Compensación del alargamiento del cliché al montarlo en el cilindro:
       `D% = (2π · k / R) · 100`, con `k` = espesor del cliché − espesor de la base de poliéster (factor k de la tabla del
       fabricante, **introducido por el usuario**) y `R` = repetición (desarrollo del cilindro) en mm. Documentar la
       fórmula y permitir introducir **D% directamente** (lo que da el fabricante).
-- [ ] Escalar el PDF solo en la dirección de impresión (elegir horizontal/vertical) con PyMuPDF (matriz), por página.
-- [ ] Añadir una nota con la distorsión aplicada en el margen. Test: 100 mm con D = 2% → 98 mm.
+- [x] Escalar el PDF solo en la dirección de impresión (elegir horizontal/vertical) con PyMuPDF (matriz), por página.
+- [x] Añadir una nota con la distorsión aplicada en el margen. Test: 100 mm con D = 2% → 98 mm.
 
 ### 11.4 Braille
-- [ ] Traducción de texto a braille español (grado 1) con liblouis (`es-g1.ctb`). Si `louis` no está disponible en
+- [x] Traducción de texto a braille español (grado 1) con liblouis (`es-g1.ctb`). Si `louis` no está disponible en
       Windows, implementar una **tabla propia de grado 1 español** (alfabeto, acentos, números con signo numérico,
       mayúsculas) y documentarla.
-- [ ] Geometría **Marburg Medium** (usada en farmacéutica, EN 15823): diámetro de punto ≈ 1.6 mm, distancia entre
+- [x] Geometría **Marburg Medium** (usada en farmacéutica, EN 15823): diámetro de punto ≈ 1.6 mm, distancia entre
       puntos 2.5 mm, entre caracteres 6.0 mm y entre líneas 10.0 mm (**verificar** los valores con la norma o con la
       referencia disponible y hacerlos configurables).
-- [ ] Salida: capa vectorial en la tinta técnica "Braille" (sobreimpresión) + vista previa. Aviso de la zona libre de
+- [x] Salida: capa vectorial en la tinta técnica "Braille" (sobreimpresión) + vista previa. Aviso de la zona libre de
       pliegues/solapas.
-- [ ] Test: "Paracetamol 500 mg" → celdas esperadas (tabla de referencia en el test).
+- [x] Test: "Paracetamol 500 mg" → celdas esperadas (tabla de referencia en el test).
 
 ### 11.5 Gama extendida (tipo Equinox)
-- [ ] Juego de tintas fijo (p. ej. CMYK+OGV) con Lab de sus sólidos (biblioteca del usuario).
-- [ ] Para cada tinta directa del trabajo: buscar coberturas (≤ 3 tintas activas, preferir 2) que minimicen ΔE2000
+- [x] Juego de tintas fijo (p. ej. CMYK+OGV) con Lab de sus sólidos (biblioteca del usuario).
+- [x] Para cada tinta directa del trabajo: buscar coberturas (≤ 3 tintas activas, preferir 2) que minimicen ΔE2000
       usando el modelo 7.3 (o el perfil calibrado 7.6) con `least_squares` + búsqueda combinatoria de subconjuntos.
-- [ ] Tabla: tinta directa → receta (%), ΔE estimado y semáforo (≤ 2 verde, ≤ 4 amarillo, > 4 rojo = "no reproducible
+- [x] Tabla: tinta directa → receta (%), ΔE estimado y semáforo (≤ 2 verde, ≤ 4 amarillo, > 4 rojo = "no reproducible
       con este juego").
-- [ ] Aplicar al PDF: reemplazar cada `Separation` convertible por un `DeviceN` de las tintas fijas con la función de
+- [x] Aplicar al PDF: reemplazar cada `Separation` convertible por un `DeviceN` de las tintas fijas con la función de
       tinte correspondiente (lineal por tramo). Comparar el render antes/después (simulado).
-- [ ] Nota honesta en la UI: "estimación basada en un modelo; confirmar con prueba impresa".
+- [x] Nota honesta en la UI: "estimación basada en un modelo; confirmar con prueba impresa".
 
 ### 11.6 Prueba en pantalla (soft proof)
-- [ ] Simulación del trabajo con: tintas reales (Lab), sustrato (color + textura opcional kraft/cartón/prenda),
+- [x] Simulación del trabajo con: tintas reales (Lab), sustrato (color + textura opcional kraft/cartón/prenda),
       ganancia de punto (curva simple por tinta) y opción "ver sin blanco".
-- [ ] Siempre con la etiqueta "Vista orientativa, no es una prueba contractual".
+- [x] Siempre con la etiqueta "Vista orientativa, no es una prueba contractual".
 
 **Criterios S7:** cada herramienta con sus tests y una sección en el manual con capturas.
 
@@ -636,15 +636,15 @@ Enfoque **por placas (raster)**, robusto y explicable; el trapping vectorial que
 
 ## 12. S8 – Automatización ("recetas")
 
-- [ ] **Receta** = JSON con una lista de pasos, cada uno `{modulo, accion, parametros}`, p. ej.:
+- [x] **Receta** = JSON con una lista de pasos, cada uno `{modulo, accion, parametros}`, p. ej.:
       `preflight(perfil=Flexo) → separar.unir_duplicadas → separar.exportar_placas(dpi=1200) → tools.step_repeat(…) → reporte`.
-- [ ] Editor visual simple en la UI (lista de pasos con parámetros; arrastrar para reordenar) + importar/exportar JSON.
-- [ ] Ejecutar una receta sobre: un archivo, una **carpeta** o una **carpeta vigilada** (watchdog: `entrada/` →
+- [x] Editor visual simple en la UI (lista de pasos con parámetros; arrastrar para reordenar) + importar/exportar JSON.
+- [x] Ejecutar una receta sobre: un archivo, una **carpeta** o una **carpeta vigilada** (watchdog: `entrada/` →
       `salida/` + `errores/` + `reportes/`).
-- [ ] Condiciones: "si el preflight tiene errores → detener y mover a `errores/`".
-- [ ] Registro por archivo (log legible en español) y resumen del lote (reutiliza los lotes de v2).
-- [ ] Recetas de ejemplo incluidas: "Revisión rápida", "Preparar etiqueta flexo", "Separar logo para serigrafía".
-- [ ] Tests: receta de 3 pasos sobre 5 archivos sintéticos → 5 salidas + 1 archivo con error en `errores/`.
+- [x] Condiciones: "si el preflight tiene errores → detener y mover a `errores/`".
+- [x] Registro por archivo (log legible en español) y resumen del lote (reutiliza los lotes de v2).
+- [x] Recetas de ejemplo incluidas: "Revisión rápida", "Preparar etiqueta flexo", "Separar logo para serigrafía".
+- [x] Tests: receta de 3 pasos sobre 5 archivos sintéticos → 5 salidas + 1 archivo con error en `errores/`.
 
 ---
 

@@ -14,3 +14,10 @@ datos_locales/
 data/.acceso_directo_creado
 .coverage
 htmlcov/
+
+# certificados de firma del plugin: NUNCA a git
+*.p12
+*.pfx
+*.zxp
+plugin/cep/.debug
+docs/*_raw.pdf

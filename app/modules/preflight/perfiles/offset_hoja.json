@@ -1,0 +1,102 @@
+{
+ "nombre": "Offset hoja (inspirado en GWG 2015 Sheetfed CMYK)",
+ "descripcion": "Impresión offset en hoja: CMYK, 300 % de cobertura, sangrado 3 mm. Inspirado en las recomendaciones GWG 2015; no es una certificación.",
+ "reglas": {
+  "fuentes_no_incrustadas": {
+   "activa": true,
+   "severidad": "error"
+  },
+  "fuentes_type3": {
+   "activa": true,
+   "severidad": "advertencia"
+  },
+  "resolucion": {
+   "activa": true,
+   "severidad": "advertencia",
+   "color_min": 250,
+   "gris_min": 250,
+   "bn_min": 800
+  },
+  "espacios_color": {
+   "activa": true,
+   "severidad": "advertencia",
+   "prohibidos": [
+    "RGB",
+    "Lab"
+   ]
+  },
+  "tintas_directas_max": {
+   "activa": true,
+   "severidad": "advertencia",
+   "max": 4
+  },
+  "tintas_duplicadas": {
+   "activa": true,
+   "severidad": "advertencia"
+  },
+  "tac": {
+   "activa": true,
+   "severidad": "error",
+   "limite": 300
+  },
+  "linea_fina": {
+   "activa": true,
+   "severidad": "advertencia",
+   "min_mm": 0.1
+  },
+  "texto_pequeno": {
+   "activa": true,
+   "severidad": "advertencia",
+   "min_pt": 6
+  },
+  "negro_enriquecido_texto": {
+   "activa": true,
+   "severidad": "advertencia",
+   "max_pt": 12
+  },
+  "sobreimpresion": {
+   "activa": true,
+   "severidad": "advertencia"
+  },
+  "sangrado": {
+   "activa": true,
+   "severidad": "error",
+   "min_mm": 3
+  },
+  "trimbox_ausente": {
+   "activa": true,
+   "severidad": "advertencia"
+  },
+  "zona_segura": {
+   "activa": true,
+   "severidad": "info",
+   "mm": 3
+  },
+  "transparencias": {
+   "activa": true,
+   "severidad": "info"
+  },
+  "capas_ocultas": {
+   "activa": true,
+   "severidad": "advertencia"
+  },
+  "anotaciones": {
+   "activa": true,
+   "severidad": "advertencia"
+  },
+  "pdfx": {
+   "activa": true,
+   "severidad": "info",
+   "requerido": null
+  },
+  "output_intent": {
+   "activa": true,
+   "severidad": "info"
+  },
+  "jpeg_calidad": {
+   "activa": true,
+   "severidad": "advertencia",
+   "min": 60
+  }
+ }
+}

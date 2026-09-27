@@ -1,6 +1,29 @@
 # Cambios de FAVERVIEW
 
-## 3.0.0 (suite) — en desarrollo
+## 3.2.0 (plugin de Illustrator) — 2026-09-26
+- Nuevo: plugin para usar FAVERVIEW dentro de Illustrator 2024–2026 (vectorizar, preflight, separar, comparar, códigos y trap).
+- Nuevo: auto-trap (reventado) con la tolerancia de movimiento de tu máquina y prueba de filetes.
+- Actualizaciones: el aviso muestra la versión nueva y sus novedades, y hay un botón «Buscar actualizaciones» en el pie.
+- Manuales nuevos: instalación y actualización, guía rápida, plugin de Illustrator y guía del mantenedor.
+- **Revisión previa a publicar:** el aviso de actualización ya no se pierde al reiniciar la app dentro de las 24 h (se recalcula con las
+  referencias descargadas), muestra la versión nueva (`pyproject.toml` de `origin/main`) y las novedades (primera sección de este archivo),
+  `POST /api/update/check` para comprobar en el momento y «Actualizar» se niega fuera de la rama `main`. Documentación: 5 PDF generados con
+  la versión del proyecto, capítulos renumerados, comandos largos partidos en líneas cortas (al copiarlos desde el PDF ya no se rompen),
+  generación en memoria (sin `_raw.pdf` sueltos) y eliminados dos `.md` vacíos de `docs/`.
+- **Plugin de Illustrator (CEP):** servidor con token en `%APPDATA%\FAVERVIEW\plugin.json`, CORS restringido a CEP, defensa contra DNS rebinding, `/api/plugin/*` (vectorizar, preflight,
+  separar, comparar, códigos, braille, verificar códigos, trap, clasificación de tintas) con bbox en puntos PDF; panel HTML/JS sin Node con 7 pestañas y conexión verde/amarilla/roja; capa host
+  ExtendScript (exportar sin tocar el documento, colocar, muestras spot sin duplicar, zoom, selección, marcadores, correcciones nativas); trap vectorial de un PDF de arte plano; empaquetado
+  y firma (`build_zxp.py`), instalación de desarrollo, aviso de nueva versión del plugin, CI, documentación y `MIGRACION_UXP.md`.
+- Pruebas automáticas sin Illustrator: mock de Illustrator (Node), núcleo del panel contra un servidor real y el panel completo en Edge con CEP simulado. Las **pruebas manuales en Illustrator
+  (`plugin/PRUEBAS_MANUALES.md`) están pendientes**.
+
+## 3.1.0 (auto-trap) — 2026-09-26
+- **Auto-trap con tolerancia de registro:** perfiles de máquina (`core/press`), motor de reglas R1–R12 (corrige el defecto de luminosidad parecida con trap centrado,
+  retracción del negro enriquecido, objetos finos, texto pequeño, tolerancia elíptica), **prueba de movimiento** objetiva, auto-trap integrado en Separar (imagen y PDF),
+  trap vectorial con sobreimpresión en el Vectorizador, regla de preflight «Bordes sin protección de registro», pasos de receta `auto_trap` y `prueba_movimiento`,
+  banco `bench/trapping` (60 casos, 0 filetes) y capítulo del manual.
+
+## 3.0.0 (suite) — 2026-09-26
 - **S0 – Preparación:** código de Comparar movido a `app/modules/compare/` y `app/core/`, rutas repartidas en routers
   (`app/main.py` ≤ 80 líneas), `GET /api/status`, detección de Ghostscript, nuevas dependencias y interfaz con pestañas.
 - **S1 – Núcleo compartido:** `core/units`, `core/colorscience` (Lab D50, ΔE2000 validada con los 34 pares de Sharma, densidad
@@ -15,6 +38,34 @@
 - **Revisión previa a publicar:** las placas Cyan/Magenta/Yellow/Black de contenido DeviceCMYK se mostraban como tinta
   «spot» en la lista, el análisis y el informe exportado; ahora se identifican como tintas de proceso (con prueba). La marca
   local `data/.acceso_directo_creado` ya no se versiona (impedía crear el acceso directo en equipos nuevos).
+- **S3 – Separar colores (imagen):** modos tintas planas (k-means en Lab, fusión por ΔE2000, limpieza de islas, bordes suaves),
+  proceso simulado (búsqueda de coberturas con el modelo de mezcla, base blanca con choke, ΔE estimado), índice (difusión
+  Floyd–Steinberg) y CMYK con perfil ICC y límite de TAC; tramado AM y FM (ruido azul void-and-cluster); salidas: canales TIFF,
+  placas de 1 bit CCITT G4, PDF DeviceN con alternativo CMYK, simulación e informe. Banco `bench/separation` (25 casos).
+- **S4 – Vectorizar (v1):** pipeline preprocesado → cuantización en tintas → fronteras de grieta compartidas (cero huecos por
+  construcción) → ajuste de Bézier (Schneider) con esquinas → SVG, PDF con tintas directas (Separation), EPS (Ghostscript) y DXF
+  en mm. Preajustes Logo/Línea/Ilustración/Escaneo/Foto, modos sin solapes/apilado y visor con contornos/diferencias.
+  Banco `bench/vector` (40 logos con vector verdadero vs VTracer y Potrace): SSIM ≥ VTracer en 87 % de los casos y ≈ 3,6× menos nodos.
+- **S5 – Vectorizar (v2):** primitivas (arcos, círculos y elipses exactos como Bézier), geometría limpia (rectas casi H/V exactas moviendo
+  nodos compartidos), simetría, líneas como trazos con grosor, texto (marcar zonas o reemplazar por texto real), engrosado de detalles finos,
+  edición básica (unir, borrar, recolorear, volver a trazar una zona) y limpieza de anillos de antialias. Banco: SSIM ≥ VTracer en 92 % de los
+  casos con ≈ 4,5× menos nodos y 0 huecos.
+- **S6 – Preflight y códigos de barras:** motor de reglas con 5 perfiles JSON editables (inspirados en GWG 2015, sin llamarlos GWG): fuentes,
+  resolución efectiva, espacios de color, tintas directas y duplicadas, TAC, líneas y texto pequeño, sobreimpresión, sangrado y zona segura,
+  transparencias, capas, anotaciones, PDF/X, OutputIntent y compresión JPEG; correcciones seguras sobre copia con comprobación antes/después;
+  reporte PDF con miniaturas. Códigos de barras: generar 12 tipos en vectores (EAN/UPC, ITF-14, Code 128, GS1-128, Code 39, DataBar,
+  DataMatrix, GS1 DataMatrix, QR) con dígito de control, AIs GS1, magnificación, BWR y zonas de silencio; verificar en PDF/imagen (decodificación,
+  magnificación medida, contraste en luz roja, dirección flexo y grado A–F estimado) y lote CSV.
+- **S7 – Herramientas:** trapping por placas (la tinta más clara se expande bajo la más oscura, tabla de anchos, tope de TAC, choke del blanco,
+  simulación de mal registro con/sin trap), step & repeat con rotación, desfase y marcas (registro /All, corte, barra de color, microdots,
+  rótulo de cada tinta en su placa), distorsión flexo (D % = 2π·k/R·100), braille español grado 1 (tabla propia, Marburg Medium configurable,
+  tinta técnica en sobreimpresión), gama extendida (recetas ≤ 3 tintas con semáforo y conversión a DeviceN) y prueba en pantalla con
+  ganancia de punto y textura. Calibración opcional del modelo de mezcla (gráfico, plantilla CSV y ajuste de n y ganancia por tinta).
+- **S8 – Automatizar:** recetas JSON con 12 pasos (preflight, correcciones, unir duplicadas, exportar placas, step & repeat, distorsión flexo,
+  trapping, verificar códigos, vectorizar, separar imagen, resumen), condiciones que detienen el proceso, ejecución sobre archivo, carpeta y carpeta
+  vigilada (watchdog) con salida/, errores/ y reportes/, editor visual y 3 recetas de ejemplo.
+- **Transversal:** «Enviar a…» entre módulos, botón Cancelar en trabajos largos, manual PDF ampliado con un capítulo por módulo (capturas, glosario,
+  Ghostscript, bibliotecas de tintas), guía de instalación con Ghostscript, `tools/manual/` para regenerarlos.
 
 ## 2.0.0 — 2026-09-25
 

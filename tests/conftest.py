@@ -35,3 +35,12 @@ def _datos_locales_aislado(tmp_path_factory, monkeypatch):
         vocab._cache["mtime"] = None
     except Exception:
         pass
+
+
+@pytest.fixture(autouse=True)
+def _plugin_json_aislado(tmp_path_factory, monkeypatch):
+    """El archivo de conexion del plugin (token + puerto) va a una carpeta temporal, nunca a %APPDATA%."""
+    f = tmp_path_factory.mktemp("plugin") / "plugin.json"
+    monkeypatch.setenv("FAVERVIEW_PLUGIN_JSON", str(f))
+    from app.core import plugin_auth
+    monkeypatch.setattr(plugin_auth, "_TOKEN", None)

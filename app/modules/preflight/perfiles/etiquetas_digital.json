@@ -1,0 +1,97 @@
+{
+ "nombre": "Etiquetas digital",
+ "descripcion": "Etiquetas en impresión digital: TAC 320 %, líneas finas hasta 0,08 mm.",
+ "reglas": {
+  "fuentes_no_incrustadas": {
+   "activa": true,
+   "severidad": "error"
+  },
+  "fuentes_type3": {
+   "activa": true,
+   "severidad": "info"
+  },
+  "resolucion": {
+   "activa": true,
+   "severidad": "advertencia",
+   "color_min": 200,
+   "gris_min": 200,
+   "bn_min": 600
+  },
+  "espacios_color": {
+   "activa": true,
+   "severidad": "info",
+   "prohibidos": [
+    "Lab"
+   ]
+  },
+  "tintas_directas_max": {
+   "activa": true,
+   "severidad": "advertencia",
+   "max": 6
+  },
+  "tintas_duplicadas": {
+   "activa": true,
+   "severidad": "advertencia"
+  },
+  "tac": {
+   "activa": true,
+   "severidad": "advertencia",
+   "limite": 320
+  },
+  "linea_fina": {
+   "activa": true,
+   "severidad": "advertencia",
+   "min_mm": 0.08
+  },
+  "texto_pequeno": {
+   "activa": true,
+   "severidad": "info",
+   "min_pt": 5
+  },
+  "negro_enriquecido_texto": {
+   "activa": true,
+   "severidad": "info",
+   "max_pt": 10
+  },
+  "sobreimpresion": {
+   "activa": true,
+   "severidad": "advertencia"
+  },
+  "sangrado": {
+   "activa": true,
+   "severidad": "advertencia",
+   "min_mm": 2
+  },
+  "trimbox_ausente": {
+   "activa": true,
+   "severidad": "advertencia"
+  },
+  "zona_segura": {
+   "activa": true,
+   "severidad": "info",
+   "mm": 2
+  },
+  "transparencias": {
+   "activa": false
+  },
+  "capas_ocultas": {
+   "activa": true,
+   "severidad": "advertencia"
+  },
+  "anotaciones": {
+   "activa": true,
+   "severidad": "advertencia"
+  },
+  "pdfx": {
+   "activa": false
+  },
+  "output_intent": {
+   "activa": false
+  },
+  "jpeg_calidad": {
+   "activa": true,
+   "severidad": "advertencia",
+   "min": 50
+  }
+ }
+}

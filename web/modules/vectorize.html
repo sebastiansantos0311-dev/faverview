@@ -1,0 +1,57 @@
+<section id="vz-setup" class="setup">
+  <div class="drop" id="vz-drop"><div class="drop-title">Imagen a vectorizar</div>
+    <div class="drop-hint">Arrastra aquí o haz clic<br><small>Logos, ilustraciones, escaneos · JPG, PNG, TIFF, BMP, WEBP</small></div>
+    <input type="file" hidden accept=".jpg,.jpeg,.png,.tif,.tiff,.bmp,.webp"></div>
+  <div id="vz-err" class="error hidden"></div>
+</section>
+<section id="vz-main" class="hidden">
+  <div class="sp-bar">
+    <strong id="vz-name"></strong>
+    <label>Preajuste <select id="vz-preset"><option value="logo">Logo</option><option value="linea">Línea (B/N)</option>
+      <option value="ilustracion">Ilustración</option><option value="escaneo">Escaneo</option><option value="foto">Foto posterizada</option></select></label>
+    <label>Ver <select id="vz-ver"><option value="vector">Vector</option><option value="original">Original</option>
+      <option value="sobre">Superpuesto</option><option value="contornos">Contornos y nodos</option><option value="dif">Diferencias</option></select></label>
+    <label>Opacidad <input id="vz-op" type="range" min="0" max="100" value="50"></label>
+    <span class="sp-gap"></span>
+    <button id="vz-new" class="ghost">Otra imagen</button>
+  </div>
+  <div class="sp-grid">
+    <aside class="sp-side">
+      <h3>Ajustes</h3>
+      <label>Colores máximos <input id="vz-k" type="number" min="2" max="12" value="6" class="num"></label>
+      <label>Fusionar colores ΔE &lt; <input id="vz-fus" type="number" min="1" max="30" value="8" class="num"></label>
+      <label>Detalle mínimo (mm) <input id="vz-det" type="number" min="0" max="5" step="0.05" value="0.15" class="num"></label>
+      <label>Tolerancia del ajuste (px) <input id="vz-tol" type="number" min="0.2" max="5" step="0.1" value="0.7" class="num"></label>
+      <label>Ángulo de esquina (°) <input id="vz-esq" type="number" min="20" max="120" value="60" class="num"></label>
+      <label>Suavidad <input id="vz-suav" type="number" min="0" max="5" step="0.2" value="1.6" class="num"></label>
+      <label>Modo <select id="vz-modo"><option value="sin_solapes">Sin solapes (fronteras compartidas)</option><option value="apilado">Apilado (sin agujeros)</option></select></label>
+      <label>Tamaño final (mm de ancho) <input id="vz-mm" type="number" min="0" step="1" value="0" class="num"></label>
+      <label><input id="vz-trap" type="checkbox"> Añadir trap para impresión (PDF y SVG)</label>
+      <label>Perfil de máquina <select id="vz-press"></select></label>
+      <div id="vz-trapinfo" class="hint"></div>
+      <details><summary>Geometría y preprensa (v2)</summary>
+        <label><input id="vz-prim" type="checkbox"> Primitivas (arcos, círculos, elipses)</label>
+        <label><input id="vz-limpia" type="checkbox"> Geometría limpia (enderezar)</label>
+        <label><input id="vz-sim" type="checkbox"> Simetría (si el diseño la tiene)</label>
+        <label><input id="vz-trazos" type="checkbox"> Líneas como trazos con grosor</label>
+        <label>Engrosar detalles menores de (mm) <input id="vz-eng" type="number" min="0" step="0.05" value="0" class="num"></label>
+        <label>Texto <select id="vz-texto"><option value="normal">Vectorizar normal</option><option value="marcar">Marcar la zona</option><option value="reemplazar">Reemplazar por texto real</option></select></label>
+        <label>Fuente del texto <input id="vz-fuente" value="Arial"></label>
+      </details>
+      <button id="vz-go" class="ghost">Vectorizar</button>
+      <h3>Descargar</h3>
+      <div class="sp-actions">
+        <a class="btn" id="vz-dsvg" href="#">SVG</a><a class="btn" id="vz-dpdf" href="#">PDF (tintas directas)</a>
+        <a class="btn" id="vz-deps" href="#">EPS</a><a class="btn" id="vz-ddxf" href="#">DXF (corte)</a>
+      </div>
+    </aside>
+    <div class="sp-center"><div class="viewer" id="vz-viewer"></div><div id="vz-stats" class="sp-probe"></div></div>
+    <aside class="sp-side"><h3>Colores</h3><div id="vz-cols"></div>
+      <div class="sp-actions">
+        <button id="vz-unir" class="ghost">Unir con el siguiente</button>
+        <button id="vz-borrar" class="ghost">Borrar el seleccionado</button>
+        <label>Recolorear <input id="vz-recol" type="color" value="#000000"></label>
+        <button id="vz-zona" class="ghost">Volver a trazar una zona…</button>
+      </div></aside>
+  </div>
+</section>

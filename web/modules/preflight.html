@@ -1,0 +1,24 @@
+<section id="pf-setup" class="setup">
+  <div class="drop" id="pf-drop"><div class="drop-title">PDF a revisar</div>
+    <div class="drop-hint">Arrastra aquí o haz clic<br><small>Revisión técnica con perfiles: fuentes, imágenes, tintas, sangrado y más</small></div>
+    <input type="file" hidden accept=".pdf"></div>
+  <div id="pf-err" class="error hidden"></div>
+</section>
+<section id="pf-main" class="hidden">
+  <div class="sp-bar">
+    <strong id="pf-name"></strong>
+    <label>Perfil <select id="pf-prof"></select></label>
+    <label>Página <select id="pf-page"></select></label>
+    <button id="pf-run" class="ghost">Revisar de nuevo</button>
+    <span class="sp-gap"></span>
+    <button id="pf-fix" class="ghost">Corregir…</button>
+    <a id="pf-rep" class="btn" href="#">Reporte PDF</a>
+    <a id="pf-dl" class="btn hidden" href="#">Descargar corregido</a>
+    <button id="pf-undo" class="ghost hidden">Deshacer correcciones</button>
+    <button id="pf-new" class="ghost">Otro PDF</button>
+  </div>
+  <div class="sp-grid pf-grid">
+    <aside class="sp-side"><h3>Resultado <span id="pf-sum"></span></h3><div id="pf-list"></div><div id="pf-notes" class="hint"></div></aside>
+    <div class="sp-center"><div class="viewer" id="pf-viewer"></div></div>
+  </div>
+</section>

@@ -25,6 +25,8 @@ const FVDrop = {
 
   /* enlaza una caja: clic → selector, arrastrar y soltar */
   bind(box, input, onFile, onError) {
+    const inner = onFile;
+    onFile = f => { FVDrop.last = { file: f, from: window.FVRouter ? FVRouter.current : null }; window.dispatchEvent(new CustomEvent("fv:file", { detail: f })); return inner(f); };
     box.addEventListener("click", e => { if (!e.target.closest(".pagesel, select, button")) input.click(); });
     input.addEventListener("change", () => input.files[0] && onFile(input.files[0]));
     ["dragenter", "dragover"].forEach(ev => box.addEventListener(ev, e => { e.preventDefault(); box.classList.add("over"); }));

@@ -1,0 +1,33 @@
+<div class="sp-grid au-grid">
+  <aside class="sp-side">
+    <h3>Recetas</h3><div id="au-list"></div>
+    <div class="sp-actions">
+      <button id="au-new" class="ghost">Nueva receta</button>
+      <button id="au-imp" class="ghost">Importar JSON…</button><input id="au-impf" type="file" accept=".json" hidden>
+      <button id="au-exp" class="ghost">Exportar JSON</button>
+    </div>
+    <p class="hint">Una receta encadena pasos (preflight, separar, step &amp; repeat…) para aplicarlos a un archivo, una carpeta o una carpeta vigilada.</p>
+  </aside>
+  <div class="sp-center">
+    <div class="sp-bar"><label>Nombre <input id="au-name" style="width:240px"></label><label>Descripción <input id="au-desc" style="width:340px"></label></div>
+    <div id="au-steps"></div>
+    <div class="sp-bar">
+      <select id="au-add"></select><button id="au-addb" class="ghost">Añadir paso</button>
+      <span class="sp-gap"></span>
+      <button id="au-save" class="ghost">Guardar receta</button><button id="au-del" class="ghost">Borrar</button>
+    </div>
+    <h3>Ejecutar</h3>
+    <div class="au-run">
+      <div class="drop tl-drop" id="au-drop"><span>Suelta un archivo (PDF o imagen) para ejecutar la receta</span><input type="file" hidden accept=".pdf,.png,.jpg,.jpeg,.tif,.tiff,.bmp,.webp"></div>
+      <div class="sp-bar">
+        <label>Carpeta de entrada <input id="au-in" style="width:280px" placeholder="C:\trabajos\entrada"></label>
+        <label>Carpeta de salida <input id="au-out" style="width:280px" placeholder="C:\trabajos\salida"></label>
+        <button id="au-folder" class="ghost">Procesar carpeta</button>
+        <button id="au-watch" class="ghost">Vigilar carpeta</button>
+      </div>
+      <div id="au-watching" class="hint"></div>
+    </div>
+    <pre id="au-log" class="au-log"></pre>
+    <a id="au-dl" class="btn hidden" href="#">Descargar resultado (ZIP)</a>
+  </div>
+</div>

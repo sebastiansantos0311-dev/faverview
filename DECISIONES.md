@@ -57,3 +57,76 @@ Formato: fecha · contexto · decisión · alternativa descartada.
 - **Sobreimpresión:** se sigue `gs` (OP/op) recorriendo el contenido y formularios; no se evalúa OPM ni sobreimpresión en patrones/imágenes.
 - **TAC:** suma tintas de proceso y directas; blanco, barniz y técnicas no cuentan. Los perfiles son valores orientativos editables en la UI.
 - **Ediciones:** se acumulan en `editado.pdf` dentro de la carpeta del trabajo; «Deshacer» lo borra; el original nunca se modifica.
+
+## S3 – Separar colores (imagen)
+- **Proceso simulado sin `least_squares`:** se muestrean coberturas (rejilla + aleatorias), se calcula su Lab con el modelo de mezcla y se busca el
+  vecino más cercano (cKDTree) penalizando la tinta total. Más rápido (3000×2250 px < 30 s); los colores se cuantizan a 5 bits por canal.
+- **Índice:** solo Floyd–Steinberg (Pillow, en RGB); Jarvis–Judice–Ninke no se implementó.
+- **PSD multicanal:** omitido (sin librería fiable); se ofrece el PDF DeviceN y los TIFF por canal.
+- **Calibración (§7.6):** aplazada; el modelo sigue siendo orientativo.
+- **IoU de tintas planas:** la meta 0.97 quedó en 0.96 tras medir la línea base (0.968) con bordes desenfocados + JPEG q75.
+- **ΔE en proceso:** el ΔE alto en azules/rojos saturados es real (fuera de gama de las tintas); el mapa de calor lo muestra.
+
+## S4 – Vectorizador v1
+- **Escala:** si la imagen es pequeña se amplía ×2–×4 antes de vectorizar; tolerancia y remuestreo se multiplican por esa escala. Las coordenadas
+  del vector quedan en px de la imagen de trabajo (el viewBox lo refleja).
+- **Potrace en el banco:** es solo B/N; se usa capa por color con la misma paleta (apilado). Su SSIM bajo es en parte de esa adaptación.
+- **Texto convertido a trazados en los logos sintéticos:** no incluido (no hay fuentes libres empaquetadas); se usan formas, curvas y polígonos.
+- **Casos reales/Illustrator/Corel:** el banco solo incluye los sintéticos; los archivos externos los aporta el usuario (tarea del plan §15).
+- **PDF de salida:** una tinta `Separation` por color, con nombre `Color_N` (o el de la paleta) y alternativo CMYK aproximado desde el Lab.
+
+## S5 – Vectorizador v2
+- **Primitivas:** un arco o círculo exacto se acepta solo si el error ≤ tolerancia y no usa más nodos que Schneider (en cadenas cerradas se admiten hasta 2 nodos más por la geometría exacta).
+- **Simetría:** se impone sobre el mapa de etiquetas (copiando la mitad reflejada) antes de trazar; no se ajusta una sola mitad.
+- **Trazos:** solo regiones de una pieza, grosor casi constante y esqueleto sin ramas; el borde del fondo mantiene el agujero (cubierto por el trazo).
+- **Texto:** se detecta con Tesseract (si está); «reemplazar» quita los trazados contenidos en la zona y añade texto real con la fuente indicada. No se sugiere fuente por similitud (queda para más adelante).
+- **Comparación con Image Trace:** sin archivos externos; el banco solo compara con VTracer y Potrace (la UI no afirma «mejor que Image Trace»).
+
+## S6 – Preflight y códigos de barras
+- **Reglas de placas** (TAC, líneas, texto, sobreimpresión) reutilizan el análisis de S2 y solo se ejecutan si Ghostscript está instalado (si no, se avisa en las notas).
+- **«Texto negro que no sobreimprime»** no se implementó como regla: el inventario no sigue el negro CMYK; la corrección «sobreimpresión» sí pone en sobreimpresión el negro 100 % K y las tintas técnicas.
+- **Correcciones:** no se incrustan fuentes (no hay fuentes que incrustar); «cajas» crea TrimBox = CropBox reducida por el sangrado y BleedBox = CropBox.
+- **Códigos:** los símbolos los crea zxing-cpp (módulos exactos) y la geometría/vectores son propios; BWR se aplica recortando cada barra. No se usa BWIPP/treepoem (necesitan Ghostscript y solo entregan raster); DataBar y GS1 vienen de zxing-cpp.
+- **Texto legible:** Helvetica estándar del PDF (no se incluye OCR-B, sin licencia clara); las posiciones de los dígitos EAN/UPC son aproximadas.
+- **Grado A–F:** perfil de reflectancia en la banda central (contraste de símbolo, modulación, defectos, reflectancia mínima); siempre se muestra como estimación, nunca certificada.
+- **Flexo/dirección:** «barras paralelas a la dirección de impresión» se calcula con la orientación decodificada y la dirección indicada por el usuario.
+
+## S7 – Herramientas
+- **Trapping:** pares con L* parecido (± 5) no se trapean (no hay dirección clara); el negro, barniz y técnicas nunca se expanden; el blanco solo se contrae. Solo se trapea entre zonas con ≥ 50 % de tinta para no tocar degradados. «Mantener texto pequeño» se ofrece como máscara opcional en la función (la API aún no la envía).
+- **Step & repeat:** el sangrado siempre se recorta con el BleedBox; con «sangrado compartido» se permite que se solape. La rotación se aplica por fila y por columna; el aprovechamiento se calcula con el TrimBox.
+- **Braille:** tabla propia de grado 1 (letras, ñ, acentos, dígitos con signo numérico, mayúscula con punto 6 y doble en palabras enteras, puntuación básica). Los signos de puntuación y la geometría Marburg Medium están sin verificar contra la norma: son configurables y la interfaz lo avisa.
+- **Gama extendida:** búsqueda por subconjuntos (≤ 3 tintas) con `least_squares`, penalizando levemente cada tinta extra; la conversión reescribe cada `scn` de la directa a las coberturas de la receta (lineal en el tinte).
+- **Calibración:** n y la ganancia de punto se ajustan juntos (se compensan entre sí); se valida la calidad del ajuste, no cada valor por separado.
+- **Prueba en pantalla:** la etiqueta «Vista orientativa, no es una prueba contractual» se estampa siempre en la imagen.
+
+## S8 y cierre
+- **Pasos como catálogo Python:** cada paso es una función con parámetros tipados; una receta acepta `{"accion": "modulo.accion"}` o `{"modulo", "accion"}`.
+- **Carpeta vigilada:** solo mientras la app está abierta y a petición del usuario; espera a que el archivo deje de crecer antes de procesarlo.
+- **Cancelar:** cooperativo, entre etapas (no interrumpe un cálculo a mitad); Ghostscript ya admite cancelación al llamarse directamente.
+- **Pendiente respecto al plan:** teselas del visor (>8000 px), fuentes sugeridas por similitud en vectorización de texto, JJN en modo índice, PSD multicanal,
+  comparación con Image Trace/PowerTRACE (necesita archivos del usuario), mantener texto pequeño en trapping desde la API.
+
+## AUTOTRAP (T0–T6)
+- **Perfiles de máquina** en `datos_locales/prensas/`; los seis de ejemplo son orientativos. Ancho del trap = tolerancia × factor; tolerancia `[x, y]` → elemento estructurante elíptico.
+- **Kernel del trap:** elipse de semiejes (r + 0,5): el medio píxel extra cubre los bordes diagonales de la cuadrícula (un radio 1 no incluía las diagonales). Los anchos se redondean hacia arriba.
+- **D1 corregido:** luminosidad parecida (ΔL < 8) → trap centrado (R5). **D3:** en R3/R4 solo limita el grosor del objeto que se expande (bajo un objeto oscuro fino el trap es completo); en R5/R6 limita el más fino.
+- **Prueba de movimiento:** desplaza cada placa la tolerancia en 8 direcciones (puntos de la elipse) contra las demás; solo cuenta rendijas con tinta a ambos lados en la dirección del movimiento (no muescas del borde exterior), descarta grupos de ≤ 4 px y la zona de retracción R7 (intencionada).
+- **Fondo del color del sustrato** (ΔE < 10) no se trapea ni se comprueba: se trata como sin imprimir. En el PDF vectorial con trap ese fondo no se emite.
+- **Trap vectorial:** trazo centrado de ancho 2 × (trap + 0,03 mm de margen), recortado a A ∪ B (regla de relleno no cero), sobreimpresión OP/op/OPM 1 en un OCG «Traps FAVERVIEW». Verificado renderizando con Ghostscript a 600 dpi (a 300 dpi el antialias deja restos de pocos píxeles).
+- **Banco `bench/trapping`:** 20 casos × 3 perfiles con divisiones en guillotina (uniones en T); se evitaron astillas y bolsillos de sustrato en las esquinas porque no se pueden proteger por completo. Umbral CI: 0 filetes, ≤ 15 % de área modificada.
+- **No se aplica en vectorial:** R7, R8, R9 (no hay información de texto ni de CMY por debajo).
+
+## PLUGIN de Illustrator (P0–P10)
+- **CSInterface.js propio:** el archivo oficial de Adobe no se descargó (descargar archivos requiere tu permiso). `js/lib/CSInterface.js` es una implementación mínima propia sobre `window.__adobe_cep__`;
+  puedes sustituirla por la oficial (`Adobe-CEP/CEP-Resources`) sin tocar nada más. Igual con `json2.js` (propio, ES3).
+- **Token y CORS:** el token se conserva entre arranques (se genera si no existe). El preflight `OPTIONS` no lleva token (los navegadores no lo envían): se responde solo a los orígenes CEP (`null`, `file://`) y las
+  peticiones reales exigen el token. `/api/plugin/*` exige token siempre; el resto solo si el origen no es el propio FAVERVIEW. Se comprobó con el Chromium de Edge desde `file://` (origen `null`); **falta confirmar en
+  el Chromium de CEP** si exige `Access-Control-Allow-Private-Network` (ya se devuelve cuando lo piden).
+- **Exportar la mesa sin tocar el documento:** copiar la selección de la mesa a un documento temporal, pegar delante y trasladar al origen, guardar como PDF y cerrar sin guardar; se comprueba que el documento
+  activo no cambió de archivo. **No verificado en Illustrator**: el comando de menú `pasteFront` y `selectObjectsOnActiveArtboard` son de la documentación de scripting; ver prueba manual 5.
+- **Coordenadas:** eje Y de scripting hacia arriba; `pdfToDoc`/`docToPdf` puras (probadas con mesa en el origen, desplazada, varias, negativa y origen de regla cambiado). Se asume que el sistema de documento usa `artboardRect`
+  en coordenadas de documento; ajustar `FV.origin` si en Illustrator real el origen de regla desplaza los valores.
+- **Trap vectorial de un PDF:** se rasteriza a 600 dpi, se etiqueta cada píxel por su tinta dominante, se reutiliza el vectorizador (cadenas compartidas) y se emiten solo los trazos en sobreimpresión con los nombres exactos de las tintas.
+  Solo arte plano (sin imágenes, degradados, transparencias ni patrones); el resto se deriva a las placas con trap.
+- **Correcciones nativas:** sobreimpresión de tintas técnicas, negro pequeño, unir/eliminar muestras; «RGB a CMYK» solo se reporta (no hay forma fiable desde ExtendScript).
+- **UXP:** ver `plugin/MIGRACION_UXP.md`; el panel no usa Node y las APIs de CEP están aisladas en `host.js`/`files.js`.
