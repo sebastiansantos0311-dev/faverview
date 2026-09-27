@@ -10,7 +10,7 @@
 #include "fv_geom.jsx"
 
 var FV = (typeof FV === "undefined") ? {} : FV;
-FV.VERSION = "3.2.0";
+FV.VERSION = "3.2.1";
 FV.LAYER_REVIEW = "FAVERVIEW \u2013 Revisi\u00f3n";
 FV.LAYER_VECTOR = "FAVERVIEW \u2013 Vector";
 FV.LAYER_TRAPS = "FAVERVIEW \u2013 Traps";

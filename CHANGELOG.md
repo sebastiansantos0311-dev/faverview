@@ -1,5 +1,15 @@
 # Cambios de FAVERVIEW
 
+## 3.2.1 (seguridad) — 2026-09-27
+- Seguridad: revisión completa del repositorio público y de la app; corregidos dos textos que se mostraban sin escapar.
+- Nueva política de seguridad (SECURITY.md) con cómo reportar un problema en privado.
+- **Detalle:** historial completo (36 commits) sin claves, tokens ni certificados; el token real del plugin nunca se subió. Corregido el escape
+  HTML de nombres de tinta/reglas del auto-trap (`web/modules/separate_img.js`) y del perfil, reglas y avisos de traps del Vectorizador
+  (`web/modules/vectorize.js`): un nombre de tinta de una biblioteca ASE/CxF ajena podía insertar HTML. Pruebas automáticas
+  `tests/test_seguridad_estatico.py` (servidor solo en 127.0.0.1, sin shell/eval/pickle, XML sin XXE, Ghostscript con -dSAFER, sin secretos
+  ni datos locales versionados, avisos escapados, panel sin Node y con lista blanca, CI de solo lectura). Workflow con `permissions: contents:
+  read`; `.gitignore` con `.env`, `*.pem`, `*.key`, `plugin.json`. `pip-audit`: sin vulnerabilidades conocidas en las dependencias.
+
 ## 3.2.0 (plugin de Illustrator) — 2026-09-26
 - Nuevo: plugin para usar FAVERVIEW dentro de Illustrator 2024–2026 (vectorizar, preflight, separar, comparar, códigos y trap).
 - Nuevo: auto-trap (reventado) con la tolerancia de movimiento de tu máquina y prueba de filetes.

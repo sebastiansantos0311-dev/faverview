@@ -2,6 +2,7 @@
 (function () {
 /* Módulo Vectorizar (S4). */
 const { h, toast } = FV;
+const esc = s => String(s).replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
 const root = document.getElementById("vista-vectorizar");
 const q = s => root.querySelector(s);
 let job = null, last = null, pane = null, timer = null, sel = 0, drawZone = false;
@@ -135,7 +136,7 @@ viewer.onPointerDown = (p, ev) => {
       const mm = num("#vz-mm");
       if (!mm && !last.ancho) return;
       const r = await FVApi.getJSON(`/api/vectorizar/${job}/traps?trap_prensa=${encodeURIComponent(q("#vz-press").value)}${mm ? "&tam_mm=" + mm : ""}`);
-      box.innerHTML = `${r.traps.length} traps con «${r.perfil}»: ` + r.traps.map(x => `color ${x.de + 1} bajo ${x.bajo + 1} (${x.regla}, trazo ${x.ancho_trazo_mm} mm)`).join(" · ") + `<br>${r.avisos.join(" ")}`;
+      box.innerHTML = `${r.traps.length} traps con «${esc(r.perfil)}»: ` + r.traps.map(x => `color ${x.de + 1} bajo ${x.bajo + 1} (${esc(x.regla)}, trazo ${x.ancho_trazo_mm} mm)`).join(" · ") + `<br>${r.avisos.map(esc).join(" ")}`;
     } catch (e) { box.textContent = e.message; }
     show(true);
   }

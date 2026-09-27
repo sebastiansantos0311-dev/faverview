@@ -1,8 +1,8 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<ExtensionManifest Version="7.0" ExtensionBundleId="com.faverview.illustrator" ExtensionBundleVersion="3.2.0" ExtensionBundleName="FAVERVIEW"
+<ExtensionManifest Version="7.0" ExtensionBundleId="com.faverview.illustrator" ExtensionBundleVersion="3.2.1" ExtensionBundleName="FAVERVIEW"
                    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
   <ExtensionList>
-    <Extension Id="com.faverview.illustrator.panel" Version="3.2.0" />
+    <Extension Id="com.faverview.illustrator.panel" Version="3.2.1" />
   </ExtensionList>
   <ExecutionEnvironment>
     <HostList>
