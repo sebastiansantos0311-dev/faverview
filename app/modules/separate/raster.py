@@ -38,6 +38,9 @@ class SepResult:
     stats: dict = field(default_factory=dict)
     warnings: list[str] = field(default_factory=list)
     palette: list[Ink] = field(default_factory=list)
+    trap: object = None                  # TrapResult (AUTOTRAP T3)
+    reg_before: object = None            # RegResult sin trap
+    reg_after: object = None             # RegResult con trap
 
 
 # ---------------------------------------------------------------- carga y utilidades

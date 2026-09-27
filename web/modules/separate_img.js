@@ -26,6 +26,10 @@ box.innerHTML = `
       <div id="si-libs"></div>
       <h3>3 · Ajustes</h3>
       <div id="si-adj"></div>
+      <div id="si-trapbox"><label><input id="si-trap" type="checkbox"> Auto-trap (reventado)</label>
+        <label>Perfil de máquina <select id="si-press"></select></label>
+        <label>Tolerancia de movimiento (mm) <input id="si-tol" type="number" step="0.05" min="0" max="5" class="num"></label>
+        <div id="si-trapmsg" class="hint">Valores orientativos: mide el movimiento real de tu máquina.</div></div>
       <h3>4 · Salida</h3>
       <label>Tramado <select id="si-tr"><option value="">Sin tramado (solo canales)</option><option value="am">AM (puntos)</option><option value="fm">FM (estocástico)</option></select></label>
       <label>lpi <input id="si-lpi" type="number" value="55" min="10" max="200" class="num"></label>
@@ -35,7 +39,7 @@ box.innerHTML = `
     <div class="sp-center">
       <div class="si-view">
         <div class="sp-bar">
-          <label>Ver <select id="si-ver"><option value="simulacion">Simulada</option><option value="original">Original</option><option value="dividida">Original | Simulada</option><option value="de">Mapa de error ΔE</option></select></label>
+          <label>Ver <select id="si-ver"><option value="simulacion">Simulada</option><option value="original">Original</option><option value="dividida">Original | Simulada</option><option value="de">Mapa de error ΔE</option><option value="trap">Mapa de traps</option><option value="prueba">Prueba de movimiento (sin trap | con trap)</option></select></label>
           <label>Canal <select id="si-canal"><option value="">— ninguno —</option></select></label>
           <span id="si-stats" class="hint"></span>
         </div>
@@ -47,7 +51,7 @@ box.innerHTML = `
 </section>`;
 
 const Q = s => box.querySelector(s);
-let job = null, info = null, libInks = [], picked = [], timer = null, last = null;
+let job = null, info = null, libInks = [], picked = [], timer = null, last = null, presses = [];
 const err = m => { const b = Q("#si-err"); b.textContent = m || ""; b.classList.toggle("hidden", !m); };
 
 /* ---- pestañas PDF / Imagen ---- */
@@ -67,6 +71,7 @@ FVDrop.bind(Q("#si-drop"), Q("#si-drop input"), async f => {
     const sub = Q("#si-sub"); sub.innerHTML = "";
     Object.keys(info.sustratos).forEach(k => sub.append(h("option", { value: k }, k)));
     await loadLibs();
+    await loadPresses();
     Q("#si-setup").classList.add("hidden"); Q("#si-main").classList.remove("hidden");
     adjust();
     await run(true);
@@ -89,6 +94,19 @@ async function pickLib(name) {
     h("input", { type: "checkbox", onchange: e => { e.target.checked ? picked.push(n) : picked.splice(picked.indexOf(n), 1); schedule(); } }),
     h("span", { class: "sp-sw", style: { background: i.swatch || "#999" } }), " " + i.name + (i.kind === "white" ? " (blanco)" : ""))));
   list.append(h("p", { class: "hint" }, "Planas / índice: sin marcar = paleta automática. Proceso: marca las tintas (el blanco se imprime primero)."));
+}
+
+async function loadPresses() {
+  if (presses.length) return;
+  const r = await FVApi.getJSON("/api/prensas");
+  presses = r.perfiles;
+  const sel = Q("#si-press"); sel.innerHTML = "";
+  presses.forEach(p => sel.append(h("option", { value: p.id }, `${p.nombre} (${Array.isArray(p.tolerancia_mm) ? p.tolerancia_mm.join("×") : p.tolerancia_mm} mm)`)));
+  sel.value = "serigrafia_textil_automatica";
+  const upd = () => { const p = presses.find(x => x.id === sel.value); if (p) { Q("#si-tol").value = Array.isArray(p.tolerancia_mm) ? p.tolerancia_mm[0] : p.tolerancia_mm; Q("#si-trap").checked = ["serigrafia", "flexo"].includes(p.proceso); } };
+  sel.onchange = () => { upd(); schedule(); };
+  Q("#si-tol").oninput = schedule; Q("#si-trap").onchange = schedule;
+  upd();
 }
 
 function adjust() {
@@ -117,6 +135,7 @@ function params(previa) {
   return { modo, sustrato: Q("#si-sub").value, tintas, previa,
     k_max: val("a-k", 8), fusionar_de: val("a-fus", 6), area_min_mm2: val("a-min", 0.05), bordes_suaves: val("a-soft", false),
     lam: val("a-lam", 4), punto_min: val("a-pmin", 3), punto_max: val("a-pmax", 100), gamma: val("a-gam", 1), choke_px: val("a-choke", 0),
+    auto_trap: Q("#si-trap").checked, prensa: Q("#si-press").value || null, tolerancia_mm: Q("#si-tol").value === "" ? null : +Q("#si-tol").value,
     difusion: val("a-dif", "fs"), perfil: val("a-prof", "") || null, intencion: val("a-int", "relativa"), tac: val("a-tac", 300), negro_sombras: val("a-ks", false) };
 }
 
@@ -141,6 +160,10 @@ function show() {
   const cv = Q("#si-canal"), cur = cv.value; cv.innerHTML = '<option value="">— ninguno —</option>';
   r.nombres.forEach(n => cv.append(h("option", { value: n }, n))); cv.value = r.nombres.includes(cur) ? cur : "";
   Q("#si-ver option[value=de]").disabled = !r.de;
+  const tp = r.trap;
+  Q("#si-ver option[value=trap]").disabled = !tp; Q("#si-ver option[value=prueba]").disabled = !(tp && tp.ok !== null);
+  Q("#si-trapmsg").innerHTML = tp ? `<b style="color:${tp.ok === false ? "#ef4444" : "#22c55e"}">${tp.registro || ""}</b><br>` + tp.traps.map(t => `${t.de} bajo ${t.bajo} (${t.regla}) ${t.ancho_mm} mm`).join("<br>")
+    : "Valores orientativos: mide el movimiento real de tu máquina.";
   render();
 }
 function render() {
@@ -150,7 +173,7 @@ function render() {
   i2.classList.add("hidden");
   if (c) { i1.src = `${base}/canal.png?nombre=${encodeURIComponent(c)}${t.replace("?", "&")}`; return; }
   if (v === "dividida") { i1.src = `${base}/original.png${t}`; i2.src = `${base}/simulacion.png${t}`; i2.classList.remove("hidden"); }
-  else i1.src = `${base}/${v === "de" ? "de" : v}.png${t}`;
+  else i1.src = `${base}/${v === "de" ? "de" : v === "trap" ? "trap" : v === "prueba" ? "prueba" : v}.png${t}`;
 }
 Q("#si-ver").onchange = render; Q("#si-canal").onchange = render;
 Q("#si-go").onclick = () => run(false, false);

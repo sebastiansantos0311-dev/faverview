@@ -7,7 +7,7 @@ const root = document.getElementById("vista-separar");
 const q = s => root.querySelector(s);
 let job = null, res = null, inv = null, mode = "comp", solo = "", negative = false;
 const hidden = new Set();
-let probeT = null;
+let probeT = null, trapOn = false, trapRes = null, trapView = "comp", presses = [], mvT = null;
 const viewer = new FVViewer();
 const stage = h("div", { class: "stage" });
 const img = h("img", { draggable: "false" });
@@ -50,9 +50,12 @@ async function analyze(keepView) {
 function loadImage(fit) {
   const p = params();
   let url;
-  if (mode === "tac") url = `${base()}/tac.png?${p}&limite=${res.limite_tac}&t=${Date.now()}`;
+  const tq = `&prensa=${encodeURIComponent(q("#sp-press").value)}&tolerancia_mm=${q("#sp-tol").value}`;
+  if (trapOn && trapRes && trapView === "mapa") url = `${base()}/trap.png?${p}${tq}&t=${Date.now()}`;
+  else if (trapOn && trapRes && trapView === "prueba") url = `${base()}/prueba.png?${p}${tq}&t=${Date.now()}`;
+  else if (mode === "tac") url = `${base()}/tac.png?${p}&limite=${res.limite_tac}&t=${Date.now()}`;
   else if (solo) url = `${base()}/placa.png?${p}&nombre=${encodeURIComponent(solo)}&negativo=${negative}&t=${Date.now()}`;
-  else url = `${base()}/composicion.png?${p}&ocultas=${encodeURIComponent([...hidden].join("|"))}&t=${Date.now()}`;
+  else url = `${base()}/composicion.png?${p}&ocultas=${encodeURIComponent([...hidden].join("|"))}${trapOn && trapRes ? "&trap=true" + tq : ""}&t=${Date.now()}`;
   img.onload = () => {
     if (fit || !pane) {
       const box = q("#sp-viewer"); box.innerHTML = "";
@@ -172,11 +175,57 @@ q("#sp-exp").onclick = () => {
        try {
          FV.setLoading(true);
          const r = await FVApi.api(`${base()}/exportar`, { method: "POST", headers: { "Content-Type": "application/json" },
-           body: JSON.stringify({ formato: fmt.value, pagina: +q("#sp-page").value, dpi: +q("#sp-dpi").value, limite_tac: +q("#sp-prof").value }) });
+           body: JSON.stringify({ formato: fmt.value, pagina: +q("#sp-page").value, dpi: trapOn ? Math.max(+q("#sp-dpi").value, 300) : +q("#sp-dpi").value, limite_tac: +q("#sp-prof").value, trap: trapOn && !!trapRes, prensa: q("#sp-press").value, tolerancia_mm: q("#sp-tol").value === "" ? null : +q("#sp-tol").value }) });
          const url = URL.createObjectURL(await r.blob());
          const a = h("a", { href: url, download: "placas.zip" }); document.body.append(a); a.click(); a.remove();
        } catch (e) { toast(e.message, "error", 8000); } finally { FV.setLoading(false); }
      } }]);
 };
 FVViewer.bindShortcuts(() => (q("#sp-viewer") && q("#sp-viewer").offsetParent ? viewer : null));
+
+/* ---- Auto-trap (AUTOTRAP T3) ---- */
+(async function initTrap() {
+  try {
+    const r = await FVApi.getJSON("/api/prensas"); presses = r.perfiles;
+    const sel = q("#sp-press");
+    presses.forEach(p => sel.append(h("option", { value: p.id }, `${p.nombre} (${Array.isArray(p.tolerancia_mm) ? p.tolerancia_mm.join("×") : p.tolerancia_mm} mm)`)));
+    sel.value = "serigrafia_textil_automatica";
+    const upd = () => { const p = presses.find(x => x.id === sel.value); if (p) q("#sp-tol").value = Array.isArray(p.tolerancia_mm) ? p.tolerancia_mm[0] : p.tolerancia_mm; };
+    upd();
+    sel.onchange = () => { upd(); if (trapOn) runTrap(); };
+    q("#sp-tol").onchange = () => { if (trapOn) runTrap(); };
+  } catch {}
+})();
+async function runTrap() {
+  if (!job) return;
+  try {
+    FV.setLoading(true);
+    const dpi = Math.max(+q("#sp-dpi").value, 300);
+    const qs = `pagina=${q("#sp-page").value}&dpi=${dpi}&prensa=${encodeURIComponent(q("#sp-press").value)}&tolerancia_mm=${q("#sp-tol").value}`;
+    const { job_id } = await (await FVApi.api(`${base()}/autotrap?${qs}`, { method: "POST" })).json();
+    trapRes = await FVApi.pollJob(job_id);
+    trapRes.dpi = dpi;
+    q("#sp-trapbox").classList.remove("hidden");
+    q("#sp-trapmsg").style.color = trapRes.ok ? "#22c55e" : "#ef4444";
+    q("#sp-trapmsg").textContent = trapRes.registro + ` · ${trapRes.traps.length} traps (${trapRes.perfil})`;
+    (trapRes.avisos || []).forEach(a => toast(a, "warn", 9000));
+    const mv = q("#sp-mv-ink"); mv.innerHTML = ""; (res ? res.placas : []).forEach(p => mv.append(h("option", {}, p.nombre)));
+    trapView = "comp"; loadImage(false);
+  } catch (e) { toast(e.message, "error", 8000); trapOn = false; q("#sp-atrap").classList.remove("active"); } finally { FV.setLoading(false); }
+}
+q("#sp-atrap").onclick = () => {
+  trapOn = !trapOn;
+  q("#sp-atrap").classList.toggle("active", trapOn);
+  q("#sp-press").classList.toggle("hidden", !trapOn); q("#sp-tolw").classList.toggle("hidden", !trapOn);
+  if (trapOn) runTrap(); else { q("#sp-trapbox").classList.add("hidden"); loadImage(false); }
+};
+q("#sp-tv-mapa").onclick = () => { trapView = "mapa"; loadImage(false); };
+q("#sp-tv-prueba").onclick = () => { trapView = "prueba"; loadImage(false); };
+q("#sp-tv-comp").onclick = () => { trapView = "comp"; loadImage(false); };
+q("#sp-mv").oninput = () => {
+  const tol = +q("#sp-tol").value || 0.2, mm = q("#sp-mv").value / 100 * 2 * tol;
+  q("#sp-mv-mm").textContent = mm.toFixed(2) + " mm (tolerancia " + tol + ")";
+  clearTimeout(mvT);
+  mvT = setTimeout(() => { if (!trapRes) return; img.src = `${base()}/movimiento.png?tinta=${encodeURIComponent(q("#sp-mv-ink").value)}&ux=1&uy=0&mm=${mm}&pagina=${q("#sp-page").value}&dpi=${trapRes.dpi}&prensa=${encodeURIComponent(q("#sp-press").value)}&tolerancia_mm=${q("#sp-tol").value}&t=${Date.now()}`; }, 120);
+};
 })();

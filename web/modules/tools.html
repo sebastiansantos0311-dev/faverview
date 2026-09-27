@@ -15,6 +15,8 @@
 
 <section class="tl-pane" data-t="trap">
   <div class="sp-grid bc-grid"><aside class="sp-side">
+    <label>Perfil de máquina <select id="tr-press"><option value="">— usar proceso y ancho manual —</option></select></label>
+    <label>Tolerancia de movimiento (mm) <input id="tr-tol" type="number" step="0.05" min="0" max="5" class="num"></label>
     <label>Proceso <select id="tr-proc"><option value="flexo">Flexo (0,15 mm)</option><option value="offset">Offset (0,08 mm)</option><option value="serigrafia">Serigrafía (0,25 mm)</option></select></label>
     <label>Ancho del trap (mm, vacío = del proceso) <input id="tr-w" type="number" min="0.01" step="0.01" class="num"></label>
     <label>Trap % <input id="tr-pct" type="number" min="10" max="100" value="100" class="num"></label>
@@ -25,6 +27,7 @@
     <label>Placa a desplazar <select id="tr-ink"></select></label>
     <label>Desplazamiento (µm) <input id="tr-dx" type="number" value="100" class="num"></label>
     <button id="tr-mis" class="ghost">Comparar con y sin trap</button>
+    <button id="tr-test" class="ghost">Prueba de movimiento</button>
     <button id="tr-exp" class="ghost">Exportar placas con trap (ZIP)</button>
     <p class="hint">Estimación orientativa: la tinta más clara se expande bajo la más oscura; el negro, el barniz y las tintas técnicas nunca se expanden. Confirma los anchos con tu imprenta.</p>
   </aside><div class="sp-center"><div id="tr-out"></div></div></div>

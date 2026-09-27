@@ -56,7 +56,7 @@ def test_trap_pares_parecidos_o_directas_tecnicas_no():
     b = np.zeros((h, w), np.uint8); b[:, 40:] = 255
     p = Plates(["A", "B"], {"A": a, "B": b}, 254.0, 0, w, h)
     meta = {"A": {"lab": (60, 0, 0), "tipo": "spot"}, "B": {"lab": (58, 0, 0), "tipo": "spot"}}
-    assert not trapping.trap(p, meta, ancho_mm=0.2).traps
+    assert {t["regla"] for t in trapping.trap(p, meta, ancho_mm=0.2).traps} == {"R5"}     # D1: luminosidad parecida → trap centrado
     meta = {"A": {"lab": (80, 0, 0), "tipo": "technical"}, "B": {"lab": (30, 0, 0), "tipo": "spot"}}
     assert not trapping.trap(p, meta, ancho_mm=0.2).traps
 

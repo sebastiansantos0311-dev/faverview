@@ -81,6 +81,11 @@ def report_text(res: SepResult, params: dict, dpi: float) -> str:
     lines += ["", "Tintas (orden de impresión) y cobertura media:"]
     for n in res.names:
         lines.append(f"- {n}: {res.channels[n].mean() / 255 * 100:.2f} %")
+    if res.trap is not None:
+        lines += ["", f"Trapping (perfil «{res.trap.press.nombre if res.trap.press else ''}», tolerancia {res.trap.press.tolerancia_mm if res.trap.press else ''} mm):"]
+        lines += [f"- {t['de']} bajo {t['bajo']} ({t['regla']}): {t['ancho_mm']} mm, {t['pixeles']} px" for t in res.trap.traps] or ["- sin traps"]
+        if res.reg_after is not None:
+            lines.append(f"Prueba de movimiento: {res.reg_before.filetes_mm2:.2f} mm² de filetes sin trap → {res.reg_after.filetes_mm2:.2f} mm² con trap.")
     lines += ["", "Parámetros: " + ", ".join(f"{k}={v}" for k, v in params.items())]
     lines += [f"Aviso: {w}" for w in res.warnings]
     return "\n".join(lines)

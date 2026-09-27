@@ -54,6 +54,9 @@ class Params(BaseModel):
     previa: bool = False
     trama: dict | None = None
     dpi_salida: float = 600.0
+    auto_trap: bool = False
+    prensa: str | None = None
+    tolerancia_mm: float | None = None
 
 
 def _substrate(p: Params):
@@ -67,6 +70,16 @@ def _load(job_id: str):
 
 
 def run(rgb: np.ndarray, dpi: float | None, p: Params) -> raster.SepResult:
+    res = _run(rgb, dpi, p)
+    if p.auto_trap:
+        from app.core import press
+        from app.modules.separate import autotrap
+        pf = press.resolve(p.prensa, p.tolerancia_mm)
+        res = autotrap.apply_raster(res, dpi, pf, _substrate(p), p.modo)
+    return res
+
+
+def _run(rgb: np.ndarray, dpi: float | None, p: Params) -> raster.SepResult:
     sub = _substrate(p)
     inks = [raster.Ink(i.name, tuple(i.lab), i.opacity) for i in p.tintas]
     if p.modo == "planas":
@@ -100,6 +113,15 @@ def upload(file: UploadFile = File(...)):
             "perfiles_icc": list(raster.find_cmyk_profiles())}
 
 
+def _trap_info(res):
+    from app.modules.separate import autotrap
+    if res.trap is None:
+        return None
+    return {"traps": res.trap.traps, "registro": autotrap.registro_texto(res), "ok": res.reg_after.filetes_px == 0 if res.reg_after else None,
+            "filetes_mm2": round(res.reg_after.filetes_mm2, 3) if res.reg_after else None,
+            "antes_mm2": round(res.reg_before.filetes_mm2, 3) if res.reg_before else None, "perfil": res.trap.press.nombre if res.trap.press else ""}
+
+
 @router.post("/{job_id}/procesar")
 def process(job_id: str, p: Params):
     path, meta = _load(job_id)
@@ -124,7 +146,7 @@ def process(job_id: str, p: Params):
         return {"nombres": res.names, "stats": res.stats, "avisos": res.warnings, "ancho": rgb.shape[1], "alto": rgb.shape[0],
                 "cobertura": {n: round(float(res.channels[n].mean()) / 255 * 100, 2) for n in res.names},
                 "paleta": [{"nombre": i.name, "lab": list(i.lab), "opacidad": i.opacity} for i in res.palette],
-                "de": res.de_map is not None}
+                "de": res.de_map is not None, "trap": _trap_info(res)}
 
     aid = uuid.uuid4().hex[:12]
     jobs.start(aid, work)
@@ -169,6 +191,23 @@ def channel(job_id: str, nombre: str, negativo: bool = False):
         raise UserError("Ese canal no existe.")
     a = res.channels[nombre]
     return _png(a if negativo else 255 - a)
+
+
+@router.get("/{job_id}/trap.png")
+def trap_png(job_id: str):
+    res = _get(job_id)[0]
+    if res.trap is None:
+        raise UserError("Activa el auto-trap para ver el mapa de traps.")
+    return _png(res.trap.trap_map)
+
+
+@router.get("/{job_id}/prueba.png")
+def reg_png(job_id: str):
+    from app.modules.tools import registration_check as rc
+    res = _get(job_id)[0]
+    if res.reg_after is None:
+        raise UserError("La prueba de movimiento no está disponible para este modo.")
+    return _png(rc.side_by_side(res.reg_before, res.reg_after))
 
 
 @router.get("/{job_id}/de.png")

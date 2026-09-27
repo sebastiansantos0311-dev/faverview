@@ -119,9 +119,78 @@ def analyze(job_id: str, pagina: int = 1, dpi: float = 150, limite_tac: float = 
     return {"job_id": aid}
 
 
+# ---------------------------------------------------------------- auto-trap (AUTOTRAP T3)
+_TRAPS: "OrderedDict[tuple, tuple]" = OrderedDict()
+
+
+def _trapped(job_id: str, page: int, dpi: float, prensa: str | None, tol: float | None):
+    """(placas, TrapResult, meta, press, RegResult antes, RegResult después) con caché."""
+    from app.core import press as pressmod
+    from app.modules.tools import registration_check as rc
+    from app.modules.tools import trapping
+    pdf, _ = _job_pdf(job_id)
+    key = (job_id, pdf.name, pdf.stat().st_mtime_ns, page, dpi, prensa, tol)
+    with _LOCK:
+        if key in _TRAPS:
+            return _TRAPS[key]
+    plates = _plates(job_id, page, dpi)
+    meta = _plate_meta(plates, job_id)
+    pf = pressmod.resolve(prensa, tol)
+    mask = trapping.text_mask(pdf, page, plates, pf.no_trapear_texto_menor_pt)
+    tr = trapping.trap(plates, meta, press=pf, tac_max=None, mantener_texto=mask)
+    out = (plates, tr, meta, pf, rc.check(plates, pf, meta), rc.check(tr.plates, pf, meta, ignore=tr.pullback_mask))
+    with _LOCK:
+        _TRAPS[key] = out
+        while len(_TRAPS) > 3:
+            _TRAPS.popitem(last=False)
+    return out
+
+
+@router.post("/{job_id}/autotrap")
+def autotrap(job_id: str, pagina: int = 1, dpi: float = 300, prensa: str | None = "serigrafia_textil_automatica", tolerancia_mm: float | None = None):
+    def work(progress):
+        progress("Trapping", 0.2, "Separando y calculando los traps…")
+        plates, tr, meta, pf, before, after = _trapped(job_id, pagina - 1, dpi, prensa, tolerancia_mm)
+        from app.modules.separate import autotrap as at
+        warns = list(tr.warnings)
+        if max(pf.tol_xy()) * dpi / 25.4 < 2:
+            warns.append(f"A {dpi:g} dpi la tolerancia de {pf.tolerancia_mm} mm es de menos de 2 px: sube la resolución para un trap fiable.")
+        warns.append("El trap se aplica a las placas rasterizadas a %g dpi; el PDF original no se modifica. Para un trap vectorial usa el Vectorizador o Illustrator." % plates.dpi)
+
+        class _R:      # reutiliza el texto del informe de separación de imagen
+            reg_after = after
+        return {"perfil": pf.nombre, "tolerancia_mm": pf.tolerancia_mm, "traps": tr.traps, "avisos": warns, "registro": at.registro_texto(_R),
+                "ok": after.filetes_px == 0, "antes": before.to_dict(), "despues": after.to_dict()}
+    aid = uuid.uuid4().hex[:12]
+    jobs.start(aid, work)
+    return {"job_id": aid}
+
+
+@router.get("/{job_id}/trap.png")
+def trap_map(job_id: str, pagina: int = 1, dpi: float = 300, prensa: str | None = "serigrafia_textil_automatica", tolerancia_mm: float | None = None):
+    return _png(_trapped(job_id, pagina - 1, dpi, prensa, tolerancia_mm)[1].trap_map)
+
+
+@router.get("/{job_id}/prueba.png")
+def reg_test(job_id: str, pagina: int = 1, dpi: float = 300, prensa: str | None = "serigrafia_textil_automatica", tolerancia_mm: float | None = None):
+    from app.modules.tools import registration_check as rc
+    st = _trapped(job_id, pagina - 1, dpi, prensa, tolerancia_mm)
+    return _png(rc.side_by_side(st[4], st[5]))
+
+
+@router.get("/{job_id}/movimiento.png")
+def moved(job_id: str, tinta: str, ux: float = 1.0, uy: float = 0.0, mm: float = 0.2, pagina: int = 1, dpi: float = 300, con_trap: bool = True,
+          prensa: str | None = "serigrafia_textil_automatica", tolerancia_mm: float | None = None):
+    """Vista simulada con una placa desplazada `mm` (deslizador de movimiento)."""
+    from app.modules.tools import registration_check as rc
+    st = _trapped(job_id, pagina - 1, dpi, prensa, tolerancia_mm)
+    return _png(rc.moved_view(st[1].plates if con_trap else st[0], st[2], tinta, ux, uy, mm))
+
+
 @router.get("/{job_id}/composicion.png")
-def composition(job_id: str, pagina: int = 1, dpi: float = 150, ocultas: str = "", solo: str = "", escala: float = 1.0):
-    plates = _plates(job_id, pagina - 1, dpi)
+def composition(job_id: str, pagina: int = 1, dpi: float = 150, ocultas: str = "", solo: str = "", escala: float = 1.0, trap: bool = False,
+                prensa: str | None = "serigrafia_textil_automatica", tolerancia_mm: float | None = None):
+    plates = _trapped(job_id, pagina - 1, dpi, prensa, tolerancia_mm)[1].plates if trap else _plates(job_id, pagina - 1, dpi)
     hidden = {x for x in ocultas.split("|") if x}
     visible = {n for n in plates.names if n not in hidden}
     if solo:
@@ -187,6 +256,9 @@ class Export(BaseModel):
     dpi: float = 150
     umbral: int = 128
     limite_tac: float = 300
+    trap: bool = False
+    prensa: str | None = "serigrafia_textil_automatica"
+    tolerancia_mm: float | None = None
 
 
 @router.post("/{job_id}/exportar")
@@ -196,8 +268,15 @@ def export_plates(job_id: str, body: Export):
     pdf, name = _job_pdf(job_id)
     plates = _plates(job_id, body.pagina - 1, body.dpi)
     meta = _plate_meta(plates, job_id)
+    tr_lines = []
+    if body.trap:
+        st = _trapped(job_id, body.pagina - 1, body.dpi, body.prensa, body.tolerancia_mm)
+        plates = st[1].plates
+        tr_lines = [f"Trapping (perfil «{st[3].nombre}», tolerancia {st[3].tolerancia_mm} mm):"] + \
+                   [f"- {t['de']} bajo {t['bajo']} ({t['regla']}): {t['ancho_mm']} mm, {t['pixeles']} px" for t in st[1].traps] + \
+                   [f"Prueba de movimiento: {st[4].filetes_mm2:.2f} mm² de filetes sin trap → {st[5].filetes_mm2:.2f} mm² con trap."]
     finds = [f.to_dict() for f in analysis.run_checks(plates, pdf, body.pagina - 1, read_inventory(pdf), meta, body.limite_tac)]
-    data = export.export_zip(plates, meta, body.formato, finds, body.umbral)
+    data = export.export_zip(plates, meta, body.formato, finds, body.umbral, tr_lines)
     stem = re.sub(r"\.pdf$", "", name or "documento", flags=re.I)
     return Response(data, media_type="application/zip",
                     headers={"Content-Disposition": 'attachment; filename="' + stem + '_placas.zip"'})

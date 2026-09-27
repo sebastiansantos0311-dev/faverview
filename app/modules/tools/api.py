@@ -26,6 +26,7 @@ from app.modules.tools import braille, flexo, gamut, imposition, trapping
 
 router = APIRouter(prefix="/api/herramientas")
 _TRAPS: "OrderedDict[str, tuple]" = OrderedDict()
+_REG: dict = {}
 _LOCK = threading.Lock()
 
 
@@ -80,6 +81,8 @@ class TrapIn(BaseModel):
     dpi: float = 600.0
     pagina: int = 1
     tabla: list[list] | None = None      # [[A, B, mm], ...]
+    prensa: str | None = None            # perfil de máquina (AUTOTRAP): tolerancia × factor = ancho del trap
+    tolerancia_mm: float | None = None
 
 
 @router.post("/{job_id}/trapping")
@@ -92,12 +95,22 @@ def trap(job_id: str, p: TrapIn):
         m = _meta(plates, pdf)
         progress("Trapping", 0.6, "Calculando los traps…")
         tabla = {(a, b): float(mm) for a, b, mm in (p.tabla or [])}
-        res = trapping.trap(plates, m, proceso=p.proceso, ancho_mm=p.ancho_mm, tabla=tabla, porcentaje=p.porcentaje, tac_max=p.tac_max)
+        from app.core import press as pressmod
+        from app.modules.tools import registration_check as rc
+        pf = pressmod.resolve(p.prensa, p.tolerancia_mm, p.proceso) if (p.prensa or p.tolerancia_mm is not None) else None
+        mask = trapping.text_mask(pdf, p.pagina - 1, plates, pf.no_trapear_texto_menor_pt) if pf else None
+        res = trapping.trap(plates, m, press=pf, proceso=p.proceso, ancho_mm=p.ancho_mm if pf is None else None, tabla=tabla,
+                            porcentaje=p.porcentaje, tac_max=p.tac_max, mantener_texto=mask)
+        check_pf = res.press
+        before = rc.check(plates, check_pf, m)
+        after = rc.check(res.plates, check_pf, m, ignore=res.pullback_mask)
         with _LOCK:
+            _REG[job_id] = (before, after)
             _TRAPS[job_id] = (plates, res, m)
             while len(_TRAPS) > 3:
                 _TRAPS.popitem(last=False)
-        return {"traps": res.traps, "avisos": res.warnings, "placas": plates.names, "dpi": plates.dpi}
+        return {"traps": res.traps, "avisos": res.warnings, "placas": plates.names, "dpi": plates.dpi, "perfil": check_pf.nombre,
+                "tolerancia_mm": check_pf.tolerancia_mm, "antes": before.to_dict(), "despues": after.to_dict()}
 
     aid = uuid.uuid4().hex[:12]
     jobs.start(aid, work)
@@ -116,6 +129,21 @@ def _trap_state(job_id):
 @router.get("/{job_id}/trapping/mapa.png")
 def trap_map(job_id: str):
     return _png(_trap_state(job_id)[1].trap_map)
+
+
+@router.get("/{job_id}/trapping/prueba.png")
+def trap_test_png(job_id: str):
+    from app.modules.tools import registration_check as rc
+    _trap_state(job_id)
+    b, a = _REG[job_id]
+    return _png(rc.side_by_side(b, a))
+
+
+@router.get("/{job_id}/trapping/movimiento.png")
+def trap_moved(job_id: str, tinta: str, ux: float = 1.0, uy: float = 0.0, mm: float = 0.2, con_trap: bool = True):
+    from app.modules.tools import registration_check as rc
+    plates, res, m = _trap_state(job_id)
+    return _png(rc.moved_view(res.plates if con_trap else plates, m, tinta, ux, uy, mm))
 
 
 @router.get("/{job_id}/trapping/registro.png")
@@ -138,7 +166,8 @@ def trap_export(job_id: str):
         ok, b = cv2.imencode(".png", res.trap_map[..., ::-1])
         zout.writestr("mapa_de_traps.png", b.tobytes())
         zout.writestr("placas.pdf", sep_export.plates_pdf(res.plates))
-        zout.writestr("traps.txt", "\n".join(f"{t['de']} bajo {t['bajo']}: {t['ancho_mm']} mm ({t['pixeles']} px)" for t in res.traps) + "\n" + "\n".join(res.warnings))
+        zout.writestr("traps.txt", "\n".join(f"{t['de']} bajo {t['bajo']} ({t.get('regla', '')}): {t['ancho_mm']} mm ({t['pixeles']} px)" for t in res.traps) + "\n" + "\n".join(res.warnings)
+                      + (f"\nPrueba de movimiento: {_REG[job_id][0].filetes_mm2:.2f} mm² de filetes sin trap → {_REG[job_id][1].filetes_mm2:.2f} mm² con trap." if job_id in _REG else ""))
     return Response(z.getvalue(), media_type="application/zip", headers=_attach("trapping.zip"))
 
 

@@ -38,10 +38,12 @@ q("#tr-go").onclick = async () => {
   try {
     FV.setLoading(true);
     const { job_id } = await FVApi.postJSON(`${base()}/trapping`, { proceso: q("#tr-proc").value, ancho_mm: num("#tr-w"), porcentaje: num("#tr-pct") || 100,
-      tac_max: num("#tr-tac"), dpi: num("#tr-dpi") || 600 });
+      tac_max: num("#tr-tac"), dpi: num("#tr-dpi") || 600, prensa: q("#tr-press").value || null, tolerancia_mm: q("#tr-press").value || num("#tr-tol") !== null ? num("#tr-tol") : null });
     const r = await FVApi.pollJob(job_id);
     const t = "?t=" + Date.now();
-    q("#tr-out").innerHTML = `<p><b>${r.traps.length}</b> traps: ${r.traps.map(x => `${esc(x.de)} bajo ${esc(x.bajo)} (${x.ancho_mm} mm)`).join(" · ") || "ninguno"}</p><p class="hint">${r.avisos.map(esc).join(" ")}</p>
+    const d = r.despues, tolt = Array.isArray(r.tolerancia_mm) ? r.tolerancia_mm.join("×") : r.tolerancia_mm;
+    q("#tr-out").innerHTML = `<p><b style="color:${d.ok ? "#22c55e" : "#ef4444"}">${d.ok ? "✔ Sin filetes" : "✘ " + d.filetes_mm2 + " mm² de filetes"} con ±${tolt} mm</b> (sin trap: ${r.antes.filetes_mm2} mm²) · perfil ${esc(r.perfil)}</p>
+      <p><b>${r.traps.length}</b> traps: ${r.traps.map(x => `${esc(x.de)} bajo ${esc(x.bajo)} (${x.regla || ""} ${x.ancho_mm} mm)`).join(" · ") || "ninguno"}</p><p class="hint">${r.avisos.map(esc).join(" ")}</p>
       <div class="bc-prev"><img style="max-width:100%" src="${base()}/trapping/mapa.png${t}" alt="Mapa de traps"></div>`;
   } catch (e) { fail(e); } finally { FV.setLoading(false); }
 };
@@ -51,6 +53,12 @@ q("#tr-mis").onclick = () => {
   q("#tr-out").innerHTML = `<div class="tl-two"><figure><figcaption>Sin trap (mal registro ${dx} µm)</figcaption><img src="${base()}/trapping/registro.png?tinta=${ink}&dx_um=${dx}&con_trap=false&t=${t}"></figure>
     <figure><figcaption>Con trap</figcaption><img src="${base()}/trapping/registro.png?tinta=${ink}&dx_um=${dx}&con_trap=true&t=${t}"></figure></div>`;
 };
+q("#tr-test").onclick = () => {
+  if (!need()) return;
+  q("#tr-out").innerHTML = `<figure><figcaption>Filetes (magenta) sin trap | con trap</figcaption><img style="max-width:100%;background:#fff" src="${base()}/trapping/prueba.png?t=${Date.now()}"></figure>`;
+};
+FVApi.getJSON("/api/prensas").then(r => { r.perfiles.forEach(p => q("#tr-press").append(h("option", { value: p.id }, `${p.nombre} (${Array.isArray(p.tolerancia_mm) ? p.tolerancia_mm.join("×") : p.tolerancia_mm} mm)`))); }).catch(() => {});
+q("#tr-press").onchange = () => { const v = q("#tr-press").value; if (!v) return; FVApi.getJSON("/api/prensas/" + v).then(p => { q("#tr-tol").value = Array.isArray(p.tolerancia_mm) ? p.tolerancia_mm[0] : p.tolerancia_mm; }); };
 q("#tr-exp").onclick = async () => {
   if (!need()) return;
   try { FV.setLoading(true); save(await (await FVApi.api(`${base()}/trapping/exportar`, { method: "POST" })).blob(), "trapping.zip"); } catch (e) { fail(e); } finally { FV.setLoading(false); }

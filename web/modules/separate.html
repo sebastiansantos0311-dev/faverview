@@ -17,6 +17,9 @@
       <option value="320">Digital 320 %</option><option value="240">Papel prensa 240 %</option></select></label>
     <span class="sp-gap"></span>
     <button id="sp-tac" class="ghost">Mapa de cobertura</button>
+    <button id="sp-atrap" class="ghost" title="Reventado automático con el perfil de máquina">Auto-trap</button>
+    <select id="sp-press" class="hidden" title="Perfil de máquina"></select>
+    <label class="hidden" id="sp-tolw">Tolerancia (mm) <input id="sp-tol" type="number" step="0.05" min="0" max="5" class="num"></label>
     <button id="sp-exp" class="ghost">Exportar placas…</button>
     <button id="sp-new" class="ghost">Otro PDF</button>
   </div>
@@ -33,6 +36,10 @@
     </aside>
     <div class="sp-center">
       <div class="viewer" id="sp-viewer"></div>
+      <div class="sp-probe hidden" id="sp-trapbox"><b id="sp-trapmsg"></b> <span id="sp-trapviews">
+        <button id="sp-tv-mapa" class="ghost mini">Mapa de traps</button> <button id="sp-tv-prueba" class="ghost mini">Prueba de movimiento</button>
+        <button id="sp-tv-comp" class="ghost mini">Vista con trap</button></span><br>
+        <label>Mover placa <select id="sp-mv-ink"></select> <input id="sp-mv" type="range" min="0" max="100" value="0"> <span id="sp-mv-mm">0 mm</span></label></div>
       <div class="sp-probe" id="sp-probe">Pasa el cursor por la página: densitómetro (promedio de un área pequeña). Valores orientativos.</div>
     </div>
     <aside class="sp-side">
