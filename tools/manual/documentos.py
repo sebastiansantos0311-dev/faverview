@@ -372,6 +372,230 @@ errores conocidos) y sigue la tabla, marcando ✔ o ✘ con observaciones y capt
 """
 
 
+# ============================================================================ NOVEDADES
+def novedades(fig, version: str) -> str:
+    return f"""
+<h1>Contenido</h1>
+<ol>
+<li>Resumen: de comparador a suite de preprensa</li>
+<li>Pestañas nuevas y funciones comunes</li>
+<li>Bibliotecas de tintas</li>
+<li>Separar colores · PDF</li>
+<li>Separar colores · Imagen</li>
+<li>Vectorizar</li>
+<li>Preflight</li>
+<li>Códigos de barras</li>
+<li>Herramientas</li>
+<li>Automatizar</li>
+<li>Auto-trap y tolerancia de registro (3.1)</li>
+<li>Plugin de Illustrator (3.2)</li>
+<li>Actualizaciones automáticas mejoradas (3.2)</li>
+<li>Seguridad (3.2.1)</li>
+<li>Manuales nuevos</li>
+<li>Qué necesitas instalar para lo nuevo</li>
+<li>Historial de versiones</li>
+</ol>
+
+<h1>1. Resumen: de comparador a suite de preprensa</h1>
+<p>Hasta la versión 2, FAVERVIEW comparaba el arte del cliente con tu diseño. Desde la <b>versión 3</b> es una <b>suite de preprensa</b>: además de
+comparar, separa colores, vectoriza, revisa PDF (preflight), genera y verifica códigos de barras, hace reventado (trapping), prepara montajes y
+automatiza tareas. Y desde la 3.2 también funciona <b>dentro de Illustrator</b>. Todo sigue corriendo en tu equipo, sin internet y sin costo.</p>
+<table>
+<tr><th>Versión</th><th>Lo principal</th></tr>
+<tr><td><b>3.0</b></td><td>Suite con pestañas: Separar colores, Vectorizar, Preflight, Códigos de barras, Herramientas y Automatizar; bibliotecas de tintas.</td></tr>
+<tr><td><b>3.1</b></td><td>Auto-trap con la tolerancia de movimiento de tu máquina y prueba de filetes.</td></tr>
+<tr><td><b>3.2</b></td><td>Plugin de Illustrator; aviso de actualización con versión y novedades; botón «Buscar actualizaciones»; manuales nuevos.</td></tr>
+<tr><td><b>3.2.1</b></td><td>Revisión completa de seguridad.</td></tr>
+</table>
+<div class="nota">Lo que ya conocías de Comparar (errores por colores, semáforo, visor, checklist, reporte, aprendizaje del OCR…) sigue igual.
+Este manual cubre solo lo nuevo; el detalle completo de cada función está en el <b>Manual de uso</b>.</div>
+
+<h1>2. Pestañas nuevas y funciones comunes</h1>
+{fig("s01_suite", "La suite: una pestaña por módulo y el botón Tintas arriba a la derecha.")}
+<ul>
+<li><b>Pestañas:</b> Comparar · Separar colores · Vectorizar · Preflight · Códigos de barras · Herramientas · Automatizar.</li>
+<li><b>Enviar a…:</b> cuando cargas un archivo aparece este selector para pasar el <b>mismo archivo</b> a otra pestaña sin volver a subirlo
+(por ejemplo, de Separar a Vectorizar o a Preflight).</li>
+<li><b>Cancelar:</b> las tareas largas muestran una barra de progreso por etapas y se pueden cancelar.</li>
+<li><b>Arrastrar, soltar y pegar (Ctrl+V)</b> funcionan en todas las pestañas.</li>
+<li><b>Avisos por herramienta:</b> si falta Ghostscript o Tesseract, la pestaña afectada lo indica al pasar el ratón; el resto funciona.</li>
+</ul>
+
+<h1>3. Bibliotecas de tintas</h1>
+{fig("s02_tintas", "Pantalla Tintas: bibliotecas, importación y tintas propias.", 90)}
+<p>El botón <b>Tintas</b> (arriba a la derecha) guarda tus colores de impresión para usarlos en todos los módulos:</p>
+<ul>
+<li>Trae de fábrica <b>CMYK de referencia (ISO/Fogra)</b>, blanco, barniz y tintas técnicas (troquel, braille, cotas).</li>
+<li><b>Importa</b> tus bibliotecas en <b>ASE</b> (Illustrator), <b>CxF</b> (medición/proveedor) o <b>CSV</b> (<code>nombre,L,a,b</code>).</li>
+<li>Crea tintas propias con su valor Lab.</li>
+</ul>
+<div class="aviso"><b>Pantone, HKS, RAL, TOYO y DIC</b> son bibliotecas comerciales con licencia: FAVERVIEW no las incluye. Expórtalas desde tu
+Illustrator (Pantone Connect) o pide las CxF a tu proveedor de tintas. Se guardan en <code>datos_locales/tintas</code>, que nunca se sube a internet.</div>
+
+<h1>4. Separar colores · PDF</h1>
+{fig("s03_separar_pdf", "Separar → PDF: tintas, visor y problemas.")}
+<p>Suelta un PDF y verás <b>una placa por tinta</b> (CMYK, Pantones, blanco, barniz, troquel):</p>
+<ul>
+<li><b>Lista de tintas</b> con su cobertura; botones <b>Solo</b> (ver solo esa tinta) y <b>Neg.</b> (negativo).</li>
+<li><b>Densitómetro:</b> pasa el cursor por la página y ves el % de cada tinta en ese punto.</li>
+<li><b>Mapa de cobertura (TAC):</b> marca en rojo las zonas que superan el límite de tinta total del perfil (offset, flexo, digital…).</li>
+<li><b>Problemas</b> (clic → zoom): negro enriquecido en texto pequeño, texto pequeño en varias tintas, barniz/blanco/tintas técnicas con la
+sobreimpresión equivocada, color de registro en el arte, RGB sin convertir, líneas finas y exceso de tinta.</li>
+<li><b>Edición sobre una copia</b> (tu PDF nunca se toca): unir tintas duplicadas («PANTONE 485 C» y «Pantone 485C»), renombrar, convertir una
+tinta directa a proceso y eliminar las que no se usan.</li>
+<li><b>Exportar placas</b> en TIFF (8 o 1 bit) o PDF, más un informe de separaciones.</li>
+</ul>
+{fig("s04_separar_tac", "Mapa de cobertura total (TAC).", 90)}
+
+<h1>5. Separar colores · Imagen</h1>
+{fig("s05_separar_imagen", "Separar → Imagen: asistente de 4 pasos con vista previa.")}
+<p>Separa una imagen (logo, ilustración o foto) en las tintas con las que vas a imprimir, ideal para <b>serigrafía, flexo y etiquetas</b>:</p>
+<table>
+<tr><th>Modo</th><th>Para qué</th></tr>
+<tr><td>Tintas planas</td><td>Logos e ilustraciones de colores sólidos. Detecta la paleta sola o usa la de tu biblioteca.</td></tr>
+<tr><td>Proceso simulado</td><td>Fotos con pocas tintas, sobre papel o prenda oscura; calcula la <b>base blanca</b> con choke.</td></tr>
+<tr><td>Índice</td><td>Serigrafía con puntos cuadrados del mismo tamaño (difusión de error).</td></tr>
+<tr><td>CMYK</td><td>Con perfil ICC y límite de tinta total.</td></tr>
+</table>
+<p>Incluye <b>tramado</b> AM (lineatura y ángulo por tinta) y FM, y salidas en canales TIFF, placas de 1 bit, <b>PDF con canales por tinta (DeviceN)</b>,
+simulación sobre el sustrato e informe. Desde la 3.1 también aplica el <b>auto-trap</b> (sección 11).</p>
+
+<h1>6. Vectorizar</h1>
+{fig("s06_vectorizar", "Vectorizar: preajustes, controles y visor.")}
+<p>Convierte una imagen en vectores <b>pensados para imprimir</b>:</p>
+<ul>
+<li><b>Cero huecos entre colores:</b> dos formas vecinas comparten exactamente el mismo borde.</li>
+<li><b>Colores exactos</b> de tu paleta o de tu biblioteca, y salida en <b>PDF con tintas directas</b>, además de SVG, EPS y DXF (para corte).</li>
+<li><b>Geometría limpia:</b> círculos, arcos y elipses perfectos; rectas casi horizontales o verticales enderezadas; simetría.</li>
+<li><b>Líneas como trazos</b> con grosor, <b>texto</b> marcado o reemplazado por texto real, y engrosado de detalles demasiado finos para imprimir.</li>
+<li><b>Edición básica:</b> unir colores, borrar, recolorear y volver a trazar una zona.</li>
+<li>Preajustes: Logo, Línea, Ilustración, Escaneo y Foto posterizada. Vistas de <b>contornos</b> (nodos) y <b>diferencias</b> con el original.</li>
+</ul>
+{fig("s07_vectorizar_contornos", "Vista de contornos: nodos y trazados.", 90)}
+<p>En el banco de pruebas de logos, el vectorizador iguala o supera a VTracer en fidelidad en el 92 % de los casos, con unas 4,5 veces menos nodos y
+cero huecos. La comparación con Illustrator y CorelDRAW se hará cuando haya archivos de esos programas para medir.</p>
+
+<h1>7. Preflight</h1>
+{fig("s08_preflight", "Preflight: hallazgos por severidad y correcciones.")}
+<p>Revisión técnica del PDF antes de imprenta, con <b>5 perfiles</b> editables (offset, flexo, etiquetas digitales, serigrafía y básico, inspirados en
+GWG 2015): fuentes incrustadas, resolución de imágenes, espacios de color, tintas duplicadas, cobertura total, líneas y texto pequeños, sobreimpresión,
+sangrado y zona segura, transparencias, capas, PDF/X y compresión. Las <b>correcciones seguras</b> se aplican sobre una copia y se comprueban antes/después.
+Reporte PDF con miniaturas.</p>
+
+<h1>8. Códigos de barras</h1>
+{fig("s09_codigos", "Códigos de barras: generar, verificar y lote.")}
+<ul>
+<li><b>Generar</b> 12 tipos en vectores: EAN-13/8, UPC-A/E, ITF-14, Code 128, GS1-128, Code 39, GS1 DataBar, DataMatrix, GS1 DataMatrix y QR.
+Valida el dígito de control y los datos GS1, y permite magnificación, <b>reducción de barras (BWR)</b>, zonas de silencio y la tinta.</li>
+<li><b>Verificar</b> en un PDF o imagen: lee el código, mide la magnificación, avisa de contraste insuficiente (por ejemplo rojo sobre blanco) o de la
+dirección en flexo, y estima un grado A–F (orientativo, no certificado).</li>
+<li><b>Lote</b> desde un CSV.</li>
+</ul>
+
+<h1>9. Herramientas</h1>
+<table>
+<tr><th>Herramienta</th><th>Qué hace</th></tr>
+<tr><td>Trapping</td><td>Reventado por placas, con tabla de anchos por par de tintas y simulación de mal registro con y sin trap.</td></tr>
+<tr><td>Step &amp; repeat</td><td>Montaje en hoja o banda con separación, rotación, desfase y marcas: registro, corte, barra de color, microdots y rótulo de cada tinta.</td></tr>
+<tr><td>Distorsión flexo</td><td>Compensa el alargamiento del cliché en la dirección de impresión (D % = 2π·k/R·100, o el % del fabricante).</td></tr>
+<tr><td>Braille</td><td>Texto a braille español en la tinta técnica «Braille» (medidas Marburg Medium configurables).</td></tr>
+<tr><td>Gama extendida</td><td>Recetas para reproducir tintas directas con un juego fijo (por ejemplo CMYK+OGV), con semáforo de ΔE.</td></tr>
+<tr><td>Prueba en pantalla</td><td>Simula el trabajo con tus tintas, el sustrato y la ganancia de punto (orientativa, no contractual).</td></tr>
+<tr><td>Calibración</td><td>Gráfico de prueba para imprimir y medir, que afina el modelo de mezcla de tintas.</td></tr>
+</table>
+{fig("s11_step_repeat", "Step &amp; repeat con marcas.", 90)}
+
+<h1>10. Automatizar</h1>
+{fig("s13_automatizar", "Recetas: pasos en orden y ejecución.", 90)}
+<p>Una <b>receta</b> encadena pasos (preflight, correcciones, unir tintas, exportar placas, step &amp; repeat, distorsión, trapping, verificar códigos,
+vectorizar, separar imagen, resumen) y se ejecuta sobre un archivo, una carpeta o una <b>carpeta vigilada</b>: cada archivo nuevo se procesa solo y
+termina en <code>salida/</code>, <code>errores/</code> o <code>reportes/</code>. Hay condiciones («si el preflight tiene errores, detener») y 3 recetas de ejemplo.</p>
+
+<h1>11. Auto-trap y tolerancia de registro (3.1)</h1>
+{fig("s12_trapping", "Trapping: mapa de traps y prueba de movimiento.", 90)}
+<p>En la máquina las tintas nunca caen exactamente en el mismo sitio. Si dos colores solo se tocan, al moverse aparece un <b>filete blanco</b>. El
+<b>auto-trap</b> mete un poco un color bajo el vecino para que, dentro de la <b>tolerancia de movimiento de tu máquina</b>, el borde siga cubierto.</p>
+<ul>
+<li><b>Perfiles de máquina</b> con tu tolerancia en mm (ejemplos orientativos: serigrafía automática ±0,20 mm, flexo angosta ±0,15 mm, offset
+±0,08 mm). Puedes crear los tuyos.</li>
+<li><b>Automático en Separar colores</b> (imagen y PDF) para serigrafía y flexo, en el <b>Vectorizador</b> (trazos en sobreimpresión) y en Herramientas.</li>
+<li><b>Reglas corregidas:</b> ahora también se protegen dos colores de luminosidad parecida (trap centrado); el negro no se mueve, el blanco se contrae,
+el negro enriquecido se retrae y las líneas finas se respetan.</li>
+<li><b>Prueba de movimiento:</b> desplaza las placas en 8 direcciones y cuenta los filetes. Con el trap debe decir <b>«✔ Sin filetes con ±X mm»</b>.</li>
+<li>Preflight («Bordes sin protección de registro») y recetas (<code>auto_trap</code>, <code>prueba_movimiento</code>).</li>
+</ul>
+<div class="nota">Mide el movimiento real de tu máquina con una prueba de registro y usa ese valor; confirma siempre con tu imprenta.</div>
+
+<h1>12. Plugin de Illustrator (3.2)</h1>
+{fig("p01_vectorizar", "El panel FAVERVIEW dentro de Illustrator.", 42)}
+<p>Un panel para <b>Illustrator 2024, 2025 y 2026</b> que usa las herramientas de FAVERVIEW sin salir del programa (FAVERVIEW debe estar abierto):</p>
+<table>
+<tr><th>Pestaña</th><th>Qué hace</th></tr>
+<tr><td>Vectorizar</td><td>Vectoriza la imagen seleccionada y coloca el vector exactamente encima, con muestras spot sin duplicar.</td></tr>
+<tr><td>Preflight</td><td>Revisa la mesa; clic → zoom y selección; marcadores; correcciones directas en tu documento (sobreimpresión, K 100 %, unir y borrar muestras).</td></tr>
+<tr><td>Separar</td><td>Tintas frente a las muestras del documento, cobertura, placas y densitómetro.</td></tr>
+<tr><td>Comparar</td><td>Compara la mesa con el arte del cliente y marca las diferencias sobre tu diseño.</td></tr>
+<tr><td>Códigos</td><td>Inserta códigos de barras y braille como vectores y verifica los del documento.</td></tr>
+<tr><td>Trap</td><td>Analiza el registro y crea traps vectoriales en su propia capa.</td></tr>
+</table>
+<p>Se instala con un archivo <code>.zxp</code> firmado y el instalador oficial de Creative Cloud (ver el <b>Manual del plugin de Illustrator</b>).</p>
+<div class="aviso">El plugin está probado automáticamente, pero sus <b>pruebas en Illustrator real</b> (<code>plugin/PRUEBAS_MANUALES.md</code>) están pendientes.
+Hasta completarlas, úsalo con precaución.</div>
+
+<h1>13. Actualizaciones automáticas mejoradas (3.2)</h1>
+<ul>
+<li>El aviso azul muestra el <b>número de la versión nueva</b> y un desplegable <b>Novedades</b> con lo que trae.</li>
+<li>El aviso <b>ya no desaparece</b> si cierras y abres la app el mismo día.</li>
+<li>Nuevo botón <b>Buscar actualizaciones</b> en el pie de la página: comprueba en el momento.</li>
+<li><b>Actualizar</b> explica qué hacer si la carpeta tiene cambios locales o está en otra rama, en vez de fallar.</li>
+<li>El plugin avisa en su pestaña <b>Ajustes</b> cuando hay un <code>.zxp</code> nuevo.</li>
+</ul>
+<p>Para actualizar a mano: <code>cd $HOME\\FAVERVIEW; git pull</code> y vuelve a abrir la app. Tus datos no se tocan.</p>
+
+<h1>14. Seguridad (3.2.1)</h1>
+<p>Como el código es público, se revisó a fondo que nada permita conectarse a tu equipo ni entrar a tu cuenta:</p>
+<ul>
+<li>La app solo acepta conexiones <b>de tu propio computador</b> (127.0.0.1); ningún otro dispositivo puede usarla.</li>
+<li>Ninguna página web puede usar la app ni pulsar «Actualizar»; el plugin usa un <b>token</b> que solo existe en tu equipo.</li>
+<li>Se corrigieron dos puntos donde el nombre de una tinta de una biblioteca ajena podía insertar código en la página.</li>
+<li>Hay pruebas automáticas que vigilan estas protecciones en cada cambio, y el repositorio tiene activadas las alertas de seguridad de GitHub.</li>
+<li>¿Encuentras un problema de seguridad? Repórtalo en privado: GitHub → <b>Security → Report a vulnerability</b> (ver <code>SECURITY.md</code>).</li>
+</ul>
+
+<h1>15. Manuales nuevos</h1>
+<table>
+<tr><th>Documento</th><th>Para qué</th></tr>
+<tr><td>Guía de instalación y actualización</td><td>Instalar la app, Ghostscript y el plugin; actualizar; desinstalar.</td></tr>
+<tr><td>Manual de uso</td><td>Todas las funciones, módulo por módulo.</td></tr>
+<tr><td>Guía rápida</td><td>Los pasos esenciales de cada tarea.</td></tr>
+<tr><td>Manual del plugin de Illustrator</td><td>Instalar y usar el panel.</td></tr>
+<tr><td>Guía del mantenedor</td><td>Publicar versiones, firmar el plugin y probar.</td></tr>
+<tr><td>Novedades (este documento)</td><td>Qué cambió desde la versión 2.</td></tr>
+</table>
+<p>Todos están en la carpeta <code>docs</code> de FAVERVIEW y en GitHub.</p>
+
+<h1>16. Qué necesitas instalar para lo nuevo</h1>
+<table>
+<tr><th>Para usar…</th><th>Necesitas</th></tr>
+<tr><td>Separar colores, Códigos de barras, trapping y EPS</td><td><b>Ghostscript</b> (paso 2b de la Guía de instalación).</td></tr>
+<tr><td>Pantone y otras bibliotecas</td><td>Tus propios archivos ASE, CxF o CSV.</td></tr>
+<tr><td>El plugin de Illustrator</td><td>Illustrator 2024–2026 y el <code>.zxp</code> firmado.</td></tr>
+<tr><td>Todo lo demás</td><td>Nada: llega con <b>Actualizar</b> (o <code>git pull</code>).</td></tr>
+</table>
+
+<h1>17. Historial de versiones</h1>
+<table>
+<tr><th>Versión</th><th>Fecha</th><th>Cambios</th></tr>
+<tr><td>3.2.1</td><td>27-09-2026</td><td>Revisión de seguridad y política de seguridad.</td></tr>
+<tr><td>3.2.0</td><td>26-09-2026</td><td>Plugin de Illustrator, actualizaciones mejoradas y manuales nuevos.</td></tr>
+<tr><td>3.1.0</td><td>26-09-2026</td><td>Auto-trap con tolerancia de registro.</td></tr>
+<tr><td>3.0.0</td><td>26-09-2026</td><td>Suite de preprensa: Separar, Vectorizar, Preflight, Códigos, Herramientas, Automatizar y Tintas.</td></tr>
+<tr><td>2.0.0</td><td>25-09-2026</td><td>Comparador con OCR que aprende, revisión, plantillas, versiones y lotes.</td></tr>
+</table>
+<p>El detalle técnico completo está en <code>CHANGELOG.md</code>. Este documento corresponde a la versión {version}.</p>
+"""
+
+
 # ============================================================================ GUÍA RÁPIDA
 def guia_rapida(version: str) -> str:
     return f"""
@@ -448,7 +672,7 @@ Versión documentada: {version}. Repositorio: {REPO}</p>
 <tr><td><code>plugin/</code></td><td>Panel CEP para Illustrator (<code>cep/</code>), pruebas, herramientas de empaquetado, pruebas manuales y migración a UXP.</td></tr>
 <tr><td><code>bench/</code></td><td>Bancos de pruebas: comparar, separación, vectorizador y trapping.</td></tr>
 <tr><td><code>tests/</code></td><td>Pruebas automáticas (pytest) y casos sintéticos.</td></tr>
-<tr><td><code>tools/manual/</code></td><td>Generador de los manuales PDF y capturas.</td></tr>
+<tr><td><code>tools/manual/</code></td><td>Generador de los manuales PDF (incluido el de Novedades) y capturas.</td></tr>
 <tr><td><code>docs/</code></td><td>Manuales PDF generados.</td></tr>
 <tr><td><code>PLAN*.md</code>, <code>DECISIONES.md</code>, <code>CHANGELOG.md</code></td><td>Planes por etapas, decisiones técnicas y registro de cambios.</td></tr>
 </table>

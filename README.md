@@ -29,6 +29,7 @@ Los resultados de color son **estimaciones orientativas**; confirma siempre con 
 
 | Documento | Para quién |
 |---|---|
+| [Novedades](docs/Novedades_FAVERVIEW.pdf) | Todo lo nuevo desde la versión 2: suite de preprensa, auto-trap, plugin de Illustrator, actualizaciones y seguridad. |
 | [Guía de instalación y actualización](docs/Guia_de_instalacion_y_actualizacion_FAVERVIEW.pdf) | Instalar FAVERVIEW, Ghostscript y el plugin; actualizar; desinstalar; problemas frecuentes. |
 | [Manual de uso](docs/Manual_de_uso_FAVERVIEW.pdf) | Todas las funciones de la app, módulo por módulo. |
 | [Guía rápida](docs/Guia_rapida_FAVERVIEW.pdf) | Los pasos esenciales de cada tarea, para tener a mano. |

@@ -410,6 +410,8 @@ DOCS = [
     (d.manual_plugin(fig, VERSION), "Manual_plugin_Illustrator_FAVERVIEW.pdf", "Manual del plugin de Illustrator",
      ("Plugin de Illustrator", "FAVERVIEW dentro de Illustrator 2024–2026"),
      "Panel de Illustrator que usa las herramientas de FAVERVIEW (vectorizar, preflight, separar, comparar, códigos y trap) sin salir del programa."),
+    (d.novedades(fig, VERSION), "Novedades_FAVERVIEW.pdf", "Novedades", ("Novedades", "Todo lo nuevo desde la versión 2"),
+     "Qué cambió en FAVERVIEW 3: la suite de preprensa, el auto-trap, el plugin de Illustrator, las actualizaciones mejoradas y la seguridad."),
     (d.guia_rapida(VERSION), "Guia_rapida_FAVERVIEW.pdf", "Guía rápida", ("Guía rápida", "Cada tarea en pocos pasos"),
      "Los pasos esenciales de cada módulo para tener a mano junto al computador."),
     (d.guia_mantenedor(VERSION), "Guia_del_mantenedor_FAVERVIEW.pdf", "Guía del mantenedor",
